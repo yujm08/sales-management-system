@@ -1,0 +1,205 @@
+/* src/main/resources/static/css/datepicker.css */
+/* 날짜 선택기 스타일 */
+
+.datepicker-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.datepicker-modal.show {
+  opacity: 1;
+}
+
+.datepicker-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.datepicker-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  padding: 1.5rem;
+  min-width: 320px;
+  max-width: 400px;
+}
+
+.datepicker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.datepicker-nav-btn {
+  background: none;
+  border: 1px solid #e1e8ed;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.datepicker-nav-btn:hover {
+  background-color: #f8f9fa;
+  border-color: #3498db;
+}
+
+.datepicker-title {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.datepicker-title select {
+  padding: 0.5rem;
+  border: 1px solid #e1e8ed;
+  border-radius: 6px;
+  background-color: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.datepicker-title select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.datepicker-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.datepicker-weekdays div {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6c757d;
+  padding: 0.5rem 0;
+}
+
+.datepicker-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 1.5rem;
+}
+
+.datepicker-week {
+  display: contents;
+}
+
+.datepicker-day {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.datepicker-day:hover {
+  background-color: #e3f2fd;
+}
+
+.datepicker-day.other-month {
+  color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.datepicker-day.other-month:hover {
+  background-color: transparent;
+}
+
+.datepicker-day.today {
+  background-color: #fff3e0;
+  color: #f57f17;
+  font-weight: 600;
+}
+
+.datepicker-day.today:hover {
+  background-color: #ffe0b2;
+}
+
+.datepicker-day.selected {
+  background-color: #3498db;
+  color: white;
+  font-weight: 600;
+}
+
+.datepicker-day.selected:hover {
+  background-color: #2980b9;
+}
+
+.datepicker-day.today.selected {
+  background-color: #3498db;
+  color: white;
+}
+
+.datepicker-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e1e8ed;
+}
+
+.datepicker-footer .btn {
+  padding: 0.5rem 1rem;
+  font-size: 14px;
+  min-width: 80px;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 480px) {
+  .datepicker-container {
+    margin: 1rem;
+    width: calc(100% - 2rem);
+    max-width: none;
+    min-width: auto;
+  }
+
+  .datepicker-day {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .datepicker-title {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .datepicker-title select {
+    font-size: 12px;
+    padding: 0.25rem;
+  }
+}

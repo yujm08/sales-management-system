@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+    <title>조회 - 마이넷 매출 관리 시스템</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <script th:src="@{/js/datepicker.js}" defer></script>
+    <style>
+      /* 전체 스타일 */
+      .main-container {
+        padding: 20px;
+        background: #f8f9fa;
+        min-height: 100vh;
+      }
+
+      .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .nav-item {
+        position: relative;
+      }
+
+      .sub-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        min-width: 150px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        border-radius: 4px;
+        z-index: 1000;
+        display: none;
+      }
+
+      .nav-item:hover .sub-menu {
+        display: block;
+      }
+
+      .sub-menu a {
+        display: block;
+        padding: 10px 15px;
+        color: #333;
+        text-decoration: none;
+        border-bottom: 1px solid #eee;
+      }
+
+      .sub-menu a:last-child {
+        border-bottom: none;
+        border-radius: 0 0 4px 4px;
+      }
+
+      .sub-menu a:hover {
+        background: #f8f9fa;
+      }
+
+      /* 상단 버튼 영역 */
+      .control-panel {
+        background: #e9ecef;
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .left-controls {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        border: 1px solid #6c757d;
+        background: white;
+        color: #495057;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .btn:hover {
+        background: #f8f9fa;
+      }
+
+      .btn.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+      }
+
+      .company-select {
+        padding: 8px 12px;
+        border: 1px solid #6c757d;
+        border-radius: 4px;
+        background: white;
+        font-size: 14px;
+        min-width: 200px;
+      }
+
+      /* 기준 날짜 영역 */
+      .date-control-inline {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: 20px;
+        color: #495057; /* 무채색 */
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      .date-control-inline .label {
+        margin-right: 4px;
+        color: #6c757d;
+      }
+
+      .date-control-inline .date-nav-btn {
+        background: transparent;
+        border: 1px solid #adb5bd;
+        color: #495057;
+        padding: 3px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .date-control-inline .date-nav-btn:hover {
+        background: #f1f3f5;
+      }
+
+      .date-control-inline .current-date {
+        font-weight: 600;
+        color: #212529;
+        padding: 3px 6px;
+        border: 1px solid transparent;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+
+      .date-control-inline .current-date:hover {
+        border-color: #ced4da;
+        background: #f8f9fa;
+      }
+
+      .date-nav-btn {
+        background: transparent;
+        border: 1px solid white;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      .date-nav-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .current-date {
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 5px 10px;
+        border: 1px solid transparent;
+        border-radius: 3px;
+        color: white;
+      }
+
+      .current-date:hover {
+        border-color: white;
+      }
+
+      .date-picker {
+        position: absolute;
+        left: -9999px;
+        opacity: 0;
+      }
+
+      /* 테이블 스타일 */
+      .stats-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        background: white;
+      }
+
+      .stats-table th {
+        background: #24595e;
+        color: white;
+        padding: 12px 8px;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid #ffffff;
+        font-size: 12px;
+      }
+
+      .stats-table td {
+        vertical-align: middle;
+        padding: 8px;
+        text-align: center;
+        border: 1px solid #ffffff;
+        font-size: 12px;
+      }
+
+      /* 수정 가능한 셀 */
+      .editable-cell {
+        background-color: #fff3cd !important;
+        cursor: pointer;
+      }
+
+      .editable-cell:hover {
+        background-color: #ffeaa7 !important;
+      }
+
+      /* 카테고리 셀 스타일 */
+      .category-cell {
+        background: #dee2e6;
+        color: #333;
+        font-weight: bold;
+        vertical-align: middle;
+        text-align: center;
+      }
+
+      /* 카테고리별 배경색 (product-management.html과 동일) */
+      .data-cell.green-1 {
+        background: #e8f5e8;
+      }
+
+      .data-cell.green-2 {
+        background: #d4f4d4;
+      }
+
+      .data-cell.green-3 {
+        background: #c0f0c0;
+      }
+
+      .data-cell.green-4 {
+        background: #b3e6b3;
+      }
+
+      /* 소계/합계 행 */
+      .subtotal-row td {
+        background-color: #f1f3f5 !important;
+        font-weight: 600;
+      }
+
+      .total-row td {
+        background-color: #d3d3d3 !important;
+        font-weight: 700;
+        font-size: 13px;
+      }
+
+      /* 제품 정보 */
+      .product-info {
+        text-align: left;
+        padding-left: 10px;
+      }
+
+      .product-name {
+        font-weight: 600;
+        font-size: 12px;
+      }
+
+      /* 수치 표시 */
+      .amount {
+        font-weight: 600;
+        color: #000000;
+        text-align: right;
+        padding-right: 10px;
+      }
+
+      .profit {
+        font-weight: 600;
+        color: #dc3545;
+        text-align: right;
+        padding-right: 10px;
+      }
+
+      .profit-detail {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      .profit-amount {
+        font-weight: 600;
+        color: #dc3545;
+      }
+
+      .profit-change {
+        font-size: 10px;
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+
+      .profit-up {
+        color: #dc3545;
+      }
+
+      .profit-down {
+        color: #007bff;
+      }
+
+      /* 달성률 */
+      .achievement-rate {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .rate-text {
+        font-weight: 600;
+        color: #495057;
+        font-size: 12px;
+      }
+
+      .rate-bar {
+        width: 60px;
+        height: 6px;
+        background: #ffffff;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .rate-fill {
+        height: 100%;
+        background: #28a745;
+        transition: width 0.3s ease;
+      }
+
+      .editing-cell input {
+        width: 80px;
+        text-align: center;
+        border: 2px solid #2c5aa0;
+        border-radius: 4px;
+        padding: 4px;
+      }
+
+      /* 툴팁 */
+      .tooltip {
+        position: relative;
+        cursor: pointer;
+      }
+
+      .tooltip:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #495057;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        white-space: nowrap;
+        z-index: 1000;
+      }
+
+      /* 로딩 */
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+      }
+
+      .spinner {
+        border: 3px solid #f3f4f6;
+        border-top: 3px solid #2c5aa0;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* 알림 */
+      .alert {
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+
+      .alert-success {
+        background-color: #d1edff;
+        color: #0c5460;
+        border: 1px solid #28a745;
+      }
+
+      .alert-error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #dc3545;
+      }
+
+      /* DatePicker 모달 스타일 */
+      .datepicker-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .datepicker-modal.show {
+        opacity: 1;
+      }
+
+      .datepicker-backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+      }
+
+      .datepicker-container {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        padding: 20px;
+        width: 320px;
+      }
+
+      .datepicker-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+      }
+
+      .datepicker-nav-btn {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+
+      .datepicker-title {
+        display: flex;
+        gap: 10px;
+      }
+
+      .datepicker-title select {
+        padding: 5px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .datepicker-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+        margin-bottom: 10px;
+      }
+
+      .datepicker-weekdays div {
+        text-align: center;
+        font-weight: bold;
+        padding: 8px;
+        background: #f8f9fa;
+      }
+
+      .datepicker-calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+        margin-bottom: 15px;
+      }
+
+      .datepicker-week {
+        display: contents;
+      }
+
+      .datepicker-day {
+        padding: 8px;
+        text-align: center;
+        cursor: pointer;
+        border: 1px solid #eee;
+        background: white;
+      }
+
+      .datepicker-day:hover {
+        background: #e9ecef;
+      }
+
+      .datepicker-day.selected {
+        background: #007bff;
+        color: white;
+      }
+
+      .datepicker-day.today {
+        background: #28a745;
+        color: white;
+      }
+
+      .datepicker-day.other-month {
+        color: #ccc;
+        cursor: not-allowed;
+      }
+
+      .datepicker-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+        margin-left: 5px;
+      }
+
+      .btn-secondary:hover {
+        background: #5a6268;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 헤더 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">마이넷 매출 관리 시스템</div>
+        <div class="user-info">
+          <span
+            class="user-name"
+            th:text="${#authentication.principal.companyName}"
+            >마이넷</span
+          >
+          <span class="user-role">(마이넷)</span>
+          <form th:action="@{/logout}" method="post" style="display: inline">
+            <button type="submit" class="logout-btn">로그아웃</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <!-- 네비게이션 -->
+    <nav class="nav-menu">
+      <div class="nav-content">
+        <div class="nav-item active">
+          <a th:href="@{/mynet/view}">조회</a>
+        </div>
+        <div class="nav-item">
+          <a href="javascript:void(0)">비교 ▼</a>
+          <div class="sub-menu">
+            <a th:href="@{/mynet/compare/monthly}">월별</a>
+            <a th:href="@{/mynet/compare/yearly}">년도별</a>
+            <a th:href="@{/mynet/compare/period}">기간별</a>
+            <a th:href="@{/mynet/compare/product}">제품별</a>
+          </div>
+        </div>
+        <div class="nav-item">
+          <a th:href="@{/admin/products}">제품 분류</a>
+        </div>
+        <div class="nav-item" th:if="${!isCanon}">
+          <a th:href="@{/admin/users}">사용자 관리</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="main-container">
+      <div id="alert-container"></div>
+
+      <div class="card">
+        <!-- 상단 버튼 영역 -->
+        <div class="control-panel">
+          <div class="left-controls" th:if="${!isCanon}">
+            <button
+              class="btn"
+              id="total-stats-btn"
+              onclick="selectTotalStats()"
+            >
+              전체 통계
+            </button>
+            <button
+              class="btn"
+              id="edit-btn"
+              onclick="toggleEdit()"
+              style="display: none"
+            >
+              수정
+            </button>
+          </div>
+          <div class="left-controls" th:if="${isCanon}">
+            <button class="btn active" disabled>전체 통계</button>
+          </div>
+
+          <!-- 기준 날짜 영역 -->
+          <div class="date-control-inline">
+            <span>기준 날짜 : </span>
+            <button class="date-nav-btn" onclick="changeDate(-1)">◀</button>
+            <span
+              class="current-date"
+              id="current-date"
+              onclick="showDatePicker()"
+              th:text="${#temporals.format(targetDate, 'yyyy-MM-dd')}"
+              >2025-09-07</span
+            >
+            <button class="date-nav-btn" onclick="changeDate(1)">▶</button>
+            <input
+              type="date"
+              class="date-picker"
+              id="date-picker"
+              th:value="${targetDate}"
+              onchange="selectDate()"
+            />
+          </div>
+
+          <select
+            id="company-select"
+            class="company-select"
+            onchange="changeCompany(this.value)"
+          >
+            <option value="">하위 회사명 선택</option>
+            <option
+              th:each="company : ${subsidiaryCompanies}"
+              th:value="${company.id}"
+              th:text="${company.name}"
+              th:selected="${companyFilter == company.id.toString()}"
+            >
+              회사명
+            </option>
+          </select>
+        </div>
+
+        <!-- 로딩 표시 -->
+        <div id="loading" class="loading">
+          <div class="spinner"></div>
+          <p>데이터를 불러오는 중...</p>
+        </div>
+
+        <!-- 통계 테이블 -->
+        <div class="table-container" id="table-container">
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th colspan="5">제품</th>
+                <th colspan="3">일 합계</th>
+                <th colspan="3">월 합계</th>
+                <th colspan="2">목표수량</th>
+              </tr>
+              <tr>
+                <th>분류</th>
+                <th>제품코드</th>
+                <th>제품명</th>
+                <th>원가</th>
+                <th>공급가</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>이익</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>이익</th>
+                <th th:text="${currentMonth + '월'}">9월</th>
+                <th>달성률</th>
+              </tr>
+            </thead>
+            <!-- 수정된 tbody 부분 -->
+            <tbody id="stats-tbody">
+              <!-- 데이터가 없는 경우 -->
+              <tr th:if="${#lists.isEmpty(statisticsData)}">
+                <td
+                  colspan="13"
+                  style="text-align: center; padding: 40px; color: #6c757d"
+                >
+                  표시할 데이터가 없습니다.
+                </td>
+              </tr>
+
+              <!-- 통계 데이터 반복 -->
+              <th:block
+                th:each="categoryEntry, categoryStat : ${statisticsData}"
+              >
+                <!-- 제품 데이터만 먼저 표시 -->
+                <th:block
+                  th:each="item, itemStat : ${categoryEntry.value}"
+                  th:if="${item != null and item.productCode != null}"
+                >
+                  <tr>
+                    <!-- 카테고리 셀 (첫 번째 제품에만 표시) -->
+                    <td
+                      th:if="${itemStat.first}"
+                      class="category-cell"
+                      th:rowspan="${#lists.size(categoryEntry.value)}"
+                      th:text="${categoryEntry.key}"
+                    >
+                      카테고리
+                    </td>
+
+                    <!-- 제품 정보 -->
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1}"
+                      th:text="${item.productCode}"
+                    >
+                      제품코드
+                    </td>
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1}"
+                      class="product-info"
+                    >
+                      <div class="product-name" th:text="${item.productName}">
+                        제품명
+                      </div>
+                    </td>
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
+                      th:text="${'₩' + #numbers.formatInteger(item.costPrice, 0, 'COMMA')}"
+                    >
+                      원가
+                    </td>
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
+                      th:text="${'₩' + #numbers.formatInteger(item.supplyPrice, 0, 'COMMA')}"
+                    >
+                      공급가
+                    </td>
+
+                    <!-- 일별 수량 (수정 가능) -->
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + 
+            ${(companyFilter != '' and !isCanon) ? ' tooltip editable-cell' : ' tooltip'}"
+                      th:data-tooltip="${item.dailySummary?.lastModifiedAt != null ? 
+                ('수정: ' + #temporals.format(item.dailySummary.lastModifiedAt, 'yyyy-MM-dd HH:mm') + 
+                 ' by ' + item.dailySummary.modifiedBy) : '수정 기록 없음'}"
+                      th:data-company-id="${companyFilter != '' ? companyFilter : ''}"
+                      th:data-product-id="${item.productId}"
+                      th:data-type="'quantity'"
+                      th:attr="onclick=${(companyFilter != '' and !isCanon) ? 'editCell(this)' : null}"
+                      th:text="${item.dailySummary?.quantity ?: 0}"
+                    >
+                      수량
+                    </td>
+
+                    <!-- 일별 금액 -->
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
+                      th:text="${#numbers.formatInteger(item.dailySummary?.amount ?: 0, 0, 'COMMA')}"
+                    >
+                      금액
+                    </td>
+
+                    <!-- 일별 이익 -->
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' profit'"
+                    >
+                      <div class="profit-detail">
+                        <span
+                          class="profit-amount"
+                          th:text="${'₩' + #numbers.formatInteger(item.dailySummary?.profit ?: 0, 0, 'COMMA')}"
+                          >이익</span
+                        >
+                        <div
+                          th:if="${item.dailySummary?.comparison != null}"
+                          class="profit-change"
+                        >
+                          <span
+                            th:class="${item.dailySummary.comparison.increase} ? 'profit-up' : 'profit-down'"
+                            th:text="${item.dailySummary.comparison.increase ? '▲' : '▼'}"
+                            >화살표</span
+                          >
+                          <span
+                            th:class="${item.dailySummary.comparison.increase} ? 'profit-up' : 'profit-down'"
+                            th:text="${#numbers.formatDecimal(item.dailySummary.comparison.changeRate, 0, 0)} + '%'"
+                            >변화율</span
+                          >
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- 월별 수량 -->
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1}"
+                      th:text="${item.monthlySummary?.quantity ?: 0}"
+                    >
+                      월수량
+                    </td>
+
+                    <!-- 월별 금액 -->
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
+                      th:text="${#numbers.formatInteger(item.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
+                    >
+                      월금액
+                    </td>
+
+                    <!-- 월별 이익 -->
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' profit'"
+                    >
+                      <div class="profit-detail">
+                        <span
+                          class="profit-amount"
+                          th:text="${'₩' + #numbers.formatInteger(item.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
+                          >월이익</span
+                        >
+                        <div
+                          th:if="${item.monthlySummary?.comparison != null}"
+                          class="profit-change"
+                        >
+                          <span
+                            th:class="${item.monthlySummary.comparison.increase} ? 'profit-up' : 'profit-down'"
+                            th:text="${item.monthlySummary.comparison.increase ? '▲' : '▼'}"
+                            >화살표</span
+                          >
+                          <span
+                            th:class="${item.monthlySummary.comparison.increase} ? 'profit-up' : 'profit-down'"
+                            th:text="${#numbers.formatDecimal(item.monthlySummary.comparison.changeRate, 1, 1)} + '%'"
+                            >변화율</span
+                          >
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- 목표 수량 (수정 가능) -->
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + 
+            ${(companyFilter != '' and !isCanon) ? ' tooltip editable-cell' : ' tooltip'}"
+                      th:data-tooltip="'목표 수량'"
+                      th:data-company-id="${companyFilter != '' ? companyFilter : ''}"
+                      th:data-product-id="${item.productId}"
+                      th:data-type="'target'"
+                      th:attr="onclick=${(companyFilter != '' and !isCanon) ? 'editCell(this)' : null}"
+                      th:text="${item.targetData?.targetQuantity ?: 0}"
+                    >
+                      목표
+                    </td>
+
+                    <!-- 달성률 -->
+                    <td
+                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1}"
+                    >
+                      <div class="achievement-rate">
+                        <span
+                          class="rate-text"
+                          th:text="${#numbers.formatDecimal(item.targetData?.achievementRate ?: 0, 0, 0)} + '%'"
+                          >달성률</span
+                        >
+                        <div class="rate-bar">
+                          <div
+                            class="rate-fill"
+                            th:style="'width: ' + ${(item.targetData?.achievementRate ?: 0) > 100 ? 100 : (item.targetData?.achievementRate ?: 0)} + '%'"
+                          ></div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </th:block>
+
+                <!-- 소계 행 (카테고리 끝에 추가) -->
+                <tr
+                  class="subtotal-row"
+                  th:with="subtotalItem=${subtotalData[categoryEntry.key]}"
+                >
+                  <td colspan="5" style="text-align: left; padding-left: 15px">
+                    <strong th:text="${'소계'}">소계</strong>
+                  </td>
+                  <!-- 실제 소계 데이터 표시 -->
+                  <td>
+                    <strong
+                      th:text="${subtotalItem?.dailySummary?.quantity ?: 0}"
+                      >소계수량</strong
+                    >
+                  </td>
+                  <td class="amount">
+                    <strong
+                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.dailySummary?.amount ?: 0, 0, 'COMMA')}"
+                      >소계금액</strong
+                    >
+                  </td>
+                  <td class="profit">
+                    <strong
+                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.dailySummary?.profit ?: 0, 0, 'COMMA')}"
+                      >소계이익</strong
+                    >
+                  </td>
+                  <td>
+                    <strong
+                      th:text="${subtotalItem?.monthlySummary?.quantity ?: 0}"
+                      >소계월수량</strong
+                    >
+                  </td>
+                  <td class="amount">
+                    <strong
+                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
+                      >소계월금액</strong
+                    >
+                  </td>
+                  <td class="profit">
+                    <strong
+                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
+                      >소계월이익</strong
+                    >
+                  </td>
+                  <td>
+                    <strong
+                      th:text="${subtotalItem?.targetData?.targetQuantity ?: 0}"
+                      >소계목표</strong
+                    >
+                  </td>
+                  <td>
+                    <div class="achievement-rate">
+                      <span class="rate-text">
+                        <strong
+                          th:text="${#numbers.formatDecimal(subtotalItem?.targetData?.achievementRate ?: 0, 0, 0)} + '%'"
+                          >소계달성률</strong
+                        >
+                      </span>
+                      <div class="rate-bar">
+                        <div
+                          class="rate-fill"
+                          th:style="'width: ' + ${(subtotalItem?.targetData?.achievementRate ?: 0) > 100 ? 100 : (subtotalItem?.targetData?.achievementRate ?: 0)} + '%'"
+                        ></div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </th:block>
+
+              <!-- 전체 합계 행 -->
+              <tr th:if="${grandTotalData != null}" class="total-row">
+                <td colspan="5" style="text-align: left; padding-left: 15px">
+                  <strong th:text="${grandTotalData.productName ?: '합계'}"
+                    >합계</strong
+                  >
+                </td>
+                <!-- 실제 합계 데이터 표시 -->
+                <td>
+                  <strong
+                    th:text="${grandTotalData.dailySummary?.quantity ?: 0}"
+                    >합계수량</strong
+                  >
+                </td>
+                <td class="amount">
+                  <strong
+                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.dailySummary?.amount ?: 0, 0, 'COMMA')}"
+                    >합계금액</strong
+                  >
+                </td>
+                <td class="profit">
+                  <strong
+                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.dailySummary?.profit ?: 0, 0, 'COMMA')}"
+                    >합계이익</strong
+                  >
+                </td>
+                <td>
+                  <strong
+                    th:text="${grandTotalData.monthlySummary?.quantity ?: 0}"
+                    >합계월수량</strong
+                  >
+                </td>
+                <td class="amount">
+                  <strong
+                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
+                    >합계월금액</strong
+                  >
+                </td>
+                <td class="profit">
+                  <strong
+                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
+                    >합계월이익</strong
+                  >
+                </td>
+                <td>
+                  <strong
+                    th:text="${grandTotalData.targetData?.targetQuantity ?: 0}"
+                    >합계목표</strong
+                  >
+                </td>
+                <td>
+                  <div class="achievement-rate">
+                    <span class="rate-text">
+                      <strong
+                        th:text="${#numbers.formatDecimal(grandTotalData.targetData?.achievementRate ?: 0, 0, 0)} + '%'"
+                        >합계달성률</strong
+                      >
+                    </span>
+                    <div class="rate-bar">
+                      <div
+                        class="rate-fill"
+                        th:style="'width: ' + ${(grandTotalData.targetData?.achievementRate ?: 0) > 100 ? 100 : (grandTotalData.targetData?.achievementRate ?: 0)} + '%'"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <script th:src="@{/js/common.js}"></script>
+
+    <!-- JavaScript -->
+    <script>
+      let currentDate = new Date();
+      let currentCompanyFilter = "";
+      let isEditMode = false;
+      let selectedCells = new Set();
+      let pendingChanges = new Map();
+
+      // 페이지 로드 시 DatePicker 초기화
+      document.addEventListener("DOMContentLoaded", function () {
+        const targetDateElement = document.getElementById("current-date");
+        const companySelectElement = document.getElementById("company-select");
+
+        if (targetDateElement) {
+          currentDate = new Date(targetDateElement.textContent);
+        }
+        if (companySelectElement) {
+          currentCompanyFilter = companySelectElement.value || "";
+        }
+
+        // DatePicker 초기화 추가
+        if (typeof globalDatePicker !== "undefined") {
+          globalDatePicker.selectedDate = new Date(currentDate);
+          globalDatePicker.init(document.getElementById("current-date"), {
+            onSelect: function (dateString) {
+              const companyId = currentCompanyFilter || "";
+              location.href = `/mynet/view?companyFilter=${companyId}&date=${dateString}`;
+            },
+          });
+        }
+
+        updateDateDisplay();
+        updateButtonStates();
+      });
+
+      // 수정 모드 토글
+      function toggleEdit() {
+        isEditMode = !isEditMode;
+        const editBtn = document.getElementById("edit-btn");
+
+        if (isEditMode) {
+          editBtn.textContent = "수정 완료";
+          editBtn.classList.add("active");
+          document.body.classList.add("multi-select-mode");
+          enableMultiSelectEditing();
+        } else {
+          editBtn.textContent = "수정";
+          editBtn.classList.remove("active");
+          document.body.classList.remove("multi-select-mode");
+          savePendingChanges(); // 자동 저장
+          clearSelections();
+        }
+      }
+
+      // 다중 선택 활성화
+      function enableMultiSelectEditing() {
+        const editableCells = document.querySelectorAll(".editable-cell");
+        editableCells.forEach((cell) => {
+          cell.removeAttribute("onclick");
+          cell.addEventListener("click", function (e) {
+            if (e.ctrlKey || e.metaKey) {
+              toggleCellSelection(cell);
+            } else {
+              editSingleCell(cell);
+            }
+          });
+        });
+      }
+
+      // 셀 선택/해제
+      function toggleCellSelection(cell) {
+        const cellKey = `${cell.dataset.productId}-${cell.dataset.type}`;
+
+        if (selectedCells.has(cellKey)) {
+          selectedCells.delete(cellKey);
+          cell.classList.remove("selected");
+          removeCellInput(cell);
+        } else {
+          selectedCells.add(cellKey);
+          cell.classList.add("selected");
+          addCellInput(cell);
+        }
+      }
+
+      // 개별 셀 편집
+      function editSingleCell(cell) {
+        clearAllInputs();
+        addCellInput(cell);
+      }
+
+      // 셀에 입력 필드 추가
+      function addCellInput(cell) {
+        const currentValue = cell.textContent.trim();
+        const input = document.createElement("input");
+        input.type = "number";
+        input.value = currentValue;
+        input.style.width = "70px";
+        input.style.textAlign = "center";
+        input.style.border = "2px solid #2c5aa0";
+        input.style.borderRadius = "4px";
+        input.style.padding = "2px";
+
+        input.addEventListener("blur", () => updatePendingChange(cell, input));
+        input.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            updatePendingChange(cell, input);
+            if (selectedCells.size <= 1) {
+              saveCell(cell, input.value);
+            }
+          }
+        });
+
+        cell.innerHTML = "";
+        cell.appendChild(input);
+        input.focus();
+        input.select();
+      }
+
+      // 셀 입력 제거
+      function removeCellInput(cell) {
+        const input = cell.querySelector("input");
+        if (input) {
+          cell.textContent = input.value;
+        }
+      }
+
+      // 변경사항을 대기 목록에 추가
+      function updatePendingChange(cell, input) {
+        const cellKey = `${cell.dataset.productId}-${cell.dataset.type}`;
+        const newValue = parseInt(input.value) || 0;
+
+        pendingChanges.set(cellKey, {
+          productId: cell.dataset.productId,
+          companyId: cell.dataset.companyId,
+          type: cell.dataset.type,
+          value: newValue,
+          cell: cell,
+        });
+
+        cell.textContent = newValue;
+      }
+
+      // 단일 셀 저장 개선
+      function saveCell(cell, value) {
+        const formData = new FormData();
+        formData.append("companyId", cell.dataset.companyId);
+        formData.append("productId", cell.dataset.productId);
+
+        const salesDate = currentDate.toISOString().split("T")[0];
+        let endpoint = "";
+
+        if (cell.dataset.type === "quantity") {
+          formData.append("salesDate", salesDate);
+          formData.append("quantity", value);
+          endpoint = "/mynet/update-quantity";
+        } else {
+          formData.append("targetDate", salesDate);
+          formData.append("targetQuantity", value);
+          endpoint = "/mynet/update-target";
+        }
+
+        const token = document
+          .querySelector("meta[name='_csrf']")
+          .getAttribute("content");
+        const header = document
+          .querySelector("meta[name='_csrf_header']")
+          .getAttribute("content");
+
+        fetch(endpoint, {
+          method: "POST",
+          body: formData,
+          headers: {
+            [header]: token,
+          },
+        })
+          .then((response) => {
+            console.log("Response status:", response.status); // 디버깅용
+            return response.json();
+          })
+          .then((data) => {
+            console.log("Response data:", data); // 디버깅용
+            if (data.success) {
+              showAlert("저장되었습니다.", "success");
+            } else {
+              cell.style.backgroundColor = "#f8d7da";
+              showAlert("저장 실패: " + data.message, "error");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            cell.style.backgroundColor = "#f8d7da";
+            showAlert("네트워크 오류가 발생했습니다.", "error");
+          });
+      }
+
+      // 대기 중인 변경사항 저장
+      function savePendingChanges() {
+        if (pendingChanges.size === 0) return;
+
+        const quantityChanges = [];
+        const targetChanges = [];
+
+        pendingChanges.forEach((change) => {
+          if (change.type === "quantity") {
+            quantityChanges.push(change);
+          } else {
+            targetChanges.push(change);
+          }
+        });
+
+        const promises = [];
+        if (quantityChanges.length > 0) {
+          promises.push(saveBulkChanges("quantity", quantityChanges));
+        }
+        if (targetChanges.length > 0) {
+          promises.push(saveBulkChanges("target", targetChanges));
+        }
+
+        Promise.all(promises).then(() => {
+          showAlert("모든 변경사항이 저장되었습니다.", "success");
+          pendingChanges.clear();
+          setTimeout(() => location.reload(), 1000);
+        });
+      }
+
+      // 일괄 저장
+      function saveBulkChanges(type, changes) {
+        const salesDate = currentDate.toISOString().split("T")[0];
+        const formData = new FormData();
+
+        formData.append("companyId", changes[0].companyId);
+
+        // key 이름에 [index] 붙이지 말고 같은 key 반복해서 append하면 Spring이 자동으로 Long[] productIds, Integer[] quantities로 매핑
+        changes.forEach((change) => {
+          formData.append("productIds", change.productId);
+        });
+
+        const token = document
+          .querySelector("meta[name='_csrf']")
+          .getAttribute("content");
+        const header = document
+          .querySelector("meta[name='_csrf_header']")
+          .getAttribute("content");
+
+        if (type === "quantity") {
+          formData.append("salesDate", salesDate);
+          changes.forEach((change) => {
+            formData.append("quantities", change.value);
+          });
+          console.log("FormData(Quantity):", [...formData]); // 디버깅용
+          return fetch("/mynet/update-quantity", {
+            method: "POST",
+            body: formData,
+            headers: {
+              [header]: token,
+            },
+          });
+        } else {
+          formData.append("targetDate", salesDate);
+          changes.forEach((change) => {
+            formData.append("targetQuantities", change.value);
+          });
+          console.log("FormData(Target):", [...formData]); // 디버깅용
+          return fetch("/mynet/update-target", {
+            method: "POST",
+            body: formData,
+            headers: {
+              [header]: token,
+            },
+          });
+        }
+      }
+
+      // 모든 입력 필드 정리
+      function clearAllInputs() {
+        document.querySelectorAll(".editable-cell input").forEach((input) => {
+          const cell = input.parentElement;
+          cell.textContent = input.value;
+        });
+      }
+
+      // 선택 해제
+      function clearSelections() {
+        selectedCells.clear();
+        pendingChanges.clear();
+        document.querySelectorAll(".selected").forEach((cell) => {
+          cell.classList.remove("selected");
+        });
+        clearAllInputs();
+      }
+
+      // 나머지 기존 함수들...
+      function selectTotalStats() {
+        const dateStr = currentDate.toISOString().split("T")[0];
+        location.href = `/mynet/view?companyFilter=&date=${dateStr}`;
+      }
+
+      function updateButtonStates() {
+        const totalBtn = document.getElementById("total-stats-btn");
+        const editBtn = document.getElementById("edit-btn");
+
+        if (currentCompanyFilter === "" || currentCompanyFilter === "all") {
+          if (totalBtn) totalBtn.classList.add("active");
+          if (editBtn) editBtn.style.display = "none";
+        } else {
+          if (totalBtn) totalBtn.classList.remove("active");
+          if (editBtn) editBtn.style.display = "inline-block";
+        }
+      }
+
+      function changeDate(days) {
+        const newDate = new Date(currentDate);
+        newDate.setDate(newDate.getDate() + days);
+        const dateStr = newDate.toISOString().split("T")[0];
+        location.href = `/mynet/view?companyFilter=${currentCompanyFilter}&date=${dateStr}`;
+      }
+
+      function showDatePicker() {
+        console.log("showDatePicker 호출");
+
+        if (typeof globalDatePicker !== "undefined") {
+          // init()이 이미 호출되었으므로 바로 show() 가능
+          globalDatePicker.currentDate = new Date(currentDate);
+          globalDatePicker.selectedDate = new Date(currentDate);
+          globalDatePicker.show();
+        } else {
+          console.log("globalDatePicker 없음, fallback 사용");
+          const datePicker = document.getElementById("date-picker");
+          if (datePicker) {
+            datePicker.click();
+          }
+        }
+      }
+
+      function selectDate() {
+        const datePicker = document.getElementById("date-picker");
+        const dateValue = datePicker.value;
+        location.href = `/mynet/view?companyFilter=${currentCompanyFilter}&date=${dateValue}`;
+      }
+
+      function changeCompany(companyId) {
+        const dateStr = currentDate.toISOString().split("T")[0];
+        location.href = `/mynet/view?companyFilter=${companyId}&date=${dateStr}`;
+      }
+
+      function updateDateDisplay() {
+        const dateElement = document.getElementById("current-date");
+        const datePicker = document.getElementById("date-picker");
+        const dateStr = currentDate.toISOString().split("T")[0];
+        if (dateElement) dateElement.textContent = dateStr;
+        if (datePicker) datePicker.value = dateStr;
+      }
+
+      function showAlert(message, type) {
+        const alertContainer = document.getElementById("alert-container");
+        const alertDiv = document.createElement("div");
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.textContent = message;
+        alertContainer.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+      }
+
+      // 사용하지 않는 함수들 제거
+      function updateData() {
+        location.reload();
+      }
+      function updateTable() {
+        location.reload();
+      }
+    </script>
+  </body>
+</html>

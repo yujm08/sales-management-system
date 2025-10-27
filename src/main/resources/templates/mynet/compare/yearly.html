@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>년도별 비교 - 마이넷 매출 관리 시스템</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <style>
+      .main-container {
+        padding: 20px;
+        background: #f8f9fa;
+        min-height: 100vh;
+      }
+
+      .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+
+      /* 년도별 비교 표 */
+      .yearly-table-container {
+        overflow-x: auto;
+        padding: 20px;
+      }
+
+      .yearly-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        background: white;
+        border: 1px solid white;
+      }
+
+      /* 헤더 스타일 */
+      .yearly-table thead tr:first-child th {
+        background: #24595e;
+        color: white;
+        padding: 12px 8px;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid white;
+      }
+
+      .yearly-table thead tr:nth-child(2) th {
+        background: #d3d3d3;
+        color: #000;
+        padding: 10px 8px;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid white;
+      }
+
+      /* 데이터 행 */
+      .yearly-table tbody td {
+        padding: 10px 8px;
+        text-align: center;
+        border: 1px solid white;
+      }
+
+      /* 분류 열 (카테고리 병합) */
+      .category-cell {
+        background: #f1f3f5 !important;
+        color: #000;
+        font-weight: 700;
+        text-align: center;
+        vertical-align: middle;
+      }
+
+      /* 제품명 왼쪽 정렬 */
+      .product-name-cell {
+        text-align: left;
+        padding-left: 15px;
+      }
+
+      /* 카테고리별 배경색 */
+      .category-bg-1 {
+        background: #e8f5e8;
+      }
+      .category-bg-2 {
+        background: #d4f4d4;
+      }
+      .category-bg-3 {
+        background: #c0f0c0;
+      }
+      .category-bg-4 {
+        background: #b3e6b3;
+      }
+
+      /* 금액 우측 정렬 */
+      .amount-cell {
+        text-align: right;
+        padding-right: 15px;
+      }
+
+      /* 증감률 스타일 */
+      .growth-rate {
+        font-weight: 600;
+      }
+
+      .growth-positive {
+        color: #28a745;
+      }
+
+      .growth-negative {
+        color: #dc3545;
+      }
+
+      .growth-zero {
+        color: #6c757d;
+      }
+
+      /* 합계 행 */
+      .grand-total-row td {
+        background: #dee2e6;
+        font-weight: 700;
+        color: #000;
+        border-top: none !important;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+
+      .error {
+        text-align: center;
+        padding: 40px;
+        color: #d32f2f;
+      }
+
+      /* 네비게이션 서브메뉴 */
+      .nav-item {
+        position: relative;
+      }
+
+      .sub-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        min-width: 150px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        border-radius: 4px;
+        z-index: 1000;
+        display: none;
+      }
+
+      .nav-item:hover .sub-menu {
+        display: block;
+      }
+
+      .sub-menu a {
+        display: block;
+        padding: 10px 15px;
+        color: #333;
+        text-decoration: none;
+        border-bottom: 1px solid #eee;
+      }
+
+      .sub-menu a:last-child {
+        border-bottom: none;
+        border-radius: 0 0 4px 4px;
+      }
+
+      .sub-menu a:hover {
+        background: #f8f9fa;
+      }
+
+      .sub-menu a.active {
+        background: #e9ecef;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 헤더 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">마이넷 매출 관리 시스템</div>
+        <div class="user-info">
+          <span
+            class="user-name"
+            th:text="${#authentication.principal.companyName}"
+            >마이넷</span
+          >
+          <span class="user-role">(마이넷)</span>
+          <form th:action="@{/logout}" method="post" style="display: inline">
+            <button type="submit" class="logout-btn">로그아웃</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <!-- 네비게이션 -->
+    <nav class="nav-menu">
+      <div class="nav-content">
+        <div class="nav-item">
+          <a th:href="@{/mynet/view}">조회</a>
+        </div>
+        <div class="nav-item active">
+          <a href="javascript:void(0)">비교 ▼</a>
+          <div class="sub-menu">
+            <a th:href="@{/mynet/compare/monthly}">월별</a>
+            <a th:href="@{/mynet/compare/yearly}" class="active">년도별</a>
+            <a th:href="@{/mynet/compare/period}">기간별</a>
+            <a th:href="@{/mynet/compare/product}">제품별</a>
+          </div>
+        </div>
+        <div class="nav-item">
+          <a th:href="@{/admin/products}">제품 분류</a>
+        </div>
+        <div class="nav-item" th:if="${!isCanon}">
+          <a th:href="@{/admin/users}">사용자 관리</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="main-container">
+      <h2 style="margin-bottom: 20px">년도별 비교</h2>
+
+      <div class="card">
+        <!-- 년도별 비교 표 -->
+        <div class="yearly-table-container">
+          <div id="loading" class="loading">데이터를 불러오는 중...</div>
+          <div id="error" class="error" style="display: none">
+            데이터를 불러오는데 실패했습니다.
+          </div>
+
+          <table id="dataTable" class="yearly-table" style="display: none">
+            <thead>
+              <tr>
+                <th colspan="3">제품</th>
+                <th colspan="3">매출</th>
+                <th rowspan="2">증감률</th>
+              </tr>
+              <tr>
+                <th>제품분류</th>
+                <th>제품코드</th>
+                <th>제품명</th>
+                <th id="year1Header"></th>
+                <th id="year2Header"></th>
+                <th id="year3Header"></th>
+              </tr>
+            </thead>
+            <tbody id="dataBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <script th:src="@{/js/common.js}"></script>
+    <script>
+      const currentYear = new Date().getFullYear();
+      const year1 = currentYear - 2;
+      const year2 = currentYear - 1;
+      const year3 = currentYear;
+
+      document.getElementById("year1Header").textContent = year1;
+      document.getElementById("year2Header").textContent = year2;
+      document.getElementById("year3Header").textContent = year3;
+
+      async function loadData() {
+        try {
+          const response = await fetch("/api/statistics/yearly-comparison");
+
+          if (!response.ok) {
+            throw new Error("데이터 조회 실패");
+          }
+
+          const data = await response.json();
+          renderTable(data);
+
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("dataTable").style.display = "table";
+        } catch (error) {
+          console.error("데이터 로드 오류:", error);
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("error").style.display = "block";
+        }
+      }
+
+      function renderTable(data) {
+        const tbody = document.getElementById("dataBody");
+        tbody.innerHTML = "";
+
+        // 카테고리별 데이터 렌더링
+        data.categories.forEach((categoryData, categoryIndex) => {
+          const colorClass = `category-bg-${(categoryIndex % 4) + 1}`;
+          const products = categoryData.products;
+          const categoryRowSpan = products.length;
+
+          products.forEach((product, productIndex) => {
+            const row = document.createElement("tr");
+
+            // 카테고리 셀 (첫 번째 제품 행에만 표시, rowspan 적용)
+            if (productIndex === 0) {
+              const categoryCell = document.createElement("td");
+              categoryCell.className = "category-cell";
+              categoryCell.rowSpan = categoryRowSpan;
+              categoryCell.textContent = categoryData.category;
+              row.appendChild(categoryCell);
+            }
+
+            // 제품코드
+            const codeCell = document.createElement("td");
+            codeCell.className = colorClass;
+            codeCell.textContent = product.productCode;
+            row.appendChild(codeCell);
+
+            // 제품명
+            const nameCell = document.createElement("td");
+            nameCell.className = `${colorClass} product-name-cell`;
+            nameCell.textContent = product.productName;
+            row.appendChild(nameCell);
+
+            // 년도별 금액
+            const year1Cell = document.createElement("td");
+            year1Cell.className = `${colorClass} amount-cell`;
+            year1Cell.textContent = formatCurrency(product.year1Amount);
+            row.appendChild(year1Cell);
+
+            const year2Cell = document.createElement("td");
+            year2Cell.className = `${colorClass} amount-cell`;
+            year2Cell.textContent = formatCurrency(product.year2Amount);
+            row.appendChild(year2Cell);
+
+            const year3Cell = document.createElement("td");
+            year3Cell.className = `${colorClass} amount-cell`;
+            year3Cell.textContent = formatCurrency(product.year3Amount);
+            row.appendChild(year3Cell);
+
+            // 증감률
+            const growthCell = document.createElement("td");
+            growthCell.className = `${colorClass} growth-rate ${getGrowthClass(
+              product.growthRate
+            )}`;
+            growthCell.textContent = formatGrowthRate(product.growthRate);
+            row.appendChild(growthCell);
+
+            tbody.appendChild(row);
+          });
+        });
+
+        // 전체 합계 행
+        const grandTotalRow = document.createElement("tr");
+        grandTotalRow.className = "grand-total-row";
+        grandTotalRow.innerHTML = `
+                <td colspan="3" style="text-align: center;"><strong>합계</strong></td>
+                <td class="amount-cell"><strong>${formatCurrency(
+                  data.grandTotal.year1Amount
+                )}</strong></td>
+                <td class="amount-cell"><strong>${formatCurrency(
+                  data.grandTotal.year2Amount
+                )}</strong></td>
+                <td class="amount-cell"><strong>${formatCurrency(
+                  data.grandTotal.year3Amount
+                )}</strong></td>
+                <td class="growth-rate ${getGrowthClass(
+                  data.grandTotal.growthRate
+                )}">
+                    <strong>${formatGrowthRate(
+                      data.grandTotal.growthRate
+                    )}</strong>
+                </td>
+            `;
+        tbody.appendChild(grandTotalRow);
+      }
+
+      function formatCurrency(value) {
+        if (value === null || value === undefined || value === 0) {
+          return "-";
+        }
+        return "₩" + Math.round(value).toLocaleString("ko-KR");
+      }
+
+      function formatGrowthRate(rate) {
+        if (rate === null || rate === undefined) {
+          return "0.0%";
+        }
+        const formatted = rate.toFixed(1);
+        if (rate > 0) {
+          return "+" + formatted + "%";
+        }
+        return formatted + "%";
+      }
+
+      function getGrowthClass(rate) {
+        if (rate > 0) return "growth-positive";
+        if (rate < 0) return "growth-negative";
+        return "growth-zero";
+      }
+
+      loadData();
+    </script>
+  </body>
+</html>

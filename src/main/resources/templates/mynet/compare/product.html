@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>제품별 비교 - 마이넷 매출 관리 시스템</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <style>
+      .main-container {
+        padding: 20px;
+        background: #f8f9fa;
+        min-height: 100vh;
+      }
+
+      .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+
+      /* 제품 목록 토글 */
+      .toggle-section {
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      .toggle-btn {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .toggle-btn:hover {
+        background: #0056b3;
+      }
+
+      .toggle-icon {
+        font-weight: bold;
+        font-size: 16px;
+      }
+
+      /* 제품 목록 테이블 */
+      .product-list {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+      }
+
+      .product-list.expanded {
+        max-height: 500px;
+        overflow-y: auto;
+      }
+
+      .product-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .product-table thead th {
+        background: #24595e;
+        color: white;
+        padding: 12px 8px;
+        text-align: center;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .product-table tbody tr:nth-child(odd) {
+        background: #f8f9fa;
+      }
+
+      .product-table tbody tr:nth-child(even) {
+        background: white;
+      }
+
+      .product-table tbody tr:hover {
+        background: #e9ecef;
+        cursor: pointer;
+      }
+
+      .product-table tbody td {
+        padding: 10px 8px;
+        text-align: center;
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      .product-inactive {
+        color: #6c757d;
+        text-decoration: line-through;
+      }
+
+      /* 검색 섹션 */
+      .search-section {
+        padding: 20px;
+        background: #e9ecef;
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      .search-group {
+        position: relative;
+        max-width: 400px;
+      }
+
+      .search-group label {
+        display: block;
+        font-weight: 600;
+        font-size: 14px;
+        color: #495057;
+        margin-bottom: 5px;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      .autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ced4da;
+        border-top: none;
+        border-radius: 0 0 4px 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .autocomplete-item {
+        padding: 10px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f3f5;
+      }
+
+      .autocomplete-item:hover {
+        background: #e9ecef;
+      }
+
+      .highlight {
+        background-color: #fff3cd;
+        color: #d63384;
+        font-weight: 600;
+        border-radius: 2px;
+        padding: 0 2px;
+      }
+
+      .btn-search {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 30px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-top: 15px;
+      }
+
+      .btn-search:hover {
+        background: #0056b3;
+      }
+
+      /* 비교 표 */
+      .comparison-table-container {
+        padding: 20px;
+        overflow-x: auto;
+      }
+
+      .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        border: 1px solid white;
+      }
+
+      /* 헤더 */
+      .comparison-table thead tr:first-child th {
+        background: #24595e;
+        color: white;
+        padding: 12px 8px;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid white;
+      }
+
+      .comparison-table thead tr:nth-child(2) th {
+        background: #d3d3d3;
+        color: #000;
+        padding: 10px 8px;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid white;
+      }
+
+      /* 데이터 행 */
+      .comparison-table tbody td {
+        padding: 10px 8px;
+        text-align: center;
+        border: 1px solid white;
+      }
+
+      .year-cell {
+        background: #f1f3f5;
+        font-weight: 700;
+        color: #000;
+      }
+
+      .current-year-cell {
+        background: #d1ecf1;
+        font-weight: 700;
+        color: #0c5460;
+      }
+
+      /* 월별 데이터 통일 색상 */
+      .qty-color {
+        background: #e8f5e8;
+      }
+      .amt-color {
+        background: #fff2eb;
+      }
+
+      /* 합계 색상 */
+      .total-qty-color {
+        background: #c0f0c0;
+      }
+      .total-amt-color {
+        background: #ffe0d6;
+      }
+
+      .amount-cell {
+        text-align: right;
+        padding-right: 15px;
+      }
+
+      /* 증감률 행 */
+      .growth-rate-row td {
+        background: #fff9e6 !important;
+        font-weight: 600;
+      }
+
+      .growth-rate-label {
+        background: #ffeaa7 !important;
+        color: #000;
+        font-weight: 700;
+      }
+
+      .growth-positive {
+        color: #28a745;
+      }
+
+      .growth-negative {
+        color: #dc3545;
+      }
+
+      .growth-zero {
+        color: #6c757d;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+      }
+
+      .no-data {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+      }
+
+      /* 네비게이션 서브메뉴 */
+      .nav-item {
+        position: relative;
+      }
+
+      .sub-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        min-width: 150px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        border-radius: 4px;
+        z-index: 1000;
+        display: none;
+      }
+
+      .nav-item:hover .sub-menu {
+        display: block;
+      }
+
+      .sub-menu a {
+        display: block;
+        padding: 10px 15px;
+        color: #333;
+        text-decoration: none;
+        border-bottom: 1px solid #eee;
+      }
+
+      .sub-menu a:last-child {
+        border-bottom: none;
+        border-radius: 0 0 4px 4px;
+      }
+
+      .sub-menu a:hover {
+        background: #f8f9fa;
+      }
+
+      .sub-menu a.active {
+        background: #e9ecef;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 헤더 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">마이넷 매출 관리 시스템</div>
+        <div class="user-info">
+          <span
+            class="user-name"
+            th:text="${#authentication.principal.companyName}"
+            >마이넷</span
+          >
+          <span class="user-role">(마이넷)</span>
+          <form th:action="@{/logout}" method="post" style="display: inline">
+            <button type="submit" class="logout-btn">로그아웃</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <!-- 네비게이션 -->
+    <nav class="nav-menu">
+      <div class="nav-content">
+        <div class="nav-item">
+          <a th:href="@{/mynet/view}">조회</a>
+        </div>
+        <div class="nav-item active">
+          <a href="javascript:void(0)">비교 ▼</a>
+          <div class="sub-menu">
+            <a th:href="@{/mynet/compare/monthly}">월별</a>
+            <a th:href="@{/mynet/compare/yearly}">년도별</a>
+            <a th:href="@{/mynet/compare/period}">기간별</a>
+            <a th:href="@{/mynet/compare/product}" class="active">제품별</a>
+          </div>
+        </div>
+        <div class="nav-item">
+          <a th:href="@{/admin/products}">제품 분류</a>
+        </div>
+        <div class="nav-item">
+          <a th:href="@{/admin/users}" th:if="${!isCanon}">사용자 관리</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="main-container">
+      <h2 style="margin-bottom: 20px">제품별 비교</h2>
+
+      <div class="card">
+        <!-- 제품 목록 토글 -->
+        <div class="toggle-section">
+          <button class="toggle-btn" onclick="toggleProductList()">
+            <span id="toggleText">제품 목록 보기</span>
+            <span class="toggle-icon" id="toggleIcon">+</span>
+          </button>
+        </div>
+
+        <!-- 제품 목록 테이블 -->
+        <div class="product-list" id="productList">
+          <table class="product-table">
+            <thead>
+              <tr>
+                <th>분류</th>
+                <th>제품코드</th>
+                <th>제품명</th>
+                <th>원가</th>
+                <th>판매가</th>
+              </tr>
+            </thead>
+            <tbody id="productTableBody">
+              <tr>
+                <td
+                  colspan="5"
+                  style="padding: 40px; text-align: center; color: #6c757d"
+                >
+                  로딩 중...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 검색 섹션 -->
+        <div class="search-section">
+          <div class="search-group">
+            <label>제품명 또는 제품코드</label>
+            <input
+              type="text"
+              class="search-input"
+              id="productSearch"
+              placeholder="제품을 검색하세요 (미선택 시 전체 제품 합계)"
+              oninput="handleProductSearch()"
+            />
+            <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+          </div>
+          <button class="btn-search" onclick="searchProductData()">조회</button>
+        </div>
+      </div>
+
+      <!-- 결과 표시 -->
+      <div class="card">
+        <div class="comparison-table-container">
+          <div id="loading" class="loading" style="display: none">
+            데이터를 불러오는 중...
+          </div>
+          <div id="noData" class="no-data">
+            제품을 선택하거나 조회 버튼을 클릭하세요.
+          </div>
+          <table
+            id="comparisonTable"
+            class="comparison-table"
+            style="display: none"
+          >
+            <thead>
+              <tr>
+                <th rowspan="2">연도</th>
+                <th colspan="2">1월</th>
+                <th colspan="2">2월</th>
+                <th colspan="2">3월</th>
+                <th colspan="2">4월</th>
+                <th colspan="2">5월</th>
+                <th colspan="2">6월</th>
+                <th colspan="2">7월</th>
+                <th colspan="2">8월</th>
+                <th colspan="2">9월</th>
+                <th colspan="2">10월</th>
+                <th colspan="2">11월</th>
+                <th colspan="2">12월</th>
+                <th colspan="2">합계</th>
+              </tr>
+              <tr>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+              </tr>
+            </thead>
+            <tbody id="comparisonBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <script th:src="@{/js/common.js}"></script>
+    <script>
+      let allProducts = [];
+      let selectedProductId = null;
+
+      window.addEventListener("DOMContentLoaded", loadProducts);
+
+      async function loadProducts() {
+        try {
+          const response = await fetch("/api/statistics/products");
+          if (!response.ok) throw new Error("제품 목록 조회 실패");
+
+          allProducts = await response.json();
+          renderProductTable();
+        } catch (error) {
+          console.error("제품 목록 로드 오류:", error);
+          document.getElementById("productTableBody").innerHTML =
+            '<tr><td colspan="5" style="padding: 40px; color: #d32f2f;">제품 목록을 불러올 수 없습니다.</td></tr>';
+        }
+      }
+
+      function renderProductTable() {
+        const tbody = document.getElementById("productTableBody");
+        tbody.innerHTML = "";
+
+        const grouped = {};
+        allProducts.forEach((p) => {
+          if (!grouped[p.category]) grouped[p.category] = [];
+          grouped[p.category].push(p);
+        });
+
+        Object.keys(grouped).forEach((cat) => {
+          grouped[cat].sort((a, b) =>
+            a.productCode.localeCompare(b.productCode)
+          );
+        });
+
+        const colors = ["#E8F5E8", "#D4F4D4", "#C0F0C0", "#B3E6B3"];
+        let colorIndex = 0;
+
+        Object.entries(grouped).forEach(([category, products]) => {
+          const bgColor = colors[colorIndex % colors.length];
+          colorIndex++;
+
+          products.forEach((product, i) => {
+            const row = document.createElement("tr");
+            const inactiveClass = !product.active ? "product-inactive" : "";
+            row.style.backgroundColor = bgColor;
+
+            if (i === 0) {
+              const catCell = document.createElement("td");
+              catCell.textContent = category;
+              catCell.rowSpan = products.length;
+              catCell.style.background = "#d9d9d9";
+              catCell.style.fontWeight = "600";
+              catCell.style.textAlign = "center";
+              row.appendChild(catCell);
+            }
+
+            row.innerHTML += `
+  <td class="${inactiveClass}" style="text-align:center; border-right:1px solid #ccc;">
+    ${product.productCode}
+  </td>
+  <td class="${inactiveClass}" style="text-align:center; border-right:1px solid #ccc;">
+    ${product.productName}
+  </td>
+  <td class="${inactiveClass}" style="text-align:right; border-right:1px solid #ccc;">
+    ₩${formatNumber(product.currentCostPrice)}
+  </td>
+  <td class="${inactiveClass}" style="text-align:right;">
+    ₩${formatNumber(product.currentSupplyPrice)}
+  </td>
+`;
+
+            row.onclick = () => selectProduct(product);
+            tbody.appendChild(row);
+          });
+        });
+      }
+
+      function toggleProductList() {
+        const list = document.getElementById("productList");
+        const icon = document.getElementById("toggleIcon");
+        const text = document.getElementById("toggleText");
+
+        list.classList.toggle("expanded");
+
+        if (list.classList.contains("expanded")) {
+          icon.textContent = "-";
+          text.textContent = "제품 목록 닫기";
+        } else {
+          icon.textContent = "+";
+          text.textContent = "제품 목록 보기";
+        }
+      }
+
+      function selectProduct(product) {
+        selectedProductId = product.id;
+        document.getElementById(
+          "productSearch"
+        ).value = `${product.productCode} - ${product.productName}`;
+        hideAutocomplete();
+
+        const list = document.getElementById("productList");
+        if (list.classList.contains("expanded")) {
+          toggleProductList();
+        }
+      }
+
+      function handleProductSearch() {
+        const searchValue = document
+          .getElementById("productSearch")
+          .value.trim()
+          .toLowerCase();
+
+        if (searchValue === "") {
+          selectedProductId = null;
+          hideAutocomplete();
+          return;
+        }
+
+        const filtered = allProducts.filter(
+          (p) =>
+            p.productName.toLowerCase().includes(searchValue) ||
+            p.productCode.toLowerCase().includes(searchValue)
+        );
+
+        showAutocomplete(filtered);
+      }
+
+      function showAutocomplete(products) {
+        const dropdown = document.getElementById("autocompleteDropdown");
+        dropdown.innerHTML = "";
+
+        if (products.length === 0) {
+          dropdown.style.display = "none";
+          return;
+        }
+
+        const query = document
+          .getElementById("productSearch")
+          .value.trim()
+          .toLowerCase();
+
+        products.slice(0, 10).forEach((product) => {
+          const item = document.createElement("div");
+          item.className = "autocomplete-item";
+
+          const highlightText = (text) => {
+            const regex = new RegExp(`(${query})`, "gi");
+            return text.replace(regex, '<span class="highlight">$1</span>');
+          };
+
+          item.innerHTML = `${highlightText(
+            product.productCode
+          )} - ${highlightText(product.productName)}`;
+          item.onclick = () => selectProduct(product);
+          dropdown.appendChild(item);
+        });
+
+        dropdown.style.display = "block";
+      }
+
+      function hideAutocomplete() {
+        document.getElementById("autocompleteDropdown").style.display = "none";
+      }
+
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".search-group")) {
+          hideAutocomplete();
+        }
+      });
+
+      async function searchProductData() {
+        document.getElementById("loading").style.display = "block";
+        document.getElementById("noData").style.display = "none";
+        document.getElementById("comparisonTable").style.display = "none";
+
+        try {
+          const url = selectedProductId
+            ? `/api/statistics/product-comparison?productId=${selectedProductId}`
+            : "/api/statistics/product-comparison";
+
+          const response = await fetch(url);
+          if (!response.ok) throw new Error("데이터 조회 실패");
+
+          const data = await response.json();
+          renderComparisonTable(data);
+
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("comparisonTable").style.display = "table";
+        } catch (error) {
+          console.error("데이터 조회 오류:", error);
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("noData").textContent =
+            "데이터를 불러오는데 실패했습니다.";
+          document.getElementById("noData").style.display = "block";
+        }
+      }
+
+      function renderComparisonTable(data) {
+        const tbody = document.getElementById("comparisonBody");
+        tbody.innerHTML = "";
+
+        data.years.forEach((yearData, yearIndex) => {
+          const row = document.createElement("tr");
+
+          const yearCell = document.createElement("td");
+          yearCell.className = yearData.isCurrentYear
+            ? "current-year-cell"
+            : "year-cell";
+          yearCell.textContent = yearData.year;
+          row.appendChild(yearCell);
+
+          yearData.months.forEach((monthData, monthIndex) => {
+            const qtyColorClass = "qty-color";
+            const amtColorClass = "amt-color";
+
+            const qtyCell = document.createElement("td");
+            qtyCell.className = qtyColorClass;
+            qtyCell.textContent = formatDisplay(monthData.quantity);
+            row.appendChild(qtyCell);
+
+            const amtCell = document.createElement("td");
+            amtCell.className = `${amtColorClass} amount-cell`;
+            amtCell.textContent = formatDisplayCurrency(monthData.amount);
+            row.appendChild(amtCell);
+          });
+
+          const totalQtyCell = document.createElement("td");
+          totalQtyCell.className = "total-qty-color";
+          totalQtyCell.style.fontWeight = "700";
+          totalQtyCell.textContent = formatDisplay(yearData.yearTotal.quantity);
+          row.appendChild(totalQtyCell);
+
+          const totalAmtCell = document.createElement("td");
+          totalAmtCell.className = "total-amt-color amount-cell";
+          totalAmtCell.style.fontWeight = "700";
+          totalAmtCell.textContent = formatDisplayCurrency(
+            yearData.yearTotal.amount
+          );
+          row.appendChild(totalAmtCell);
+
+          tbody.appendChild(row);
+        });
+
+        const growthRow = document.createElement("tr");
+        growthRow.className = "growth-rate-row";
+
+        const growthLabelCell = document.createElement("td");
+        growthLabelCell.className = "growth-rate-label";
+        growthLabelCell.textContent = "증감률";
+        growthRow.appendChild(growthLabelCell);
+
+        data.growthRates.monthlyGrowthRates.forEach((rate) => {
+          const growthCell = document.createElement("td");
+          growthCell.colSpan = 2;
+          growthCell.className = getGrowthClass(rate);
+          growthCell.textContent = formatGrowthRate(rate);
+          growthRow.appendChild(growthCell);
+        });
+
+        const totalGrowthCell = document.createElement("td");
+        totalGrowthCell.colSpan = 2;
+        totalGrowthCell.className = getGrowthClass(
+          data.growthRates.totalGrowthRate
+        );
+        totalGrowthCell.textContent = formatGrowthRate(
+          data.growthRates.totalGrowthRate
+        );
+        growthRow.appendChild(totalGrowthCell);
+
+        tbody.appendChild(growthRow);
+      }
+
+      function formatNumber(value) {
+        if (value === null || value === undefined) return "0";
+        return Math.round(value).toLocaleString("ko-KR");
+      }
+
+      function formatDisplay(value) {
+        if (value === null || value === undefined || value === 0) return "-";
+        return formatNumber(value);
+      }
+
+      function formatDisplayCurrency(value) {
+        if (value === null || value === undefined || value === 0) return "-";
+        return "₩" + formatNumber(value);
+      }
+
+      function formatGrowthRate(rate) {
+        if (rate === null || rate === undefined) return "0.0%";
+        const formatted = rate.toFixed(1);
+        if (rate > 0) return "+" + formatted + "%";
+        return formatted + "%";
+      }
+
+      function getGrowthClass(rate) {
+        if (rate > 0) return "growth-positive";
+        if (rate < 0) return "growth-negative";
+        return "growth-zero";
+      }
+    </script>
+  </body>
+</html>

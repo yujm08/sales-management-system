@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+    <title>사용자 관리 - 마이넷 매출 관리 시스템</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <script th:src="@{/js/common.js}" defer></script>
+  </head>
+  <body>
+    <!-- 헤더 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">마이넷 매출 관리 시스템</div>
+        <div class="user-info">
+          <span
+            class="user-name"
+            th:text="${#authentication.principal.companyName}"
+            >마이넷</span
+          >
+          <span class="user-role">(관리자)</span>
+          <form th:action="@{/logout}" method="post" style="display: inline">
+            <button type="submit" class="logout-btn">로그아웃</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <!-- 네비게이션 -->
+    <nav class="nav-menu">
+      <div class="nav-content">
+        <div
+          class="nav-item"
+          th:classappend="${currentPage == 'view'} ? 'active'"
+        >
+          <a th:href="@{/mynet/view}">조회</a>
+        </div>
+
+        <div
+          class="nav-item"
+          th:classappend="${currentPage == 'compare'} ? 'active'"
+        >
+          <a href="javascript:void(0)">비교 ▼</a>
+          <div class="sub-menu">
+            <a
+              th:href="@{/mynet/compare/monthly}"
+              th:classappend="${comparePage == 'monthly'} ? 'active'"
+              >월별</a
+            >
+            <a
+              th:href="@{/mynet/compare/yearly}"
+              th:classappend="${comparePage == 'yearly'} ? 'active'"
+              >년도별</a
+            >
+            <a
+              th:href="@{/mynet/compare/period}"
+              th:classappend="${comparePage == 'period'} ? 'active'"
+              >기간별</a
+            >
+            <a
+              th:href="@{/mynet/compare/product}"
+              th:classappend="${comparePage == 'product'} ? 'active'"
+              >제품별</a
+            >
+          </div>
+        </div>
+
+        <div
+          class="nav-item"
+          th:classappend="${currentPage == 'products'} ? 'active'"
+        >
+          <a th:href="@{/admin/products}">제품 분류</a>
+        </div>
+
+        <div
+          class="nav-item"
+          th:classappend="${currentPage == 'users'} ? 'active'"
+        >
+          <a th:href="@{/admin/users}">사용자 관리</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="main-container">
+      <!-- 알림 메시지 영역 -->
+      <div id="alert-container"></div>
+
+      <!-- 사용자 생성 폼 -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">새 사용자 추가</h2>
+        </div>
+
+        <form id="user-create-form" class="user-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">사용자명</label>
+              <input type="text" name="username" class="form-input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">비밀번호</label>
+              <input
+                type="password"
+                name="password"
+                class="form-input"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">소속 회사</label>
+              <select name="companyId" class="form-input" required>
+                <option value="">회사 선택</option>
+                <option
+                  th:each="company : ${companies}"
+                  th:value="${company.id}"
+                  th:text="${company.name}"
+                >
+                  회사명
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">역할</label>
+              <select name="role" class="form-input" required>
+                <option value="">역할 선택</option>
+                <option
+                  th:each="role : ${roles}"
+                  th:value="${role}"
+                  th:text="${role}"
+                >
+                  역할
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">
+                <input type="checkbox" name="isCanon" /> 캐논 계정
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">사용자 생성</button>
+        </form>
+      </div>
+
+      <!-- 사용자 목록 -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">등록된 사용자 목록</h2>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>사용자명</th>
+                <th>소속 회사</th>
+                <th>역할</th>
+                <th>캐논 계정</th>
+                <th>생성일</th>
+                <th>작업</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="user : ${users}">
+                <td th:text="${user.username}">사용자명</td>
+                <td th:text="${user.company.name}">회사명</td>
+                <td th:text="${user.role}">역할</td>
+                <td th:text="${user.isCanon} ? 'Y' : 'N'">N</td>
+                <td
+                  th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd')}"
+                >
+                  2025-09-15
+                </td>
+                <td>
+                  <button
+                    class="btn btn-danger btn-sm"
+                    th:onclick="|deleteUser(${user.id})|"
+                    th:disabled="${user.id == #authentication.principal.user.id}"
+                  >
+                    삭제
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // 알림 메시지 표시 함수
+      function showAlert(message, type = "info") {
+        const container = document.getElementById("alert-container");
+
+        const alert = document.createElement("div");
+        alert.style.cssText = `
+          padding: 15px;
+          margin: 10px 0;
+          border-radius: 5px;
+          color: white;
+          font-weight: bold;
+          position: relative;
+          ${
+            type === "success"
+              ? "background-color: #28a745;"
+              : type === "error"
+              ? "background-color: #dc3545;"
+              : "background-color: #17a2b8;"
+          }
+        `;
+        alert.textContent = message;
+
+        // 닫기 버튼
+        const closeBtn = document.createElement("button");
+        closeBtn.innerHTML = "×";
+        closeBtn.style.cssText = `
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: white;
+          font-size: 20px;
+          cursor: pointer;
+        `;
+        closeBtn.onclick = () => alert.remove();
+        alert.appendChild(closeBtn);
+
+        container.appendChild(alert);
+
+        // 5초 후 자동 제거
+        setTimeout(() => {
+          if (alert.parentNode) {
+            alert.remove();
+          }
+        }, 5000);
+      }
+
+      // AJAX 요청 함수
+      function saveData(url, data, successCallback, errorCallback) {
+        // 로딩 표시
+        const loadingDiv = document.createElement("div");
+        loadingDiv.id = "loading";
+        loadingDiv.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0,0,0,0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999;
+          color: white;
+          font-size: 18px;
+        `;
+        loadingDiv.textContent = "처리 중...";
+        document.body.appendChild(loadingDiv);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader(
+          "Content-Type",
+          "application/x-www-form-urlencoded"
+        );
+
+        // CSRF 토큰 설정
+        const csrfToken = document.querySelector('meta[name="_csrf"]');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+        if (csrfToken && csrfHeader) {
+          xhr.setRequestHeader(
+            csrfHeader.getAttribute("content"),
+            csrfToken.getAttribute("content")
+          );
+        }
+
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4) {
+            // 로딩 제거
+            loadingDiv.remove();
+
+            if (xhr.status === 200) {
+              const message = successCallback
+                ? successCallback(xhr.responseText)
+                : "저장되었습니다.";
+              showAlert(message, "success");
+            } else {
+              const message = errorCallback
+                ? errorCallback(xhr)
+                : "저장 중 오류가 발생했습니다.";
+              showAlert(message, "error");
+            }
+          }
+        };
+
+        const formData = new URLSearchParams(data).toString();
+        xhr.send(formData);
+      }
+
+      // 폼 초기화
+      function setupUserCreateForm() {
+        const form = document.getElementById("user-create-form");
+        if (!form) {
+          console.error("Form not found");
+          return;
+        }
+
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          console.log("Form submitted");
+
+          const formData = new FormData(this);
+          const data = {};
+
+          // 폼 데이터 수집
+          for (let [key, value] of formData.entries()) {
+            if (key === "isCanon") {
+              data[key] = true;
+            } else {
+              data[key] = value;
+            }
+          }
+
+          // 체크박스가 체크되지 않은 경우
+          if (!formData.has("isCanon")) {
+            data.isCanon = false;
+          }
+
+          console.log("Data to send:", data);
+
+          // 폼 유효성 검사
+          if (
+            !data.username ||
+            !data.password ||
+            !data.companyId ||
+            !data.role
+          ) {
+            showAlert("모든 필수 필드를 입력해주세요.", "error");
+            return;
+          }
+
+          saveData(
+            "/admin/users/create",
+            data,
+            function (response) {
+              console.log("Success response:", response);
+              document.getElementById("user-create-form").reset();
+              setTimeout(() => location.reload(), 1500);
+              return "사용자가 성공적으로 생성되었습니다.";
+            },
+            function (error) {
+              console.error("Error:", error);
+              return "사용자 생성 중 오류가 발생했습니다. 다시 시도해주세요.";
+            }
+          );
+        });
+      }
+
+      // 사용자 삭제 함수
+      function deleteUser(userId) {
+        if (!confirm("정말로 이 사용자를 삭제하시겠습니까?")) {
+          return;
+        }
+
+        saveData(
+          "/admin/users/delete",
+          { userId: userId },
+          function (response) {
+            console.log("Delete success:", response);
+            setTimeout(() => location.reload(), 1500);
+            return "사용자가 성공적으로 삭제되었습니다.";
+          },
+          function (error) {
+            console.error("Delete error:", error);
+            return "사용자 삭제 중 오류가 발생했습니다.";
+          }
+        );
+      }
+
+      // 페이지 로드 시 초기화
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM loaded, setting up form...");
+        setupUserCreateForm();
+      });
+    </script>
+
+    <style>
+      .user-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      .form-group label[type="checkbox"] {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn-sm {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.8rem;
+      }
+
+      @media (max-width: 768px) {
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      #alert-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        max-width: 400px;
+      }
+
+      .nav-item {
+        position: relative;
+      }
+
+      .sub-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        min-width: 150px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        border-radius: 4px;
+        z-index: 1000;
+        display: none;
+      }
+
+      .nav-item:hover .sub-menu {
+        display: block;
+      }
+
+      .sub-menu a {
+        display: block;
+        padding: 10px 15px;
+        color: #333;
+        text-decoration: none;
+        border-bottom: 1px solid #eee;
+      }
+
+      .sub-menu a:last-child {
+        border-bottom: none;
+        border-radius: 0 0 4px 4px;
+      }
+
+      .sub-menu a:hover {
+        background: #f8f9fa;
+      }
+    </style>
+  </body>
+</html>

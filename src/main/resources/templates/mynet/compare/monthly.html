@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>월별 비교 - 마이넷 매출 관리 시스템</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <style>
+      .main-container {
+        padding: 20px;
+        background: #f8f9fa;
+        min-height: 100vh;
+      }
+
+      .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+
+      .filter-section {
+        padding: 15px 20px;
+        background: #e9ecef;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        gap: 15px;
+        align-items: flex-end;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .filter-group label {
+        font-weight: 600;
+        font-size: 14px;
+        color: #495057;
+      }
+
+      .filter-group select {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+        min-width: 150px;
+      }
+
+      .btn-primary {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .btn-primary:hover {
+        background: #0056b3;
+      }
+
+      /* 월별 비교 표 */
+      .monthly-table-container {
+        overflow-x: auto;
+        padding: 20px;
+      }
+
+      .monthly-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        background: white;
+        border: 1px solid white;
+      }
+
+      /* 헤더 스타일 */
+      .monthly-table thead tr:first-child th {
+        background: #24595e;
+        color: white;
+        padding: 12px 8px;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid white;
+      }
+
+      .monthly-table thead tr:nth-child(2) th {
+        background: #dee2e6;
+        color: #333;
+        padding: 10px 8px;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid white;
+      }
+
+      /* 구분 상단 헤더 */
+      .monthly-table thead tr:first-child th:first-child {
+        background: #24595e;
+        color: white;
+      }
+
+      /* 분류, 제품코드, 제품명 헤더 */
+      .monthly-table thead tr:nth-child(2) th:nth-child(-n + 3) {
+        background: #d3d3d3;
+        color: #000;
+      }
+
+      /* 데이터 행 */
+      .monthly-table tbody td {
+        padding: 8px;
+        text-align: center;
+        border: 1px solid white;
+      }
+
+      /* 구분 열 (분류/제품코드/제품명) */
+      .category-col {
+        background: #f1f3f5;
+        color: #000;
+        font-weight: 600;
+      }
+
+      .product-code-col {
+        background: #f1f3f5;
+        color: #000;
+      }
+
+      .product-name-col {
+        background: #f1f3f5;
+        color: #000;
+        text-align: left;
+        padding-left: 10px;
+      }
+
+      /* 카테고리별 배경색 */
+      .green-1 {
+        background: #e8f5e8;
+      }
+      .green-2 {
+        background: #d4f4d4;
+      }
+      .green-3 {
+        background: #c0f0c0;
+      }
+      .green-4 {
+        background: #b3e6b3;
+      }
+
+      /* 합계 열 */
+      .total-quantity {
+        background: #e3f2fd !important;
+        font-weight: 600;
+      }
+
+      .total-amount {
+        background: #ffe5d9 !important;
+        font-weight: 600;
+      }
+
+      /* 전체 합계 행 */
+      .grand-total-row td {
+        background: #dee2e6 !important;
+        font-weight: 700;
+        color: #000;
+      }
+
+      .grand-total-label {
+        background: #d3d3d3 !important;
+        color: #000;
+      }
+
+      /* 숫자 포맷 */
+      .amount {
+        text-align: right;
+        padding-right: 10px;
+      }
+
+      /* 네비게이션 서브메뉴 */
+      .nav-item {
+        position: relative;
+      }
+
+      .sub-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        min-width: 150px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        border-radius: 4px;
+        z-index: 1000;
+        display: none;
+      }
+
+      .nav-item:hover .sub-menu {
+        display: block;
+      }
+
+      .sub-menu a {
+        display: block;
+        padding: 10px 15px;
+        color: #333;
+        text-decoration: none;
+        border-bottom: 1px solid #eee;
+      }
+
+      .sub-menu a:last-child {
+        border-bottom: none;
+        border-radius: 0 0 4px 4px;
+      }
+
+      .sub-menu a:hover {
+        background: #f8f9fa;
+      }
+
+      .sub-menu a.active {
+        background: #e9ecef;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 헤더 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">마이넷 매출 관리 시스템</div>
+        <div class="user-info">
+          <span
+            class="user-name"
+            th:text="${#authentication.principal.companyName}"
+            >마이넷</span
+          >
+          <span class="user-role">(마이넷)</span>
+          <form th:action="@{/logout}" method="post" style="display: inline">
+            <button type="submit" class="logout-btn">로그아웃</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <!-- 네비게이션 -->
+    <nav class="nav-menu">
+      <div class="nav-content">
+        <div class="nav-item">
+          <a th:href="@{/mynet/view}">조회</a>
+        </div>
+        <div class="nav-item active">
+          <a href="javascript:void(0)">비교 ▼</a>
+          <div class="sub-menu">
+            <a th:href="@{/mynet/compare/monthly}" class="active">월별</a>
+            <a th:href="@{/mynet/compare/yearly}">년도별</a>
+            <a th:href="@{/mynet/compare/period}">기간별</a>
+            <a th:href="@{/mynet/compare/product}">제품별</a>
+          </div>
+        </div>
+        <div class="nav-item">
+          <a th:href="@{/admin/products}">제품 분류</a>
+        </div>
+        <div class="nav-item" th:if="${!isCanon}">
+          <a th:href="@{/admin/users}">사용자 관리</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="main-container">
+      <h2 style="margin-bottom: 20px">월별 비교</h2>
+
+      <div class="card">
+        <!-- 필터 섹션 -->
+        <div class="filter-section">
+          <div class="filter-group">
+            <label>연도 선택</label>
+            <select id="year-select" onchange="loadMonthlyData()">
+              <option
+                th:each="year : ${years}"
+                th:value="${year}"
+                th:text="${year + '년'}"
+                th:selected="${year == selectedYear}"
+              ></option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label>회사 선택</label>
+            <select id="company-select" onchange="loadMonthlyData()">
+              <option
+                value="all"
+                th:selected="${selectedCompanyId == null or selectedCompanyId == 'all'}"
+              >
+                전체
+              </option>
+              <option
+                th:each="company : ${companies}"
+                th:value="${company.id}"
+                th:text="${company.name}"
+                th:selected="${company.id == selectedCompanyId}"
+              ></option>
+            </select>
+          </div>
+
+          <button class="btn-primary" onclick="loadMonthlyData()">조회</button>
+        </div>
+
+        <!-- 월별 비교 표 -->
+        <div class="monthly-table-container">
+          <table class="monthly-table">
+            <thead>
+              <tr>
+                <th colspan="3">구분</th>
+                <th colspan="2">1월</th>
+                <th colspan="2">2월</th>
+                <th colspan="2">3월</th>
+                <th colspan="2">4월</th>
+                <th colspan="2">5월</th>
+                <th colspan="2">6월</th>
+                <th colspan="2">7월</th>
+                <th colspan="2">8월</th>
+                <th colspan="2">9월</th>
+                <th colspan="2">10월</th>
+                <th colspan="2">11월</th>
+                <th colspan="2">12월</th>
+                <th colspan="2">합계</th>
+              </tr>
+              <tr>
+                <th>분류</th>
+                <th>제품코드</th>
+                <th>제품명</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 데이터가 없는 경우 -->
+              <tr th:if="${#lists.isEmpty(monthlyData)}">
+                <td
+                  colspan="29"
+                  style="padding: 40px; text-align: center; color: #6c757d"
+                >
+                  조회 버튼을 클릭하여 월별 데이터를 확인하세요.
+                </td>
+              </tr>
+
+              <!-- 카테고리별 데이터 -->
+              <th:block th:each="categoryData, categoryStat : ${monthlyData}">
+                <!-- 각 제품 행 -->
+                <tr th:each="product, productStat : ${categoryData.products}">
+                  <!-- 분류 (카테고리 첫 행에만 표시) -->
+                  <td
+                    th:if="${productStat.first}"
+                    class="category-col"
+                    th:rowspan="${#lists.size(categoryData.products)}"
+                    th:text="${categoryData.category}"
+                  ></td>
+
+                  <!-- 제품코드 -->
+                  <td
+                    class="product-code-col"
+                    th:text="${product.productCode}"
+                  ></td>
+
+                  <!-- 제품명 -->
+                  <td
+                    class="product-name-col"
+                    th:text="${product.productName}"
+                  ></td>
+
+                  <!-- 1월 ~ 12월 데이터 -->
+                  <th:block th:each="month : ${#numbers.sequence(1, 12)}">
+                    <td
+                      th:class="'green-' + ${(categoryStat.index % 4) + 1}"
+                      th:text="${product.monthlyData[month - 1].quantity == null or product.monthlyData[month - 1].quantity == 0 ? '-' : #numbers.formatInteger(product.monthlyData[month - 1].quantity, 0, 'COMMA')}"
+                    ></td>
+                    <td
+                      th:class="'green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
+                      th:text="${product.monthlyData[month - 1].amount == null or product.monthlyData[month - 1].amount == 0 ? '-' : '₩' + #numbers.formatInteger(product.monthlyData[month - 1].amount, 0, 'COMMA')}"
+                    ></td>
+                  </th:block>
+
+                  <!-- 합계 -->
+                  <td
+                    class="total-quantity"
+                    th:text="${product.totalQuantity == null or product.totalQuantity == 0 ? '-' : #numbers.formatInteger(product.totalQuantity, 0, 'COMMA')}"
+                  ></td>
+                  <td
+                    class="total-amount amount"
+                    th:text="${product.totalAmount == null or product.totalAmount == 0 ? '-' : '₩' + #numbers.formatInteger(product.totalAmount, 0, 'COMMA')}"
+                  ></td>
+                </tr>
+              </th:block>
+
+              <!-- 전체 합계 행 -->
+              <tr th:if="${grandTotal != null}" class="grand-total-row">
+                <td
+                  colspan="3"
+                  class="grand-total-label"
+                  style="text-align: center"
+                >
+                  <strong>전체 합계</strong>
+                </td>
+
+                <!-- 1월 ~ 12월 합계 -->
+                <th:block th:each="month : ${#numbers.sequence(1, 12)}">
+                  <td>
+                    <strong
+                      th:text="${grandTotal.monthlyTotals[month - 1].quantity == null or grandTotal.monthlyTotals[month - 1].quantity == 0 ? '-' : #numbers.formatInteger(grandTotal.monthlyTotals[month - 1].quantity, 0, 'COMMA')}"
+                    ></strong>
+                  </td>
+                  <td class="amount">
+                    <strong
+                      th:text="${grandTotal.monthlyTotals[month - 1].amount == null or grandTotal.monthlyTotals[month - 1].amount == 0 ? '-' : '₩' + #numbers.formatInteger(grandTotal.monthlyTotals[month - 1].amount, 0, 'COMMA')}"
+                    ></strong>
+                  </td>
+                </th:block>
+
+                <!-- 전체 합계 -->
+                <td>
+                  <strong
+                    th:text="${grandTotal.totalQuantity == null or grandTotal.totalQuantity == 0 ? '-' : #numbers.formatInteger(grandTotal.totalQuantity, 0, 'COMMA')}"
+                  ></strong>
+                </td>
+                <td class="amount">
+                  <strong
+                    th:text="${grandTotal.totalAmount == null or grandTotal.totalAmount == 0 ? '-' : '₩' + #numbers.formatInteger(grandTotal.totalAmount, 0, 'COMMA')}"
+                  ></strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <script th:src="@{/js/common.js}"></script>
+    <script>
+      function loadMonthlyData() {
+        const year = document.getElementById("year-select").value;
+        const companyId = document.getElementById("company-select").value;
+
+        const url = `/mynet/compare/monthly?year=${year}&companyId=${companyId}`;
+        window.location.href = url;
+      }
+    </script>
+  </body>
+</html>

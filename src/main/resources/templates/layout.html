@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html
+  lang="ko"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="${pageTitle} + ' - 마이넷 매출 관리 시스템'">
+      마이넷 매출 관리 시스템
+    </title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/datepicker.css}" />
+    <script th:src="@{/js/common.js}" defer></script>
+    <script th:src="@{/js/datepicker.js}" defer></script>
+  </head>
+  <body>
+    <!-- 헤더 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">마이넷 매출 관리 시스템</div>
+        <div class="user-info">
+          <span
+            class="user-name"
+            th:text="${#authentication.principal.companyName}"
+            >회사명</span
+          >
+          <span
+            class="user-role"
+            th:text="${#authentication.principal.isCanon} ? '(캐논)' : 
+                               (${#authentication.principal.isMynet} ? '(마이넷)' : '(하위회사)')"
+          >
+            (역할)
+          </span>
+          <form th:action="@{/logout}" method="post" style="display: inline">
+            <button type="submit" class="logout-btn">로그아웃</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <!-- 네비게이션 메뉴 -->
+    <nav class="nav-menu">
+      <div class="nav-content">
+        <!-- 마이넷 메뉴 -->
+        <div sec:authorize="hasRole('MYNET')">
+          <div
+            class="nav-item"
+            th:classappend="${currentPage == 'view'} ? 'active'"
+          >
+            <a th:href="@{/mynet/view}">조회</a>
+          </div>
+          <div
+            class="nav-item"
+            th:classappend="${currentPage == 'compare'} ? 'active'"
+          >
+            <a href="javascript:void(0)">비교 ▼</a>
+            <div class="sub-menu">
+              <a
+                th:href="@{/mynet/compare/monthly}"
+                th:classappend="${comparePage == 'monthly'} ? 'active'"
+                >월별</a
+              >
+              <a
+                th:href="@{/mynet/compare/yearly}"
+                th:classappend="${comparePage == 'yearly'} ? 'active'"
+                >년도별</a
+              >
+              <a
+                th:href="@{/mynet/compare/period}"
+                th:classappend="${comparePage == 'period'} ? 'active'"
+                >기간별</a
+              >
+              <a
+                th:href="@{/mynet/compare/product}"
+                th:classappend="${comparePage == 'product'} ? 'active'"
+                >제품별</a
+              >
+            </div>
+          </div>
+          <div
+            class="nav-item"
+            th:classappend="${currentPage == 'products'} ? 'active'"
+          >
+            <a th:href="@{/admin/products}">제품 분류</a>
+          </div>
+          <div
+            class="nav-item"
+            th:classappend="${currentPage == 'users'} ? 'active'"
+          >
+            <a th:href="@{/admin/users}">사용자 관리</a>
+          </div>
+        </div>
+
+        <!-- 하위회사 메뉴 -->
+        <div sec:authorize="hasRole('SUBSIDIARY')">
+          <div
+            class="nav-item"
+            th:classappend="${currentPage == 'input'} ? 'active'"
+          >
+            <a th:href="@{/subsidiary/input}">입력</a>
+          </div>
+          <div
+            class="nav-item"
+            th:classappend="${currentPage == 'statistics'} ? 'active'"
+          >
+            <a th:href="@{/subsidiary/statistics}">통계</a>
+          </div>
+          <div
+            class="nav-item"
+            th:classappend="${currentPage == 'monthly-sales'} ? 'active'"
+          >
+            <a th:href="@{/subsidiary/monthly-sales}">월별매출집계</a>
+          </div>
+        </div>
+
+        <!-- 캐논 메뉴 -->
+        <div sec:authorize="hasRole('CANON')">
+          <div
+            class="nav-item"
+            th:classappend="${currentPage == 'view'} ? 'active'"
+          >
+            <a th:href="@{/canon/view}">조회</a>
+          </div>
+          <div
+            class="nav-item"
+            th:classappend="${currentPage == 'compare'} ? 'active'"
+          >
+            <a href="#" onclick="toggleSubMenu('canon-compare-menu')">비교 ▼</a>
+            <div id="canon-compare-menu" class="sub-menu" style="display: none">
+              <a th:href="@{/canon/compare/monthly}">월별</a>
+              <a th:href="@{/canon/compare/yearly}">년도별</a>
+              <a th:href="@{/canon/compare/period}">기간별</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="main-container">
+      <!-- 알림 메시지 영역 -->
+      <div id="alert-container"></div>
+
+      <!-- 페이지별 컨텐츠 -->
+      <div th:replace="~{${contentTemplate}}">
+        페이지 내용이 여기에 표시됩니다.
+      </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script th:inline="javascript">
+      // 현재 사용자 정보를 JavaScript에서 사용할 수 있도록 설정
+      window.currentUser = {
+        username: /*[[${#authentication.principal.username}]]*/ "",
+        companyId: /*[[${#authentication.principal.companyId}]]*/ 0,
+        companyName: /*[[${#authentication.principal.companyName}]]*/ "",
+        isMynet: /*[[${#authentication.principal.isMynet}]]*/ false,
+        isCanon: /*[[${#authentication.principal.isCanon}]]*/ false,
+      };
+    </script>
+
+    <style>
+      /* 서브메뉴 스타일 */
+      .sub-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: var(--white);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        min-width: 120px;
+      }
+
+      .sub-menu a {
+        display: block;
+        padding: 0.75rem 1rem;
+        color: var(--text-dark);
+        text-decoration: none;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .sub-menu a:last-child {
+        border-bottom: none;
+      }
+
+      .sub-menu a:hover {
+        background-color: var(--light-gray);
+      }
+
+      .nav-item {
+        position: relative;
+      }
+
+      .user-role {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.8);
+      }
+    </style>
+  </body>
+</html>
