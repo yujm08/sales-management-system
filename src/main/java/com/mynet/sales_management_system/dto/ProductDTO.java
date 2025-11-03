@@ -15,4 +15,7 @@ public class ProductDTO {
     private BigDecimal currentCostPrice;
     private BigDecimal currentSupplyPrice;
     private String categoryClass;
+
+    private LocalDateTime lastModifiedAt;
+    private String lastModifiedBy;
 }

@@ -199,9 +199,12 @@
     <nav class="nav-menu">
       <div class="nav-content">
         <div class="nav-item">
-          <a th:href="@{/mynet/view}">조회</a>
+          <a
+            th:href="@{${#authentication.principal.canon ? '/canon/view' : '/mynet/view'}}"
+            >조회</a
+          >
         </div>
-        <div class="nav-item active">
+        <div class="nav-item">
           <a href="javascript:void(0)">비교 ▼</a>
           <div class="sub-menu">
             <a th:href="@{/mynet/compare/monthly}">월별</a>

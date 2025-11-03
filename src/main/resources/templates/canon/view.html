@@ -438,7 +438,7 @@
     <nav class="nav-menu">
       <div class="nav-content">
         <div class="nav-item active">
-          <a th:href="@{/mynet/view}">조회</a>
+          <a th:href="@{/canon/view}">조회</a>
         </div>
         <div class="nav-item">
           <a href="javascript:void(0)">비교 ▼</a>
@@ -535,23 +535,17 @@
           <table class="stats-table">
             <thead>
               <tr>
-                <th colspan="5">제품</th>
-                <th colspan="3">일 합계</th>
-                <th colspan="3">월 합계</th>
+                <th colspan="3">제품</th>
+                <th colspan="1">일 합계</th>
+                <th colspan="1">월 합계</th>
                 <th colspan="2">목표수량</th>
               </tr>
               <tr>
                 <th>분류</th>
                 <th>제품코드</th>
                 <th>제품명</th>
-                <th>원가</th>
-                <th>공급가</th>
                 <th>수량</th>
-                <th>금액</th>
-                <th>이익</th>
                 <th>수량</th>
-                <th>금액</th>
-                <th>이익</th>
                 <th th:text="${currentMonth + '월'}">9월</th>
                 <th>달성률</th>
               </tr>
@@ -561,7 +555,7 @@
               <!-- 데이터가 없는 경우 -->
               <tr th:if="${#lists.isEmpty(statisticsData)}">
                 <td
-                  colspan="13"
+                  colspan="7"
                   style="text-align: center; padding: 40px; color: #6c757d"
                 >
                   표시할 데이터가 없습니다.
@@ -578,7 +572,7 @@
                   th:if="${item != null and item.productCode != null}"
                 >
                   <tr>
-                    <!-- 카테고리 셀 (첫 번째 제품에만 표시) -->
+                    <!-- 카테고리 셀 -->
                     <td
                       th:if="${itemStat.first}"
                       class="category-cell"
@@ -603,71 +597,21 @@
                         제품명
                       </div>
                     </td>
-                    <td
-                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
-                      th:text="${'₩' + #numbers.formatInteger(item.costPrice, 0, 'COMMA')}"
-                    >
-                      원가
-                    </td>
-                    <td
-                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
-                      th:text="${'₩' + #numbers.formatInteger(item.supplyPrice, 0, 'COMMA')}"
-                    >
-                      공급가
-                    </td>
 
-                    <!-- 일별 수량 (수정 가능) -->
+                    <!-- 일별 수량 -->
                     <td
                       th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + 
-                        ${(companyFilter != '' and !isCanon) ? ' tooltip editable-cell' : ' tooltip'}"
+        ${(companyFilter != '' and !isCanon) ? ' tooltip editable-cell' : ' tooltip'}"
                       th:data-tooltip="${item.dailySummary?.lastModifiedAt != null ? 
-                        ('수정: ' + #temporals.format(item.dailySummary.lastModifiedAt, 'yyyy-MM-dd HH:mm') + 
-                        ' by ' + item.dailySummary.modifiedBy) : '수정 기록 없음'}"
+            ('수정: ' + #temporals.format(item.dailySummary.lastModifiedAt, 'yyyy-MM-dd HH:mm') + 
+             ' by ' + item.dailySummary.modifiedBy) : '수정 기록 없음'}"
                       th:data-company-id="${companyFilter != '' ? companyFilter : ''}"
                       th:data-product-id="${item.productId}"
                       th:data-type="'quantity'"
+                      th:attr="onclick=${(companyFilter != '' and !isCanon) ? 'editCell(this)' : null}"
+                      th:text="${item.dailySummary?.quantity ?: 0}"
                     >
-                      <span class="cell-display" th:text="${item.dailySummary?.quantity ?: 0}">수량</span>
-                      <input type="number" 
-                            th:value="${item.dailySummary?.quantity ?: 0}" 
-                            style="display:none; width: 60px;"
-                            min="0">
-                    </td>
-
-                    <!-- 일별 금액 -->
-                    <td
-                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
-                      th:text="${#numbers.formatInteger(item.dailySummary?.amount ?: 0, 0, 'COMMA')}"
-                    >
-                      금액
-                    </td>
-
-                    <!-- 일별 이익 -->
-                    <td
-                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' profit'"
-                    >
-                      <div class="profit-detail">
-                        <span
-                          class="profit-amount"
-                          th:text="${'₩' + #numbers.formatInteger(item.dailySummary?.profit ?: 0, 0, 'COMMA')}"
-                          >이익</span
-                        >
-                        <div
-                          th:if="${item.dailySummary?.comparison != null}"
-                          class="profit-change"
-                        >
-                          <span
-                            th:class="${item.dailySummary.comparison.increase} ? 'profit-up' : 'profit-down'"
-                            th:text="${item.dailySummary.comparison.increase ? '▲' : '▼'}"
-                            >화살표</span
-                          >
-                          <span
-                            th:class="${item.dailySummary.comparison.increase} ? 'profit-up' : 'profit-down'"
-                            th:text="${#numbers.formatDecimal(item.dailySummary.comparison.changeRate, 0, 0)} + '%'"
-                            >변화율</span
-                          >
-                        </div>
-                      </div>
+                      수량
                     </td>
 
                     <!-- 월별 수량 -->
@@ -678,56 +622,18 @@
                       월수량
                     </td>
 
-                    <!-- 월별 금액 -->
-                    <td
-                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
-                      th:text="${#numbers.formatInteger(item.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
-                    >
-                      월금액
-                    </td>
-
-                    <!-- 월별 이익 -->
-                    <td
-                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' profit'"
-                    >
-                      <div class="profit-detail">
-                        <span
-                          class="profit-amount"
-                          th:text="${'₩' + #numbers.formatInteger(item.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
-                          >월이익</span
-                        >
-                        <div
-                          th:if="${item.monthlySummary?.comparison != null}"
-                          class="profit-change"
-                        >
-                          <span
-                            th:class="${item.monthlySummary.comparison.increase} ? 'profit-up' : 'profit-down'"
-                            th:text="${item.monthlySummary.comparison.increase ? '▲' : '▼'}"
-                            >화살표</span
-                          >
-                          <span
-                            th:class="${item.monthlySummary.comparison.increase} ? 'profit-up' : 'profit-down'"
-                            th:text="${#numbers.formatDecimal(item.monthlySummary.comparison.changeRate, 1, 1)} + '%'"
-                            >변화율</span
-                          >
-                        </div>
-                      </div>
-                    </td>
-
-                    <!-- 목표 수량 (수정 가능) -->
+                    <!-- 목표 수량 -->
                     <td
                       th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + 
-                        ${(companyFilter != '' and !isCanon) ? ' tooltip editable-cell' : ' tooltip'}"
+        ${(companyFilter != '' and !isCanon) ? ' tooltip editable-cell' : ' tooltip'}"
                       th:data-tooltip="'목표 수량'"
                       th:data-company-id="${companyFilter != '' ? companyFilter : ''}"
                       th:data-product-id="${item.productId}"
                       th:data-type="'target'"
+                      th:attr="onclick=${(companyFilter != '' and !isCanon) ? 'editCell(this)' : null}"
+                      th:text="${item.targetData?.targetQuantity ?: 0}"
                     >
-                      <span class="cell-display" th:text="${item.targetData?.targetQuantity ?: 0}">목표</span>
-                      <input type="number" 
-                            th:value="${item.targetData?.targetQuantity ?: 0}" 
-                            style="display:none; width: 60px;"
-                            min="0">
+                      목표
                     </td>
 
                     <!-- 달성률 -->
@@ -756,44 +662,19 @@
                   class="subtotal-row"
                   th:with="subtotalItem=${subtotalData[categoryEntry.key]}"
                 >
-                  <td colspan="5" style="text-align: left; padding-left: 15px">
+                  <td colspan="3" style="text-align: left; padding-left: 15px">
                     <strong th:text="${'소계'}">소계</strong>
                   </td>
-                  <!-- 실제 소계 데이터 표시 -->
                   <td>
                     <strong
                       th:text="${subtotalItem?.dailySummary?.quantity ?: 0}"
                       >소계수량</strong
                     >
                   </td>
-                  <td class="amount">
-                    <strong
-                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.dailySummary?.amount ?: 0, 0, 'COMMA')}"
-                      >소계금액</strong
-                    >
-                  </td>
-                  <td class="profit">
-                    <strong
-                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.dailySummary?.profit ?: 0, 0, 'COMMA')}"
-                      >소계이익</strong
-                    >
-                  </td>
                   <td>
                     <strong
                       th:text="${subtotalItem?.monthlySummary?.quantity ?: 0}"
                       >소계월수량</strong
-                    >
-                  </td>
-                  <td class="amount">
-                    <strong
-                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
-                      >소계월금액</strong
-                    >
-                  </td>
-                  <td class="profit">
-                    <strong
-                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
-                      >소계월이익</strong
                     >
                   </td>
                   <td>
@@ -823,46 +704,21 @@
 
               <!-- 전체 합계 행 -->
               <tr th:if="${grandTotalData != null}" class="total-row">
-                <td colspan="5" style="text-align: left; padding-left: 15px">
+                <td colspan="3" style="text-align: left; padding-left: 15px">
                   <strong th:text="${grandTotalData.productName ?: '합계'}"
                     >합계</strong
                   >
                 </td>
-                <!-- 실제 합계 데이터 표시 -->
                 <td>
                   <strong
                     th:text="${grandTotalData.dailySummary?.quantity ?: 0}"
                     >합계수량</strong
                   >
                 </td>
-                <td class="amount">
-                  <strong
-                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.dailySummary?.amount ?: 0, 0, 'COMMA')}"
-                    >합계금액</strong
-                  >
-                </td>
-                <td class="profit">
-                  <strong
-                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.dailySummary?.profit ?: 0, 0, 'COMMA')}"
-                    >합계이익</strong
-                  >
-                </td>
                 <td>
                   <strong
                     th:text="${grandTotalData.monthlySummary?.quantity ?: 0}"
                     >합계월수량</strong
-                  >
-                </td>
-                <td class="amount">
-                  <strong
-                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
-                    >합계월금액</strong
-                  >
-                </td>
-                <td class="profit">
-                  <strong
-                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
-                    >합계월이익</strong
                   >
                 </td>
                 <td>
@@ -929,22 +785,6 @@
 
         updateDateDisplay();
         updateButtonStates();
-
-        // 하위 회사 선택 시 노란색 셀 클릭으로 자동 수정 모드
-        const companyFilter = document.getElementById("company-select");
-        if (companyFilter && companyFilter.value !== "all") {
-          enableDirectCellEdit();
-        }
-
-        // 회사 필터 변경 시
-        if (companyFilter) {
-          companyFilter.addEventListener("change", function () {
-            if (this.value !== "all") {
-              // 페이지 새로고침 후 자동으로 활성화됨
-              setTimeout(() => enableDirectCellEdit(), 100);
-            }
-          });
-        }
       });
 
       // 수정 모드 토글
@@ -953,7 +793,7 @@
         const editBtn = document.getElementById("edit-btn");
 
         if (isEditMode) {
-          editBtn.textContent = "저장";
+          editBtn.textContent = "수정 완료";
           editBtn.classList.add("active");
           document.body.classList.add("multi-select-mode");
           enableMultiSelectEditing();
@@ -1095,6 +935,7 @@
             console.log("Response data:", data); // 디버깅용
             if (data.success) {
               showAlert("저장되었습니다.", "success");
+              setTimeout(() => location.reload(), 1000);
             } else {
               cell.style.backgroundColor = "#f8d7da";
               showAlert("저장 실패: " + data.message, "error");
@@ -1206,7 +1047,7 @@
       // 나머지 기존 함수들...
       function selectTotalStats() {
         const dateStr = currentDate.toISOString().split("T")[0];
-        location.href = `/mynet/view?companyFilter=&date=${dateStr}`;
+        location.href = `/canon/view?companyFilter=&date=${dateStr}`;
       }
 
       function updateButtonStates() {
@@ -1226,7 +1067,7 @@
         const newDate = new Date(currentDate);
         newDate.setDate(newDate.getDate() + days);
         const dateStr = newDate.toISOString().split("T")[0];
-        location.href = `/mynet/view?companyFilter=${currentCompanyFilter}&date=${dateStr}`;
+        location.href = `/canon/view?companyFilter=${currentCompanyFilter}&date=${dateStr}`;
       }
 
       function showDatePicker() {
@@ -1249,12 +1090,12 @@
       function selectDate() {
         const datePicker = document.getElementById("date-picker");
         const dateValue = datePicker.value;
-        location.href = `/mynet/view?companyFilter=${currentCompanyFilter}&date=${dateValue}`;
+        location.href = `/canon/view?companyFilter=${currentCompanyFilter}&date=${dateValue}`;
       }
 
       function changeCompany(companyId) {
         const dateStr = currentDate.toISOString().split("T")[0];
-        location.href = `/mynet/view?companyFilter=${companyId}&date=${dateStr}`;
+        location.href = `/canon/view?companyFilter=${companyId}&date=${dateStr}`;
       }
 
       function updateDateDisplay() {
@@ -1273,53 +1114,6 @@
         alertContainer.appendChild(alertDiv);
         setTimeout(() => alertDiv.remove(), 3000);
       }
-
-      /**
-       * 하위 회사 선택 시 노란색 셀 클릭으로 자동 수정 모드 진입
-       */
-      function enableDirectCellEdit() {
-        const companyFilter = document.getElementById('company-select');
-        if (!companyFilter || companyFilter.value === '' || companyFilter.value === 'all') {
-
-            // 이미 등록된 클릭 이벤트 제거 및 커서 초기화
-          document.querySelectorAll('.editable-cell').forEach(cell => {
-              cell.style.cursor = 'default';
-              cell.dataset.autoEditEnabled = 'false';
-              const clone = cell.cloneNode(true); // 이벤트 제거용 복제
-              cell.parentNode.replaceChild(clone, cell);
-          });
-
-            return;
-        }
-        
-        const editableCells = document.querySelectorAll('.editable-cell');
-        editableCells.forEach(cell => {
-            if (cell.dataset.autoEditEnabled === 'true') return;
-
-            cell.dataset.autoEditEnabled = 'true';
-            cell.style.cursor = 'pointer';
-
-            cell.addEventListener('click', function(e) {
-                // 이미 편집 모드면 무시
-                if (isEditMode) return;
-
-                // 편집 모드로 전환
-                toggleEdit();
-
-                setTimeout(() => {
-                    const display = this.querySelector('.cell-display');
-                    const input = this.querySelector('input');
-
-                    if (display && input) {
-                        display.style.display = 'none';
-                        input.style.display = 'inline-block';
-                        input.focus();
-                        input.select();
-                    }
-                }, 100);
-            });
-        });
-    }
 
       // 사용하지 않는 함수들 제거
       function updateData() {

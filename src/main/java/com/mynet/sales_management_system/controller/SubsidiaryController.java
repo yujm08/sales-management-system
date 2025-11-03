@@ -2,6 +2,7 @@
 package com.mynet.sales_management_system.controller;
 
 import com.mynet.sales_management_system.dto.ProductInputDTO;
+import com.mynet.sales_management_system.dto.ViewStatisticsDTO;
 import com.mynet.sales_management_system.entity.DailySales;
 import com.mynet.sales_management_system.security.CustomUserDetails;
 import com.mynet.sales_management_system.service.ProductService;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import java.util.Map;
 import com.mynet.sales_management_system.dto.InputSaveRequest;
+import com.mynet.sales_management_system.service.ViewStatisticsService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,6 +36,7 @@ public class SubsidiaryController {
 
     private final SalesService salesService;
     private final ProductService productService;
+    private final ViewStatisticsService viewStatisticsService;
 
     /**
      * 입력 테이블 페이지 (하위회사 메인 페이지)

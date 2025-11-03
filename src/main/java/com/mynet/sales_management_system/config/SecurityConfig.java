@@ -51,6 +51,8 @@ public class SecurityConfig {
                                                 // 관리자 페이지 (사용자 관리 등) - ADMIN 권한 필요
                                                 .requestMatchers("/admin/products").hasAnyRole("MYNET", "CANON")
                                                 .requestMatchers("/admin/**").hasRole("MYNET")
+                                                // 캐논 전용 페이지 (조회, 비교)
+                                                .requestMatchers("/canon/**").hasRole("CANON")
                                                 // 나머지 모든 요청은 인증 필요
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form

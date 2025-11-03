@@ -514,26 +514,6 @@ public class MynetController {
     }
 
     /**
-     * 제품 가격 수정
-     */
-    @PostMapping("/products/update-price")
-    @ResponseBody
-    public String updateProductPrice(@AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam Long productId,
-            @RequestParam BigDecimal costPrice,
-            @RequestParam BigDecimal supplyPrice) {
-        try {
-            productService.updateProductPrice(productId, costPrice, supplyPrice, userDetails.getUsername());
-
-            log.info("제품 가격 수정: 제품ID={}, 수정자={}", productId, userDetails.getUsername());
-            return "success";
-        } catch (Exception e) {
-            log.error("제품 가격 수정 실패", e);
-            return "error:" + e.getMessage();
-        }
-    }
-
-    /**
      * 제품 활성화 상태 변경
      */
     @PostMapping("/products/toggle-active")

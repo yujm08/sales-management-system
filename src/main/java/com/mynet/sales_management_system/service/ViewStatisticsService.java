@@ -69,15 +69,15 @@ public class ViewStatisticsService {
 
                         // 회사별 상세 데이터
                         List<ViewStatisticsDTO.CompanyData> companyDataList = generateCompanyDataList(dailySalesList,
-                                        product);
+                                        product, targetDate);
 
                         ViewStatisticsDTO dto = ViewStatisticsDTO.builder()
                                         .productId(product.getId())
                                         .category(product.getCategory())
                                         .productCode(product.getProductCode())
                                         .productName(product.getProductName())
-                                        .costPrice(getCurrentCostPrice(product))
-                                        .supplyPrice(getCurrentSupplyPrice(product))
+                                        .costPrice(getCostPriceAtDate(product, targetDate))
+                                        .supplyPrice(getSupplyPriceAtDate(product, targetDate))
                                         .dailySummary(dailySummary)
                                         .monthlySummary(monthlySummary)
                                         .targetData(targetData)
@@ -135,8 +135,8 @@ public class ViewStatisticsService {
                                         .category(product.getCategory())
                                         .productCode(product.getProductCode())
                                         .productName(product.getProductName())
-                                        .costPrice(getCurrentCostPrice(product))
-                                        .supplyPrice(getCurrentSupplyPrice(product))
+                                        .costPrice(getCostPriceAtDate(product, targetDate))
+                                        .supplyPrice(getSupplyPriceAtDate(product, targetDate))
                                         .dailySummary(dailySummary)
                                         .monthlySummary(monthlySummary)
                                         .targetData(targetData)
@@ -163,8 +163,9 @@ public class ViewStatisticsService {
                         LocalDate targetDate) {
                 int totalQuantity = salesList.stream().mapToInt(DailySales::getQuantity).sum();
 
+                LocalDateTime queryTime = getQueryDateTime(targetDate);
                 ProductPriceHistory priceHistory = productService.getProductPriceAtDate(
-                                product.getId(), targetDate.atStartOfDay()).orElse(null);
+                                product.getId(), queryTime).orElse(null);
 
                 PriceCalculator.SalesAmount salesAmount = PriceCalculator.calculateSalesAmount(totalQuantity,
                                 priceHistory);
@@ -205,8 +206,9 @@ public class ViewStatisticsService {
                         LocalDate targetDate, Long companyId) {
                 int quantity = dailySales != null ? dailySales.getQuantity() : 0;
 
+                LocalDateTime queryTime = getQueryDateTime(targetDate);
                 ProductPriceHistory priceHistory = productService.getProductPriceAtDate(
-                                product.getId(), targetDate.atStartOfDay()).orElse(null);
+                                product.getId(), queryTime).orElse(null);
 
                 PriceCalculator.SalesAmount salesAmount = PriceCalculator.calculateSalesAmount(quantity, priceHistory);
 
@@ -228,29 +230,44 @@ public class ViewStatisticsService {
         }
 
         /**
-         * 월별 합계 계산 (선택된 날짜까지)
+         * 월별 합계 계산 (선택된 날짜까지)- 각 날짜별 가격으로 계산
          */
         private ViewStatisticsDTO.MonthlySummary calculateMonthlySummary(List<DailySales> monthlySalesList,
                         Product product,
                         LocalDate targetDate) {
-                int totalQuantity = monthlySalesList.stream().mapToInt(DailySales::getQuantity).sum();
+                BigDecimal totalRevenue = BigDecimal.ZERO;
+                BigDecimal totalProfit = BigDecimal.ZERO;
+                int totalQuantity = 0;
 
-                // 월별 데이터의 평균 가격 계산 (간단히 현재 가격 사용)
-                ProductPriceHistory priceHistory = productService.getProductPriceAtDate(
-                                product.getId(), targetDate.atStartOfDay()).orElse(null);
+                // 각 날짜별로 해당 날짜의 가격 사용
+                for (DailySales sales : monthlySalesList) {
+                        LocalDateTime salesDateTime = getQueryDateTime(sales.getSalesDate());
+                        ProductPriceHistory priceHistory = productService.getProductPriceAtDate(
+                                        product.getId(), salesDateTime).orElse(null);
 
-                PriceCalculator.SalesAmount salesAmount = PriceCalculator.calculateSalesAmount(totalQuantity,
-                                priceHistory);
+                        if (priceHistory != null) {
+                                PriceCalculator.SalesAmount salesAmount = PriceCalculator.calculateSalesAmount(
+                                                sales.getQuantity(), priceHistory);
+                                totalRevenue = totalRevenue.add(salesAmount.getRevenue());
+                                totalProfit = totalProfit.add(salesAmount.getProfit());
+                        }
+
+                        totalQuantity += sales.getQuantity();
+                }
+
+                BigDecimal profitRate = totalRevenue.compareTo(BigDecimal.ZERO) != 0
+                                ? totalProfit.divide(totalRevenue, 4, BigDecimal.ROUND_HALF_UP)
+                                                .multiply(BigDecimal.valueOf(100))
+                                : BigDecimal.ZERO;
 
                 // 전월 대비 비교
                 ViewStatisticsDTO.ComparisonData comparison = calculateMonthlyComparison(product.getId(), targetDate);
 
                 return ViewStatisticsDTO.MonthlySummary.builder()
                                 .quantity(totalQuantity)
-                                .amount(salesAmount.getRevenue())
-                                .profit(salesAmount.getProfit())
-                                .profitRate(PriceCalculator.calculateProfitRate(salesAmount.getProfit(),
-                                                salesAmount.getRevenue()))
+                                .amount(totalRevenue)
+                                .profit(totalProfit)
+                                .profitRate(profitRate)
                                 .comparison(comparison)
                                 .build();
         }
@@ -260,13 +277,31 @@ public class ViewStatisticsService {
          */
         private ViewStatisticsDTO.MonthlySummary calculateSingleMonthlySummary(List<DailySales> monthlySalesList,
                         Product product, LocalDate targetDate, Long companyId) {
-                int totalQuantity = monthlySalesList.stream().mapToInt(DailySales::getQuantity).sum();
 
-                ProductPriceHistory priceHistory = productService.getProductPriceAtDate(
-                                product.getId(), targetDate.atStartOfDay()).orElse(null);
+                BigDecimal totalRevenue = BigDecimal.ZERO;
+                BigDecimal totalProfit = BigDecimal.ZERO;
+                int totalQuantity = 0;
 
-                PriceCalculator.SalesAmount salesAmount = PriceCalculator.calculateSalesAmount(totalQuantity,
-                                priceHistory);
+                // 각 날짜별로 해당 날짜의 가격 사용
+                for (DailySales sales : monthlySalesList) {
+                        LocalDateTime salesDateTime = getQueryDateTime(sales.getSalesDate());
+                        ProductPriceHistory priceHistory = productService.getProductPriceAtDate(
+                                        product.getId(), salesDateTime).orElse(null);
+
+                        if (priceHistory != null) {
+                                PriceCalculator.SalesAmount salesAmount = PriceCalculator.calculateSalesAmount(
+                                                sales.getQuantity(), priceHistory);
+                                totalRevenue = totalRevenue.add(salesAmount.getRevenue());
+                                totalProfit = totalProfit.add(salesAmount.getProfit());
+                        }
+
+                        totalQuantity += sales.getQuantity();
+                }
+
+                BigDecimal profitRate = totalRevenue.compareTo(BigDecimal.ZERO) != 0
+                                ? totalProfit.divide(totalRevenue, 4, BigDecimal.ROUND_HALF_UP)
+                                                .multiply(BigDecimal.valueOf(100))
+                                : BigDecimal.ZERO;
 
                 // 전월 대비 비교
                 ViewStatisticsDTO.ComparisonData comparison = calculateSingleCompanyMonthlyComparison(companyId,
@@ -274,10 +309,9 @@ public class ViewStatisticsService {
 
                 return ViewStatisticsDTO.MonthlySummary.builder()
                                 .quantity(totalQuantity)
-                                .amount(salesAmount.getRevenue())
-                                .profit(salesAmount.getProfit())
-                                .profitRate(PriceCalculator.calculateProfitRate(salesAmount.getProfit(),
-                                                salesAmount.getRevenue()))
+                                .amount(totalRevenue)
+                                .profit(totalProfit)
+                                .profitRate(profitRate)
                                 .comparison(comparison)
                                 .build();
         }
@@ -326,7 +360,7 @@ public class ViewStatisticsService {
          * 회사별 데이터 생성
          */
         private List<ViewStatisticsDTO.CompanyData> generateCompanyDataList(List<DailySales> salesList,
-                        Product product) {
+                        Product product, LocalDate targetDate) {
                 Map<Long, List<DailySales>> companyGrouped = salesList.stream()
                                 .collect(Collectors.groupingBy(s -> s.getCompany().getId()));
 
@@ -336,15 +370,28 @@ public class ViewStatisticsService {
                                         List<DailySales> companySales = entry.getValue();
 
                                         String companyName = companySales.get(0).getCompany().getName();
-                                        int totalQuantity = companySales.stream().mapToInt(DailySales::getQuantity)
-                                                        .sum();
 
-                                        ProductPriceHistory priceHistory = productService.getProductPriceAtDate(
-                                                        product.getId(), LocalDateTime.now()).orElse(null);
+                                        // 각 날짜별로 가격을 조회해서 계산
+                                        BigDecimal totalRevenue = BigDecimal.ZERO;
+                                        BigDecimal totalProfit = BigDecimal.ZERO;
+                                        int totalQuantity = 0;
 
-                                        PriceCalculator.SalesAmount salesAmount = PriceCalculator.calculateSalesAmount(
-                                                        totalQuantity,
-                                                        priceHistory);
+                                        for (DailySales sales : companySales) {
+                                                LocalDateTime salesDateTime = getQueryDateTime(sales.getSalesDate());
+                                                ProductPriceHistory priceHistory = productService.getProductPriceAtDate(
+                                                                product.getId(), salesDateTime).orElse(null);
+
+                                                if (priceHistory != null) {
+                                                        PriceCalculator.SalesAmount salesAmount = PriceCalculator
+                                                                        .calculateSalesAmount(
+                                                                                        sales.getQuantity(),
+                                                                                        priceHistory);
+                                                        totalRevenue = totalRevenue.add(salesAmount.getRevenue());
+                                                        totalProfit = totalProfit.add(salesAmount.getProfit());
+                                                }
+
+                                                totalQuantity += sales.getQuantity();
+                                        }
 
                                         LocalDateTime lastModified = companySales.stream()
                                                         .map(DailySales::getLastModifiedAt)
@@ -363,8 +410,8 @@ public class ViewStatisticsService {
                                                         .companyId(companyId)
                                                         .companyName(companyName)
                                                         .quantity(totalQuantity)
-                                                        .amount(salesAmount.getRevenue())
-                                                        .profit(salesAmount.getProfit())
+                                                        .amount(totalRevenue)
+                                                        .profit(totalProfit)
                                                         .lastModifiedAt(lastModified)
                                                         .modifiedBy(modifiedBy)
                                                         .build();
@@ -383,8 +430,11 @@ public class ViewStatisticsService {
                 List<DailySales> previousSales = dailySalesRepository.findByProductIdAndSalesDate(productId,
                                 previousDate);
 
-                BigDecimal currentProfit = calculateTotalProfit(currentSales, productId, currentDate.atStartOfDay());
-                BigDecimal previousProfit = calculateTotalProfit(previousSales, productId, previousDate.atStartOfDay());
+                LocalDateTime currentQueryTime = getQueryDateTime(currentDate);
+                LocalDateTime previousQueryTime = getQueryDateTime(previousDate);
+
+                BigDecimal currentProfit = calculateTotalProfit(currentSales, productId, currentQueryTime);
+                BigDecimal previousProfit = calculateTotalProfit(previousSales, productId, previousQueryTime);
 
                 return buildComparisonData(currentProfit, previousProfit);
         }
@@ -403,10 +453,13 @@ public class ViewStatisticsService {
                                 companyId,
                                 productId, previousDate);
 
+                LocalDateTime currentQueryTime = getQueryDateTime(currentDate);
+                LocalDateTime previousQueryTime = getQueryDateTime(previousDate);
+
                 BigDecimal currentProfit = calculateSingleProfit(currentSales.orElse(null), productId,
-                                currentDate.atStartOfDay());
+                                currentQueryTime);
                 BigDecimal previousProfit = calculateSingleProfit(previousSales.orElse(null), productId,
-                                previousDate.atStartOfDay());
+                                previousQueryTime);
 
                 return buildComparisonData(currentProfit, previousProfit);
         }
@@ -424,9 +477,11 @@ public class ViewStatisticsService {
                                 productId, previousMonth.getYear(), previousMonth.getMonthValue(),
                                 previousMonth.getDayOfMonth());
 
-                BigDecimal currentProfit = calculateTotalProfit(currentSales, productId, currentDate.atStartOfDay());
-                BigDecimal previousProfit = calculateTotalProfit(previousSales, productId,
-                                previousMonth.atStartOfDay());
+                LocalDateTime currentQueryTime = getQueryDateTime(currentDate);
+                LocalDateTime previousQueryTime = getQueryDateTime(previousMonth);
+
+                BigDecimal currentProfit = calculateTotalProfit(currentSales, productId, currentQueryTime);
+                BigDecimal previousProfit = calculateTotalProfit(previousSales, productId, previousQueryTime);
 
                 return buildComparisonData(currentProfit, previousProfit);
         }
@@ -445,9 +500,11 @@ public class ViewStatisticsService {
                                 companyId, productId, previousMonth.getYear(), previousMonth.getMonthValue(),
                                 previousMonth.getDayOfMonth());
 
-                BigDecimal currentProfit = calculateTotalProfit(currentSales, productId, currentDate.atStartOfDay());
-                BigDecimal previousProfit = calculateTotalProfit(previousSales, productId,
-                                previousMonth.atStartOfDay());
+                LocalDateTime currentQueryTime = getQueryDateTime(currentDate);
+                LocalDateTime previousQueryTime = getQueryDateTime(previousMonth);
+
+                BigDecimal currentProfit = calculateTotalProfit(currentSales, productId, currentQueryTime);
+                BigDecimal previousProfit = calculateTotalProfit(previousSales, productId, previousQueryTime);
 
                 return buildComparisonData(currentProfit, previousProfit);
         }
@@ -475,19 +532,32 @@ public class ViewStatisticsService {
         }
 
         /**
-         * 현재 원가 조회
+         * 조회 시점 계산 (오늘이면 현재 시간, 과거면 23:59:59)
          */
-        private BigDecimal getCurrentCostPrice(Product product) {
-                return productService.getProductPriceAtDate(product.getId(), LocalDateTime.now())
+        private LocalDateTime getQueryDateTime(LocalDate targetDate) {
+                if (targetDate.isEqual(LocalDate.now())) {
+                        return LocalDateTime.now();
+                } else {
+                        return targetDate.atTime(23, 59, 59);
+                }
+        }
+
+        /**
+         * 특정 날짜의 원가 조회
+         */
+        private BigDecimal getCostPriceAtDate(Product product, LocalDate targetDate) {
+                LocalDateTime queryTime = getQueryDateTime(targetDate);
+                return productService.getProductPriceAtDate(product.getId(), queryTime)
                                 .map(ProductPriceHistory::getCostPrice)
                                 .orElse(BigDecimal.ZERO);
         }
 
         /**
-         * 현재 공급가 조회
+         * 특정 날짜의 공급가 조회
          */
-        private BigDecimal getCurrentSupplyPrice(Product product) {
-                return productService.getProductPriceAtDate(product.getId(), LocalDateTime.now())
+        private BigDecimal getSupplyPriceAtDate(Product product, LocalDate targetDate) {
+                LocalDateTime queryTime = getQueryDateTime(targetDate);
+                return productService.getProductPriceAtDate(product.getId(), queryTime)
                                 .map(ProductPriceHistory::getSupplyPrice)
                                 .orElse(BigDecimal.ZERO);
         }

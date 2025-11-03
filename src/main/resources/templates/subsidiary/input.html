@@ -7,7 +7,8 @@
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>하위 회사 입력 - 마이넷 매출 관리 시스템</title>
     <link rel="stylesheet" th:href="@{/css/style.css}" />
-    <script th:src="@{/js/datepicker.js}" defer></script>
+    <link rel="stylesheet" th:href="@{/css/datepicker.css}" />
+    <script th:src="@{/js/datepicker.js}"></script>
     <style>
         /* 전체 스타일 */
         .main-container {
@@ -76,6 +77,12 @@
         .date-control-inline .current-date:hover {
             border-color: #ced4da;
             background: #f8f9fa;
+        }
+
+        .date-picker {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
         }
 
         /* 버튼 스타일 */
@@ -197,7 +204,6 @@
             padding: 4px 8px;
             background: transparent;
             font-size: 12px;
-            vertical-align: middle;
             line-height: normal;
             height: 28px;
             box-sizing: border-box;
@@ -318,8 +324,10 @@
                     <span>기준 날짜 : </span>
                     <button class="date-nav-btn" onclick="changeDate(-1)">◀</button>
                     <span class="current-date" id="current-date" onclick="showDatePicker()"
-                          th:text="${#temporals.format(currentDate, 'yyyy-MM-dd')}">2025-01-15</span>
+                        th:text="${#temporals.format(currentDate, 'yyyy-MM-dd')}">2025-01-15</span>
                     <button class="date-nav-btn" onclick="changeDate(1)">▶</button>
+                    <input type="date" class="date-picker" id="date-picker" 
+                        th:value="${currentDate}" onchange="selectDate()">
                 </div>
 
                 <!-- 수정 버튼 (우측) -->
@@ -461,10 +469,12 @@
 
         // 날짜 피커 표시
         function showDatePicker() {
-            if (typeof globalDatePicker !== 'undefined') {
+            if (window.globalDatePicker) {
                 globalDatePicker.currentDate = new Date(currentDate);
                 globalDatePicker.selectedDate = new Date(currentDate);
                 globalDatePicker.show();
+            } else {
+                console.error("globalDatePicker가 준비되지 않았습니다.");
             }
         }
 
@@ -610,6 +620,13 @@
             alert.textContent = message;
             container.appendChild(alert);
             setTimeout(() => alert.remove(), 3000);
+        }
+
+        // 날짜 선택 (fallback)
+        function selectDate() {
+            const datePicker = document.getElementById('date-picker');
+            const dateValue = datePicker.value;
+            location.href = '/subsidiary/input?date=' + dateValue;
         }
     </script>
 </body>

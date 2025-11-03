@@ -122,34 +122,35 @@ public class ProductService {
             BigDecimal supplyPrice, String updatedBy) {
 
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("제품을 찾을 수 없습니다: " + productId));
+                .orElseThrow(() -> new IllegalArgumentException("제품을 찾을 수 없습니다."));
 
-        LocalDateTime now = LocalDateTime.now();
+        // 현재 가격 조회
+        ProductPriceHistory currentPrice = priceHistoryRepository
+                .findCurrentPriceByProductId(productId)
+                .orElseThrow(() -> new IllegalArgumentException("현재 가격 정보를 찾을 수 없습니다."));
 
-        // 기존 현재 가격 이력의 종료 시간 설정
-        Optional<ProductPriceHistory> currentPrice = priceHistoryRepository
-                .findCurrentPriceByProductId(productId);
+        // null이면 기존 값 유지
+        BigDecimal newCostPrice = costPrice != null ? costPrice : currentPrice.getCostPrice();
+        BigDecimal newSupplyPrice = supplyPrice != null ? supplyPrice : currentPrice.getSupplyPrice();
 
-        if (currentPrice.isPresent()) {
-            ProductPriceHistory existing = currentPrice.get();
-            existing.setEffectiveTo(now);
-            priceHistoryRepository.save(existing);
-        }
+        // 기존 가격 이력 종료
+        currentPrice.setEffectiveTo(LocalDateTime.now());
+        priceHistoryRepository.save(currentPrice);
 
         // 새 가격 이력 생성
         ProductPriceHistory newPriceHistory = ProductPriceHistory.builder()
                 .product(product)
-                .costPrice(costPrice)
-                .supplyPrice(supplyPrice)
-                .effectiveFrom(now)
+                .costPrice(newCostPrice)
+                .supplyPrice(newSupplyPrice)
+                .effectiveFrom(LocalDateTime.now())
                 .effectiveTo(null)
                 .createdBy(updatedBy)
                 .build();
 
         priceHistoryRepository.save(newPriceHistory);
 
-        log.info("제품 가격 업데이트: 코드={}, 원가={}, 공급가={}",
-                product.getProductCode(), costPrice, supplyPrice);
+        log.info("제품 가격 수정: 제품ID={}, 원가={}, 공급가={}, 수정자={}",
+                productId, newCostPrice, newSupplyPrice, updatedBy);
     }
 
     /**

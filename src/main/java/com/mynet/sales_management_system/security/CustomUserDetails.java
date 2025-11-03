@@ -16,11 +16,11 @@ import java.util.Collections;
  */
 public class CustomUserDetails implements UserDetails {
     private final User user;
-    
+
     public CustomUserDetails(User user) {
         this.user = user;
     }
-    
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // 캐논 계정인 경우
@@ -36,34 +36,56 @@ public class CustomUserDetails implements UserDetails {
             return Collections.singletonList(new SimpleGrantedAuthority("ROLE_SUBSIDIARY"));
         }
     }
-    
+
     @Override
     public String getPassword() {
         return user.getPassword();
     }
-    
+
     @Override
     public String getUsername() {
         return user.getUsername();
     }
-    
+
     // 계정 관련 설정들 (모두 활성화)
     @Override
-    public boolean isAccountNonExpired() { return true; }
-    
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
     @Override
-    public boolean isAccountNonLocked() { return true; }
-    
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
-    
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
     @Override
-    public boolean isEnabled() { return true; }
-    
+    public boolean isEnabled() {
+        return true;
+    }
+
     // 추가 사용자 정보 접근을 위한 메서드
-    public User getUser() { return user; }
-    public Long getCompanyId() { return user.getCompany().getId(); }
-    public String getCompanyName() { return user.getCompany().getName(); }
-    public boolean isMynet() { return user.getCompany().getIsMynet(); }
-    public boolean isCanon() { return user.getIsCanon(); }
+    public User getUser() {
+        return user;
+    }
+
+    public Long getCompanyId() {
+        return user.getCompany().getId();
+    }
+
+    public String getCompanyName() {
+        return user.getCompany().getName();
+    }
+
+    public boolean isMynet() {
+        return user.getCompany().getIsMynet();
+    }
+
+    public boolean isCanon() {
+        return user.getIsCanon();
+    }
 }

@@ -1,9 +1,10 @@
-// CanonController.java - 캐논 전용 컨트롤러
 package com.mynet.sales_management_system.controller;
 
-import com.mynet.sales_management_system.entity.DailySales;
+import com.mynet.sales_management_system.dto.ViewStatisticsDTO;
+import com.mynet.sales_management_system.entity.Company;
 import com.mynet.sales_management_system.security.CustomUserDetails;
-import com.mynet.sales_management_system.service.SalesService;
+import com.mynet.sales_management_system.service.ViewStatisticsService;
+import com.mynet.sales_management_system.repository.CompanyRepository;
 import com.mynet.sales_management_system.util.DateUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +14,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 캐논 계정 전용 컨트롤러
@@ -26,7 +28,8 @@ import java.util.List;
 @Slf4j
 public class CanonController {
 
-    private final SalesService salesService;
+    private final ViewStatisticsService viewStatisticsService;
+    private final CompanyRepository companyRepository;
 
     /**
      * 조회 페이지 (캐논 메인 페이지)
@@ -34,49 +37,56 @@ public class CanonController {
      */
     @GetMapping("/view")
     public String viewPage(@AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(defaultValue = "today") String date,
+            @RequestParam(defaultValue = "all") String companyFilter,
+            @RequestParam(required = false) String date,
             Model model) {
 
-        LocalDate targetDate = "today".equals(date) ? DateUtil.getCurrentDate() : LocalDate.parse(date);
+        LocalDate targetDate = (date != null && !date.isEmpty())
+                ? LocalDate.parse(date)
+                : DateUtil.getCurrentDate();
 
-        // 전체 회사 데이터 조회
-        List<DailySales> salesData = salesService.getAllDailySalesByDate(targetDate);
+        // ViewStatisticsService를 사용해 통계 데이터 생성
+        List<ViewStatisticsDTO> statisticsData = viewStatisticsService
+                .getViewStatistics(companyFilter, targetDate);
 
-        // 통계 계산
-        // TODO: 캐논용 통계 데이터 계산
+        // 제품 데이터만 카테고리별로 그룹화
+        Map<String, List<ViewStatisticsDTO>> statisticsGroupedByCategory = statisticsData.stream()
+                .filter(item -> item.getProductCode() != null)
+                .collect(Collectors.groupingBy(
+                        ViewStatisticsDTO::getCategory,
+                        LinkedHashMap::new,
+                        Collectors.toList()));
 
-        model.addAttribute("salesData", salesData);
+        // 소계/합계 데이터 별도 추출
+        Map<String, ViewStatisticsDTO> subtotalData = new HashMap<>();
+        ViewStatisticsDTO grandTotalData = null;
+
+        for (ViewStatisticsDTO item : statisticsData) {
+            if ("소계".equals(item.getCategory())) {
+                String categoryName = item.getProductName().replace(" 소계", "");
+                subtotalData.put(categoryName, item);
+            } else if ("합계".equals(item.getCategory())) {
+                grandTotalData = item;
+            }
+        }
+
+        // 하위 회사 목록 조회
+        List<Company> subsidiaryCompanies = companyRepository.findByIsMynetFalse()
+                .stream()
+                .filter(company -> !"캐논".equals(company.getName()))
+                .collect(Collectors.toList());
+
+        model.addAttribute("statisticsData", statisticsGroupedByCategory);
+        model.addAttribute("subtotalData", subtotalData);
+        model.addAttribute("grandTotalData", grandTotalData);
+        model.addAttribute("subsidiaryCompanies", subsidiaryCompanies);
         model.addAttribute("targetDate", targetDate);
-        model.addAttribute("isCanonAccount", true); // 캐논 계정 플래그
+        model.addAttribute("companyFilter", companyFilter);
+        model.addAttribute("currentMonth", targetDate.getMonthValue());
 
-        log.info("캐논 조회 페이지 접근: 날짜={}", targetDate);
+        log.info("Canon 조회 페이지 접근: 사용자={}, 필터={}, 날짜={}",
+                userDetails.getUsername(), companyFilter, targetDate);
+
         return "canon/view";
-    }
-
-    /**
-     * 비교 - 월별 페이지 (조회만)
-     */
-    @GetMapping("/compare/monthly")
-    public String compareMonthlyPage(Model model) {
-        model.addAttribute("isCanonAccount", true);
-        return "canon/compare-monthly";
-    }
-
-    /**
-     * 비교 - 년도별 페이지 (조회만)
-     */
-    @GetMapping("/compare/yearly")
-    public String compareYearlyPage(Model model) {
-        model.addAttribute("isCanonAccount", true);
-        return "canon/compare-yearly";
-    }
-
-    /**
-     * 비교 - 기간별 페이지 (조회만)
-     */
-    @GetMapping("/compare/period")
-    public String comparePeriodPage(Model model) {
-        model.addAttribute("isCanonAccount", true);
-        return "canon/compare-period";
     }
 }

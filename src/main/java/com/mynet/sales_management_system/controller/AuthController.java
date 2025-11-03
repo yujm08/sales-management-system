@@ -50,7 +50,7 @@ public class AuthController {
         // 사용자 타입별 리다이렉트
         if (userDetails.isCanon()) {
             // 캐논 계정 → 조회 페이지로
-            return "redirect:/mynet/view";
+            return "redirect:/canon/view";
         } else if (userDetails.isMynet()) {
             // 마이넷 계정 → 조회 페이지로
             return "redirect:/mynet/view";

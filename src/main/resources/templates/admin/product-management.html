@@ -31,11 +31,11 @@
     <!-- 네비게이션 -->
     <nav class="nav-menu">
       <div class="nav-content">
-        <div
-          class="nav-item"
-          th:classappend="${currentPage == 'view'} ? 'active'"
-        >
-          <a th:href="@{/mynet/view}">조회</a>
+        <div class="nav-item">
+          <a
+            th:href="@{${#authentication.principal.canon ? '/canon/view' : '/mynet/view'}}"
+            >조회</a
+          >
         </div>
 
         <div
@@ -68,7 +68,7 @@
         </div>
 
         <div
-          class="nav-item"
+          class="nav-item active"
           th:classappend="${currentPage == 'products'} ? 'active'"
         >
           <a th:href="@{/admin/products}">제품 분류</a>
@@ -237,16 +237,35 @@
                       th:text="${product.productName}"
                       th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
                     ></td>
-                    <td
-                      class="data-cell"
-                      th:text="${#numbers.formatDecimal(product.currentCostPrice, 0, 'COMMA', 2, 'POINT')}"
-                      th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
-                    ></td>
-                    <td
-                      class="data-cell"
-                      th:text="${#numbers.formatDecimal(product.currentSupplyPrice, 0, 'COMMA', 2, 'POINT')}"
-                      th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
-                    ></td>
+                    <!-- 원가 셀 -->
+                    <td class="data-cell editable-price-cell tooltip"
+                        th:classappend="' ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
+                        th:data-product-id="${product.id}"
+                        th:data-price-type="cost"
+                        th:data-original-value="${product.currentCostPrice}"
+                        th:data-tooltip="${product.lastModifiedAt != null ? 
+                              '최근 수정: ' + #temporals.format(product.lastModifiedAt, 'yyyy-MM-dd HH:mm') + 
+                              (product.lastModifiedBy != null ? ' by ' + product.lastModifiedBy : '') 
+                              : '수정 기록 없음'}">
+                        <span class="price-display" th:text="${#numbers.formatDecimal(product.currentCostPrice, 0, 'COMMA', 0, 'POINT')}"></span>
+                        <input type="number" class="price-input" style="display:none;" 
+                              th:value="${product.currentCostPrice.intValue()}" step="1" min="0">
+                    </td>
+
+                    <!-- 판매가 셀 -->
+                    <td class="data-cell editable-price-cell tooltip"
+                        th:classappend="' ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
+                        th:data-product-id="${product.id}"
+                        th:data-price-type="supply"
+                        th:data-original-value="${product.currentSupplyPrice}"
+                        th:data-tooltip="${product.lastModifiedAt != null ? 
+                              '최근 수정: ' + #temporals.format(product.lastModifiedAt, 'yyyy-MM-dd HH:mm') + 
+                              (product.lastModifiedBy != null ? ' by ' + product.lastModifiedBy : '') 
+                              : '수정 기록 없음'}">
+                        <span class="price-display" th:text="${#numbers.formatDecimal(product.currentSupplyPrice, 0, 'COMMA', 0, 'POINT')}"></span>
+                        <input type="number" class="price-input" style="display:none;" 
+                              th:value="${product.currentSupplyPrice.intValue()}" step="1" min="0">
+                    </td>
                     <td
                       class="data-cell"
                       th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
@@ -262,15 +281,30 @@
                       th:text="${#temporals.format(product.createdAt, 'yyyy-MM-dd')}"
                       th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
                     ></td>
-                    <td
-                      class="data-cell"
-                      th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
-                    >
-                      <button
-                        class="btn btn-sm btn-outline"
-                        th:onclick="'toggleProductStatus(' + ${product.id} + ', ' + ${product.active} + ')'"
-                        th:text="${product.active ? '비활성화' : '활성화'}"
-                      ></button>
+                    <td class="data-cell"
+                        th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')">
+                        <button class="btn btn-sm btn-primary edit-price-btn"
+                                th:if="${!#authentication.principal.canon}"
+                                th:data-product-id="${product.id}"
+                                onclick="editProductPrice(this)">
+                            수정
+                        </button>
+                        <button class="btn btn-sm btn-success save-price-btn"
+                                style="display:none;"
+                                th:data-product-id="${product.id}"
+                                onclick="saveProductPrice(this)">
+                            저장
+                        </button>
+                        <button class="btn btn-sm btn-secondary cancel-price-btn"
+                                style="display:none;"
+                                th:data-product-id="${product.id}"
+                                onclick="cancelEditPrice(this)">
+                            취소
+                        </button>
+                        <button class="btn btn-sm btn-outline"
+                                th:onclick="'toggleProductStatus(' + ${product.id} + ', ' + ${product.active} + ')'"
+                                th:text="${product.active ? '비활성화' : '활성화'}">
+                        </button>
                     </td>
                   </tr>
                   <tr th:unless="${productStat.first}">
@@ -285,16 +319,35 @@
                       th:text="${product.productName}"
                       th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
                     ></td>
-                    <td
-                      class="data-cell"
-                      th:text="${#numbers.formatDecimal(product.currentCostPrice, 0, 'COMMA', 2, 'POINT')}"
-                      th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
-                    ></td>
-                    <td
-                      class="data-cell"
-                      th:text="${#numbers.formatDecimal(product.currentSupplyPrice, 0, 'COMMA', 2, 'POINT')}"
-                      th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
-                    ></td>
+                    <!-- 원가 셀 -->
+                    <td class="data-cell editable-price-cell tooltip"
+                        th:classappend="' ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
+                        th:data-product-id="${product.id}"
+                        th:data-price-type="cost"
+                        th:data-original-value="${product.currentCostPrice}"
+                        th:data-tooltip="${product.lastModifiedAt != null ? 
+                              '최근 수정: ' + #temporals.format(product.lastModifiedAt, 'yyyy-MM-dd HH:mm') + 
+                              (product.lastModifiedBy != null ? ' by ' + product.lastModifiedBy : '') 
+                              : '수정 기록 없음'}">
+                        <span class="price-display" th:text="${#numbers.formatDecimal(product.currentCostPrice, 0, 'COMMA', 0, 'POINT')}"></span>
+                        <input type="number" class="price-input" style="display:none;" 
+                              th:value="${product.currentCostPrice.intValue()}" step="1" min="0">
+                    </td>
+
+                    <!-- 판매가 셀 -->
+                    <td class="data-cell editable-price-cell tooltip"
+                        th:classappend="' ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
+                        th:data-product-id="${product.id}"
+                        th:data-price-type="supply"
+                        th:data-original-value="${product.currentSupplyPrice}"
+                        th:data-tooltip="${product.lastModifiedAt != null ? 
+                              '최근 수정: ' + #temporals.format(product.lastModifiedAt, 'yyyy-MM-dd HH:mm') + 
+                              (product.lastModifiedBy != null ? ' by ' + product.lastModifiedBy : '') 
+                              : '수정 기록 없음'}">
+                        <span class="price-display" th:text="${#numbers.formatDecimal(product.currentSupplyPrice, 0, 'COMMA', 0, 'POINT')}"></span>
+                        <input type="number" class="price-input" style="display:none;" 
+                              th:value="${product.currentSupplyPrice.intValue()}" step="1" min="0">
+                    </td>
                     <td
                       class="data-cell"
                       th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
@@ -310,16 +363,31 @@
                       th:text="${#temporals.format(product.createdAt, 'yyyy-MM-dd')}"
                       th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
                     ></td>
-                    <td
-                      class="data-cell"
-                      th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
-                    >
-                      <button
-                        class="btn btn-sm btn-outline"
-                        th:onclick="'toggleProductStatus(' + ${product.id} + ', ' + ${product.active} + ')'"
-                        th:text="${product.active ? '비활성화' : '활성화'}"
-                      ></button>
-                    </td>
+                    <td class="data-cell"
+                      th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')">
+                      <button class="btn btn-sm btn-primary edit-price-btn"
+                              th:if="${!#authentication.principal.canon}"
+                              th:data-product-id="${product.id}"
+                              onclick="editProductPrice(this)">
+                          수정
+                      </button>
+                      <button class="btn btn-sm btn-success save-price-btn"
+                              style="display:none;"
+                              th:data-product-id="${product.id}"
+                              onclick="saveProductPrice(this)">
+                          저장
+                      </button>
+                      <button class="btn btn-sm btn-secondary cancel-price-btn"
+                              style="display:none;"
+                              th:data-product-id="${product.id}"
+                              onclick="cancelEditPrice(this)">
+                          취소
+                      </button>
+                      <button class="btn btn-sm btn-outline"
+                              th:onclick="'toggleProductStatus(' + ${product.id} + ', ' + ${product.active} + ')'"
+                              th:text="${product.active ? '비활성화' : '활성화'}">
+                      </button>
+                  </td>
                   </tr>
                 </th:block>
               </th:block>
@@ -458,6 +526,135 @@
         container.appendChild(alert);
         setTimeout(() => alert.remove(), 3000);
       }
+
+      /**
+     * 가격 수정 모드로 전환
+     */
+    function editProductPrice(button) {
+        const productId = button.dataset.productId;
+        const row = button.closest('tr');
+        
+        // 해당 행의 원가/판매가 셀 찾기
+        const priceCells = row.querySelectorAll(`.editable-price-cell[data-product-id="${productId}"]`);
+        
+        priceCells.forEach(cell => {
+            const display = cell.querySelector('.price-display');
+            const input = cell.querySelector('.price-input');
+            
+            // display 숨기고 input 표시
+            display.style.display = 'none';
+            input.style.display = 'inline-block';
+            input.focus();
+        });
+        
+        // 버튼 전환
+        const editBtn = row.querySelector(`.edit-price-btn[data-product-id="${productId}"]`);
+        const saveBtn = row.querySelector(`.save-price-btn[data-product-id="${productId}"]`);
+        const cancelBtn = row.querySelector(`.cancel-price-btn[data-product-id="${productId}"]`);
+        
+        editBtn.style.display = 'none';
+        saveBtn.style.display = 'inline-block';
+        cancelBtn.style.display = 'inline-block';
+    }
+
+    /**
+     * 가격 저장
+     */
+    function saveProductPrice(button) {
+      const productId = button.dataset.productId;
+      const row = button.closest('tr');
+      const priceCells = row.querySelectorAll(`.editable-price-cell[data-product-id="${productId}"]`);
+      const payload = {};
+
+      priceCells.forEach(cell => {
+        const input = cell.querySelector('.price-input');
+        const priceType = cell.dataset.priceType;
+        const newValue = parseFloat(input.value);
+        const originalValue = parseFloat(cell.dataset.originalValue);
+
+        if (!isNaN(newValue) && newValue !== originalValue) {
+          if (priceType === 'cost') payload.costPrice = newValue;
+          if (priceType === 'supply') payload.supplyPrice = newValue;
+        }
+      });
+
+      if (Object.keys(payload).length === 0) {
+        showAlert('변경된 값이 없습니다. ', 'info');
+        return;
+      }
+
+      const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+      const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+      fetch(`/admin/products/${productId}/update-price`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          [csrfHeader]: csrfToken
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showAlert('가격이 성공적으로 수정되었습니다. ', 'success');
+          setTimeout(() => location.reload(), 800);
+        } else {
+          showAlert('가격 수정 실패: ' + data.message, 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showAlert('네트워크 오류가 발생했습니다. ', 'error');
+      });
+    }
+
+    /**
+     * 가격 수정 취소
+     */
+    function cancelEditPrice(button) {
+        const productId = button.dataset.productId;
+        const row = button.closest('tr');
+        
+        // 원가/판매가 원래 값으로 복구
+        const priceCells = row.querySelectorAll(`.editable-price-cell[data-product-id="${productId}"]`);
+        
+        priceCells.forEach(cell => {
+            const display = cell.querySelector('.price-display');
+            const input = cell.querySelector('.price-input');
+            const originalValue = parseFloat(cell.dataset.originalValue);
+            
+            // 원래 값으로 복구
+            input.value = originalValue;
+
+            // 정수 포맷 (소수점 없이)
+            display.textContent = Number(originalValue).toLocaleString('ko-KR', {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0
+            });
+            
+            // input 숨기고 display 표시
+            input.style.display = 'none';
+            display.style.display = 'inline-block';
+        });
+        
+        // 버튼 원래대로
+        resetPriceButtons(row, productId);
+    }
+
+    /**
+     * 버튼 상태 초기화
+     */
+    function resetPriceButtons(row, productId) {
+        const editBtn = row.querySelector(`.edit-price-btn[data-product-id="${productId}"]`);
+        const saveBtn = row.querySelector(`.save-price-btn[data-product-id="${productId}"]`);
+        const cancelBtn = row.querySelector(`.cancel-price-btn[data-product-id="${productId}"]`);
+        
+        editBtn.style.display = 'inline-block';
+        saveBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+    }
+
     </script>
 
     <style>
@@ -706,6 +903,104 @@
       .sub-menu a:hover {
         background: #f8f9fa;
       }
+
+      /* 가격 편집 관련 스타일 */
+      .editable-price-cell {
+          position: relative;
+          padding: 8px 12px;
+      }
+
+      .price-display {
+          display: inline-block;
+      }
+
+      .price-input {
+          width: 100px;
+          padding: 4px 8px;
+          border: 2px solid #007bff;
+          border-radius: 4px;
+          font-size: 13px;
+          text-align: right;
+      }
+
+      .price-input:focus {
+          outline: none;
+          border-color: #0056b3;
+      }
+
+      .btn-sm {
+          padding: 4px 8px;
+          font-size: 12px;
+          margin-right: 4px;
+      }
+
+      .btn-primary {
+          background: #007bff;
+          color: white;
+          border: 1px solid #007bff;
+      }
+
+      .btn-primary:hover {
+          background: #0056b3;
+          border-color: #0056b3;
+      }
+
+      .btn-success {
+          background: #28a745;
+          color: white;
+          border: 1px solid #28a745;
+      }
+
+      .btn-success:hover {
+          background: #218838;
+          border-color: #218838;
+      }
+
+      .btn-secondary {
+          background: #6c757d;
+          color: white;
+          border: 1px solid #6c757d;
+      }
+
+      .btn-secondary:hover {
+          background: #5a6268;
+          border-color: #5a6268;
+      }
+
+      /* ===== 가격 셀 툴팁 ===== */
+      .editable-price-cell.tooltip {
+        position: relative;
+        cursor: pointer;
+      }
+
+      .editable-price-cell.tooltip:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 110%; /* 셀 위로 살짝 띄움 */
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(33, 37, 41, 0.95); /* 어두운 반투명 배경 */
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 9999;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        pointer-events: none; /* 마우스가 툴팁 위에 올라가도 사라지지 않게 */
+      }
+
+      .editable-price-cell.tooltip:hover::before {
+        content: "";
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 5px;
+        border-style: solid;
+        border-color: rgba(33, 37, 41, 0.95) transparent transparent transparent;
+      }
+
     </style>
   </body>
 </html>

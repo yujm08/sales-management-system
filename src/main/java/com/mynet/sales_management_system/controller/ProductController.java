@@ -3,10 +3,12 @@ package com.mynet.sales_management_system.controller;
 import com.mynet.sales_management_system.dto.ProductDTO;
 import com.mynet.sales_management_system.entity.Product;
 import com.mynet.sales_management_system.entity.ProductPriceHistory;
+import com.mynet.sales_management_system.security.CustomUserDetails;
 import com.mynet.sales_management_system.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -112,6 +114,55 @@ public class ProductController {
     }
 
     /**
+     * 제품 가격 수정
+     */
+    @PostMapping("/{productId}/update-price")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateProductPrice(
+            @PathVariable Long productId,
+            @RequestBody Map<String, Object> request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // null 체크 추가
+            BigDecimal costPrice = null;
+            BigDecimal supplyPrice = null;
+
+            if (request.get("costPrice") != null) {
+                costPrice = new BigDecimal(request.get("costPrice").toString());
+            }
+
+            if (request.get("supplyPrice") != null) {
+                supplyPrice = new BigDecimal(request.get("supplyPrice").toString());
+            }
+
+            // 둘 다 null이면 에러
+            if (costPrice == null && supplyPrice == null) {
+                response.put("success", false);
+                response.put("message", "수정할 가격 정보가 없습니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 현재 로그인한 사용자로 수정
+            String updatedBy = userDetails != null ? userDetails.getUsername() : "admin";
+
+            productService.updateProductPrice(productId, costPrice, supplyPrice, updatedBy);
+
+            response.put("success", true);
+            response.put("message", "가격이 성공적으로 수정되었습니다.");
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("가격 수정 실패", e);
+            response.put("success", false);
+            response.put("message", "가격 수정 중 오류가 발생했습니다: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    /**
      * Product 엔티티를 ProductDTO로 변환
      */
     private ProductDTO convertToDTO(Product product) {
@@ -127,11 +178,16 @@ public class ProductController {
         // 현재 가격 정보 설정
         Optional<ProductPriceHistory> currentPrice = productService.getCurrentProductPrice(product.getId());
         if (currentPrice.isPresent()) {
-            dto.setCurrentCostPrice(currentPrice.get().getCostPrice());
-            dto.setCurrentSupplyPrice(currentPrice.get().getSupplyPrice());
+            ProductPriceHistory price = currentPrice.get();
+            dto.setCurrentCostPrice(price.getCostPrice());
+            dto.setCurrentSupplyPrice(price.getSupplyPrice());
+            dto.setLastModifiedAt(price.getCreatedAt());
+            dto.setLastModifiedBy(price.getCreatedBy());
         } else {
             dto.setCurrentCostPrice(BigDecimal.ZERO);
             dto.setCurrentSupplyPrice(BigDecimal.ZERO);
+            dto.setLastModifiedAt(null);
+            dto.setLastModifiedBy(null);
         }
 
         return dto;
