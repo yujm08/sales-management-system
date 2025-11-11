@@ -510,12 +510,12 @@
           <span
             class="user-name"
             th:text="${#authentication.principal.username}"
-            >마이넷</span
+            >캐논</span
           >
           <span
             class="user-company"
             th:text="'(' + ${#authentication.principal.companyName} + ')'"
-            >(마이넷)</span
+            >(캐논)</span
           >
           <form th:action="@{/logout}" method="post" style="display: inline">
             <button type="submit" class="logout-btn">로그아웃</button>
@@ -528,24 +528,15 @@
     <nav class="nav-menu">
       <div class="nav-content">
         <div class="nav-item">
-          <a
-            th:href="@{${#authentication.principal.canon ? '/canon/view' : '/mynet/view'}}"
-            >조회</a
-          >
-        </div>
-        <div
-          class="nav-item"
-          th:classappend="${currentPage == 'daily-sales'} ? 'active'"
-        >
-          <a th:href="@{/mynet/daily-sales}">일일매출현황</a>
+          <a th:href="@{/canon/view}">조회</a>
         </div>
         <div class="nav-item active">
           <a href="javascript:void(0)">비교 ▼</a>
           <div class="sub-menu">
-            <a th:href="@{/mynet/compare/monthly}">월별</a>
-            <a th:href="@{/mynet/compare/yearly}">년도별</a>
-            <a th:href="@{/mynet/compare/period}" class="active">기간별</a>
-            <a th:href="@{/mynet/compare/product}">제품별</a>
+            <a th:href="@{/canon/compare/monthly}">월별</a>
+            <a th:href="@{/canon/compare/yearly}">년도별</a>
+            <a th:href="@{/canon/compare/period}" class="active">기간별</a>
+            <a th:href="@{/canon/compare/product}">제품별</a>
           </div>
         </div>
         <div class="nav-item">
@@ -578,8 +569,6 @@
                 <th>분류</th>
                 <th>제품코드</th>
                 <th>제품명</th>
-                <th>원가</th>
-                <th>판매가</th>
               </tr>
             </thead>
             <tbody id="productTableBody">
@@ -740,18 +729,8 @@
             }
 
             row.innerHTML += `
-<td class="${inactiveClass}" style="text-align:center; border-right:1px solid #ccc;">${
-              product.productCode
-            }</td>
-<td class="${inactiveClass}" style="text-align:center; border-right:1px solid #ccc;">${
-              product.productName
-            }</td>
-<td class="${inactiveClass}" style="text-align:right; border-right:1px solid #ccc;">₩${formatNumber(
-              product.currentCostPrice
-            )}</td>
-<td class="${inactiveClass}" style="text-align:right;">₩${formatNumber(
-              product.currentSupplyPrice
-            )}</td>
+<td class="${inactiveClass}" style="text-align:center; border-right:1px solid #ccc;">${product.productCode}</td>
+<td class="${inactiveClass}" style="text-align:center; border-right:1px solid #ccc;">${product.productName}</td>
 `;
 
             row.onclick = () => selectProduct(product);
@@ -1041,12 +1020,6 @@
                   periodData.totalQuantity
                 )}</div>
             </div>
-            <div class="summary-item">
-                <div class="summary-label">총 금액</div>
-                <div class="summary-value">${formatDisplayCurrency(
-                  periodData.totalAmount
-                )}</div>
-            </div>
         </div>
         <button class="btn-toggle-details" onclick="toggleDetails(${index})">
             <span id="detailsToggleText${index}">상세 보기 ▼</span>
@@ -1057,7 +1030,6 @@
                     <tr>
                         <th>날짜</th>
                         <th>수량</th>
-                        <th>금액</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1077,7 +1049,6 @@
         <tr>
             <td>${formatDate(day.date)}</td>
             <td>${formatDisplay(day.quantity)}</td>
-            <td class="amount-cell">${formatDisplayCurrency(day.amount)}</td>
         </tr>
     `
           )
@@ -1112,11 +1083,6 @@
       function formatDisplay(value) {
         if (value === null || value === undefined || value === 0) return "-";
         return formatNumber(value);
-      }
-
-      function formatDisplayCurrency(value) {
-        if (value === null || value === undefined || value === 0) return "-";
-        return "₩" + formatNumber(value);
       }
     </script>
   </body>

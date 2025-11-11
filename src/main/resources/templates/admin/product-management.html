@@ -15,12 +15,13 @@
       <div class="header-content">
         <div class="logo">마이넷 매출 관리 시스템</div>
         <div class="user-info">
+          <a th:href="@{/change-password}" class="change-password-link">비밀번호 변경</a>
           <span
             class="user-name"
-            th:text="${#authentication.principal.companyName}"
+            th:text="${#authentication.principal.username}"
             >마이넷</span
           >
-          <span class="user-role">(마이넷)</span>
+          <span class="user-company" th:text="'(' + ${#authentication.principal.companyName} + ')'">(마이넷)</span>
           <form th:action="@{/logout}" method="post" style="display: inline">
             <button type="submit" class="logout-btn">로그아웃</button>
           </form>
@@ -37,7 +38,9 @@
             >조회</a
           >
         </div>
-
+        <div class="nav-item"  th:if="${!#authentication.principal.canon}">
+          <a th:href="@{/mynet/daily-sales}">일일매출현황</a>
+        </div>
         <div
           class="nav-item"
           th:classappend="${currentPage == 'compare'} ? 'active'"
@@ -45,22 +48,22 @@
           <a href="javascript:void(0)">비교 ▼</a>
           <div class="sub-menu">
             <a
-              th:href="@{/mynet/compare/monthly}"
+              th:href="@{${#authentication.principal.canon ? '/canon/compare/monthly' : '/mynet/compare/monthly'}}"
               th:classappend="${comparePage == 'monthly'} ? 'active'"
               >월별</a
             >
             <a
-              th:href="@{/mynet/compare/yearly}"
+              th:href="@{${#authentication.principal.canon ? '/canon/compare/yearly' : '/mynet/compare/yearly'}}"
               th:classappend="${comparePage == 'yearly'} ? 'active'"
               >년도별</a
             >
             <a
-              th:href="@{/mynet/compare/period}"
+              th:href="@{${#authentication.principal.canon ? '/canon/compare/period' : '/mynet/compare/period'}}"
               th:classappend="${comparePage == 'period'} ? 'active'"
               >기간별</a
             >
             <a
-              th:href="@{/mynet/compare/product}"
+              th:href="@{${#authentication.principal.canon ? '/canon/compare/product' : '/mynet/compare/product'}}"
               th:classappend="${comparePage == 'product'} ? 'active'"
               >제품별</a
             >
@@ -91,6 +94,7 @@
       <!-- 제품 등록 버튼 -->
       <div class="action-header">
         <button
+          sec:authorize="!hasRole('CANON')"
           class="btn btn-primary"
           id="addProductBtn"
           onclick="toggleProductForm()"
@@ -112,8 +116,8 @@
                   <th class="form-header">분류</th>
                   <th class="form-header">제품코드</th>
                   <th class="form-header">제품명</th>
-                  <th class="form-header">원가</th>
-                  <th class="form-header">판매가</th>
+                  <th class="form-header" th:if="${!#authentication.principal.canon}">원가</th>
+                  <th class="form-header" th:if="${!#authentication.principal.canon}">판매가</th>
                   <th class="form-header">액션</th>
                 </tr>
               </thead>
@@ -204,8 +208,8 @@
                 <th class="product-header">분류</th>
                 <th class="product-header">제품코드</th>
                 <th class="product-header">제품명</th>
-                <th class="product-header">원가</th>
-                <th class="product-header">판매가</th>
+                <th class="product-header" th:if="${!#authentication.principal.canon}">원가</th>
+                <th class="product-header" th:if="${!#authentication.principal.canon}">판매가</th>
                 <th class="product-header">상태</th>
                 <th class="product-header">등록일</th>
                 <th class="product-header">액션</th>
@@ -238,7 +242,7 @@
                       th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
                     ></td>
                     <!-- 원가 셀 -->
-                    <td class="data-cell editable-price-cell tooltip"
+                    <td th:if="${!#authentication.principal.canon}" class="data-cell editable-price-cell tooltip"
                         th:classappend="' ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
                         th:data-product-id="${product.id}"
                         th:data-price-type="cost"
@@ -253,7 +257,7 @@
                     </td>
 
                     <!-- 판매가 셀 -->
-                    <td class="data-cell editable-price-cell tooltip"
+                    <td th:if="${!#authentication.principal.canon}" class="data-cell editable-price-cell tooltip"
                         th:classappend="' ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
                         th:data-product-id="${product.id}"
                         th:data-price-type="supply"
@@ -302,6 +306,8 @@
                             취소
                         </button>
                         <button class="btn btn-sm btn-outline"
+                                th:classappend="${#authentication.principal.canon} ? ' disabled-button' : ''"
+                                th:attr="disabled=${#authentication.principal.canon}"
                                 th:onclick="'toggleProductStatus(' + ${product.id} + ', ' + ${product.active} + ')'"
                                 th:text="${product.active ? '비활성화' : '활성화'}">
                         </button>
@@ -320,7 +326,7 @@
                       th:class="'data-cell ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
                     ></td>
                     <!-- 원가 셀 -->
-                    <td class="data-cell editable-price-cell tooltip"
+                    <td th:if="${!#authentication.principal.canon}" class="data-cell editable-price-cell tooltip"
                         th:classappend="' ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
                         th:data-product-id="${product.id}"
                         th:data-price-type="cost"
@@ -335,7 +341,7 @@
                     </td>
 
                     <!-- 판매가 셀 -->
-                    <td class="data-cell editable-price-cell tooltip"
+                    <td th:if="${!#authentication.principal.canon}" class="data-cell editable-price-cell tooltip"
                         th:classappend="' ' + ${product.categoryClass} + (${!product.active} ? ' inactive' : '')"
                         th:data-product-id="${product.id}"
                         th:data-price-type="supply"
@@ -384,6 +390,8 @@
                           취소
                       </button>
                       <button class="btn btn-sm btn-outline"
+                              th:classappend="${#authentication.principal.canon} ? ' disabled-button' : ''"
+                              th:attr="disabled=${#authentication.principal.canon}"
                               th:onclick="'toggleProductStatus(' + ${product.id} + ', ' + ${product.active} + ')'"
                               th:text="${product.active ? '비활성화' : '활성화'}">
                       </button>
@@ -398,6 +406,17 @@
     </main>
 
     <script>
+
+      window.addEventListener("load", () => {
+        const roleEl = document.querySelector(".user-role");
+        if (roleEl && roleEl.textContent.includes("캐논")) {
+          document.querySelectorAll("button").forEach(btn => {
+            btn.disabled = true;
+            btn.classList.add("disabled-button");
+          });
+        }
+      });
+
       // 제품 등록 폼 토글
       function toggleProductForm() {
         const form = document.getElementById("productForm");
@@ -1001,6 +1020,27 @@
         border-color: rgba(33, 37, 41, 0.95) transparent transparent transparent;
       }
 
+      .disabled-button {
+        opacity: 0.5;
+        pointer-events: none;
+        cursor: default;
+      }
+
+            .change-password-link {
+        color: white;
+        text-decoration: none;
+        padding: 6px 12px;
+        border: 1px solid white;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: background-color 0.2s;
+        margin-right: 10px;
+        display: inline-block;
+      }
+
+      .change-password-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
     </style>
   </body>
 </html>

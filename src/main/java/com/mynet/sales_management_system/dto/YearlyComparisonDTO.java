@@ -8,7 +8,7 @@ import java.util.List;
 @Data
 @Builder
 public class YearlyComparisonDTO {
-    
+
     // 카테고리별 데이터
     @Data
     @Builder
@@ -17,7 +17,7 @@ public class YearlyComparisonDTO {
         private List<ProductYearlyData> products;
         private YearlyTotal categoryTotal; // 카테고리별 합계
     }
-    
+
     // 제품별 연도별 데이터
     @Data
     @Builder
@@ -26,14 +26,18 @@ public class YearlyComparisonDTO {
         private String productCode;
         private String productName;
         private String category;
-        
-        private BigDecimal year1Amount;  // 전전년 연간 합계
-        private BigDecimal year2Amount;  // 전년 연간 합계
-        private BigDecimal year3Amount;  // 올해 연간 합계
-        
-        private BigDecimal growthRate;   // 증감률 (전년 대비 올해)
+
+        private BigDecimal year1Amount; // 전전년 연간 합계
+        private BigDecimal year2Amount; // 전년 연간 합계
+        private BigDecimal year3Amount; // 올해 연간 합계
+
+        private BigDecimal growthRate; // 증감률 (전년 대비 올해)
+
+        private Integer year1Quantity; // 전전년 연간 수량
+        private Integer year2Quantity; // 전년 연간 수량
+        private Integer year3Quantity; // 올해 연간 수량
     }
-    
+
     // 연도별 합계
     @Data
     @Builder
@@ -42,8 +46,12 @@ public class YearlyComparisonDTO {
         private BigDecimal year2Amount;
         private BigDecimal year3Amount;
         private BigDecimal growthRate;
+
+        private Integer year1Quantity;
+        private Integer year2Quantity;
+        private Integer year3Quantity;
     }
-    
+
     // 전체 합계
     @Data
     @Builder
@@ -52,5 +60,9 @@ public class YearlyComparisonDTO {
         private BigDecimal year2Amount;
         private BigDecimal year3Amount;
         private BigDecimal growthRate;
+
+        private Integer year1Quantity;
+        private Integer year2Quantity;
+        private Integer year3Quantity;
     }
 }

@@ -357,12 +357,12 @@
           <span
             class="user-name"
             th:text="${#authentication.principal.username}"
-            >마이넷</span
+            >캐논</span
           >
           <span
             class="user-company"
             th:text="'(' + ${#authentication.principal.companyName} + ')'"
-            >(마이넷)</span
+            >(캐논)</span
           >
           <form th:action="@{/logout}" method="post" style="display: inline">
             <button type="submit" class="logout-btn">로그아웃</button>
@@ -375,24 +375,15 @@
     <nav class="nav-menu">
       <div class="nav-content">
         <div class="nav-item">
-          <a
-            th:href="@{${#authentication.principal.canon ? '/canon/view' : '/mynet/view'}}"
-            >조회</a
-          >
-        </div>
-        <div
-          class="nav-item"
-          th:classappend="${currentPage == 'daily-sales'} ? 'active'"
-        >
-          <a th:href="@{/mynet/daily-sales}">일일매출현황</a>
+          <a th:href="@{/canon/view}">조회</a>
         </div>
         <div class="nav-item active">
           <a href="javascript:void(0)">비교 ▼</a>
           <div class="sub-menu">
-            <a th:href="@{/mynet/compare/monthly}">월별</a>
-            <a th:href="@{/mynet/compare/yearly}">년도별</a>
-            <a th:href="@{/mynet/compare/period}">기간별</a>
-            <a th:href="@{/mynet/compare/product}" class="active">제품별</a>
+            <a th:href="@{/canon/compare/monthly}">월별</a>
+            <a th:href="@{/canon/compare/yearly}">년도별</a>
+            <a th:href="@{/canon/compare/period}">기간별</a>
+            <a th:href="@{/canon/compare/product}" class="active">제품별</a>
           </div>
         </div>
         <div class="nav-item">
@@ -425,8 +416,6 @@
                 <th>분류</th>
                 <th>제품코드</th>
                 <th>제품명</th>
-                <th>원가</th>
-                <th>판매가</th>
               </tr>
             </thead>
             <tbody id="productTableBody">
@@ -477,47 +466,34 @@
             <thead>
               <tr>
                 <th rowspan="2">연도</th>
-                <th colspan="2">1월</th>
-                <th colspan="2">2월</th>
-                <th colspan="2">3월</th>
-                <th colspan="2">4월</th>
-                <th colspan="2">5월</th>
-                <th colspan="2">6월</th>
-                <th colspan="2">7월</th>
-                <th colspan="2">8월</th>
-                <th colspan="2">9월</th>
-                <th colspan="2">10월</th>
-                <th colspan="2">11월</th>
-                <th colspan="2">12월</th>
-                <th colspan="2">합계</th>
+                <th colspan="1">1월</th>
+                <th colspan="1">2월</th>
+                <th colspan="1">3월</th>
+                <th colspan="1">4월</th>
+                <th colspan="1">5월</th>
+                <th colspan="1">6월</th>
+                <th colspan="1">7월</th>
+                <th colspan="1">8월</th>
+                <th colspan="1">9월</th>
+                <th colspan="1">10월</th>
+                <th colspan="1">11월</th>
+                <th colspan="1">12월</th>
+                <th colspan="1">합계</th>
               </tr>
               <tr>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
               </tr>
             </thead>
             <tbody id="comparisonBody"></tbody>
@@ -591,12 +567,6 @@
   </td>
   <td class="${inactiveClass}" style="text-align:center; border-right:1px solid #ccc;">
     ${product.productName}
-  </td>
-  <td class="${inactiveClass}" style="text-align:right; border-right:1px solid #ccc;">
-    ₩${formatNumber(product.currentCostPrice)}
-  </td>
-  <td class="${inactiveClass}" style="text-align:right;">
-    ₩${formatNumber(product.currentSupplyPrice)}
   </td>
 `;
 
@@ -748,11 +718,6 @@
             qtyCell.className = qtyColorClass;
             qtyCell.textContent = formatDisplay(monthData.quantity);
             row.appendChild(qtyCell);
-
-            const amtCell = document.createElement("td");
-            amtCell.className = `${amtColorClass} amount-cell`;
-            amtCell.textContent = formatDisplayCurrency(monthData.amount);
-            row.appendChild(amtCell);
           });
 
           const totalQtyCell = document.createElement("td");
@@ -760,14 +725,6 @@
           totalQtyCell.style.fontWeight = "700";
           totalQtyCell.textContent = formatDisplay(yearData.yearTotal.quantity);
           row.appendChild(totalQtyCell);
-
-          const totalAmtCell = document.createElement("td");
-          totalAmtCell.className = "total-amt-color amount-cell";
-          totalAmtCell.style.fontWeight = "700";
-          totalAmtCell.textContent = formatDisplayCurrency(
-            yearData.yearTotal.amount
-          );
-          row.appendChild(totalAmtCell);
 
           tbody.appendChild(row);
         });
@@ -782,14 +739,14 @@
 
         data.growthRates.monthlyGrowthRates.forEach((rate) => {
           const growthCell = document.createElement("td");
-          growthCell.colSpan = 2;
+          growthCell.colSpan = 1;
           growthCell.className = getGrowthClass(rate);
           growthCell.textContent = formatGrowthRate(rate);
           growthRow.appendChild(growthCell);
         });
 
         const totalGrowthCell = document.createElement("td");
-        totalGrowthCell.colSpan = 2;
+        totalGrowthCell.colSpan = 1;
         totalGrowthCell.className = getGrowthClass(
           data.growthRates.totalGrowthRate
         );
@@ -809,11 +766,6 @@
       function formatDisplay(value) {
         if (value === null || value === undefined || value === 0) return "-";
         return formatNumber(value);
-      }
-
-      function formatDisplayCurrency(value) {
-        if (value === null || value === undefined || value === 0) return "-";
-        return "₩" + formatNumber(value);
       }
 
       function formatGrowthRate(rate) {

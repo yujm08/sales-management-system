@@ -204,12 +204,12 @@
           <span
             class="user-name"
             th:text="${#authentication.principal.username}"
-            >마이넷</span
+            >캐논</span
           >
           <span
             class="user-company"
             th:text="'(' + ${#authentication.principal.companyName} + ')'"
-            >(마이넷)</span
+            >(캐논)</span
           >
           <form th:action="@{/logout}" method="post" style="display: inline">
             <button type="submit" class="logout-btn">로그아웃</button>
@@ -222,24 +222,15 @@
     <nav class="nav-menu">
       <div class="nav-content">
         <div class="nav-item">
-          <a
-            th:href="@{${#authentication.principal.canon ? '/canon/view' : '/mynet/view'}}"
-            >조회</a
-          >
-        </div>
-        <div
-          class="nav-item"
-          th:classappend="${currentPage == 'daily-sales'} ? 'active'"
-        >
-          <a th:href="@{/mynet/daily-sales}">일일매출현황</a>
+          <a th:href="@{/canon/view}">조회</a>
         </div>
         <div class="nav-item">
           <a href="javascript:void(0)">비교 ▼</a>
           <div class="sub-menu">
-            <a th:href="@{/mynet/compare/monthly}">월별</a>
-            <a th:href="@{/mynet/compare/yearly}" class="active">년도별</a>
-            <a th:href="@{/mynet/compare/period}">기간별</a>
-            <a th:href="@{/mynet/compare/product}">제품별</a>
+            <a th:href="@{/canon/compare/monthly}">월별</a>
+            <a th:href="@{/canon/compare/yearly}" class="active">년도별</a>
+            <a th:href="@{/canon/compare/period}">기간별</a>
+            <a th:href="@{/canon/compare/product}">제품별</a>
           </div>
         </div>
         <div class="nav-item">
@@ -267,7 +258,7 @@
             <thead>
               <tr>
                 <th colspan="3">제품</th>
-                <th colspan="3">매출</th>
+                <th colspan="3">수량</th>
                 <th rowspan="2">증감률</th>
               </tr>
               <tr>
@@ -298,7 +289,9 @@
 
       async function loadData() {
         try {
-          const response = await fetch("/api/statistics/yearly-comparison");
+          const response = await fetch("/canon/yearly-comparison", {
+            credentials: "include",
+          });
 
           if (!response.ok) {
             throw new Error("데이터 조회 실패");
@@ -352,18 +345,18 @@
 
             // 년도별 금액
             const year1Cell = document.createElement("td");
-            year1Cell.className = `${colorClass} amount-cell`;
-            year1Cell.textContent = formatCurrency(product.year1Amount);
+            year1Cell.className = `${colorClass}`;
+            year1Cell.textContent = formatCurrency(product.year1Quantity);
             row.appendChild(year1Cell);
 
             const year2Cell = document.createElement("td");
-            year2Cell.className = `${colorClass} amount-cell`;
-            year2Cell.textContent = formatCurrency(product.year2Amount);
+            year2Cell.className = `${colorClass}`;
+            year2Cell.textContent = formatCurrency(product.year2Quantity);
             row.appendChild(year2Cell);
 
             const year3Cell = document.createElement("td");
-            year3Cell.className = `${colorClass} amount-cell`;
-            year3Cell.textContent = formatCurrency(product.year3Amount);
+            year3Cell.className = `${colorClass}`;
+            year3Cell.textContent = formatCurrency(product.year3Quantity);
             row.appendChild(year3Cell);
 
             // 증감률
@@ -382,24 +375,20 @@
         const grandTotalRow = document.createElement("tr");
         grandTotalRow.className = "grand-total-row";
         grandTotalRow.innerHTML = `
-                <td colspan="3" style="text-align: center;"><strong>합계</strong></td>
-                <td class="amount-cell"><strong>${formatCurrency(
-                  data.grandTotal.year1Amount
-                )}</strong></td>
-                <td class="amount-cell"><strong>${formatCurrency(
-                  data.grandTotal.year2Amount
-                )}</strong></td>
-                <td class="amount-cell"><strong>${formatCurrency(
-                  data.grandTotal.year3Amount
-                )}</strong></td>
-                <td class="growth-rate ${getGrowthClass(
-                  data.grandTotal.growthRate
-                )}">
-                    <strong>${formatGrowthRate(
-                      data.grandTotal.growthRate
-                    )}</strong>
-                </td>
-            `;
+        <td colspan="3" style="text-align: center;"><strong>합계</strong></td>
+        <td style="text-align: center;"><strong>${formatQuantity(
+          data.grandTotal.year1Quantity
+        )}</strong></td>
+        <td style="text-align: center;"><strong>${formatQuantity(
+          data.grandTotal.year2Quantity
+        )}</strong></td>
+        <td style="text-align: center;"><strong>${formatQuantity(
+          data.grandTotal.year3Quantity
+        )}</strong></td>
+        <td class="growth-rate ${getGrowthClass(data.grandTotal.growthRate)}">
+            <strong>${formatGrowthRate(data.grandTotal.growthRate)}</strong>
+        </td>
+    `;
         tbody.appendChild(grandTotalRow);
       }
 
@@ -407,7 +396,7 @@
         if (value === null || value === undefined || value === 0) {
           return "-";
         }
-        return "₩" + Math.round(value).toLocaleString("ko-KR");
+        return Math.round(value).toLocaleString("ko-KR");
       }
 
       function formatGrowthRate(rate) {
@@ -425,6 +414,13 @@
         if (rate > 0) return "growth-positive";
         if (rate < 0) return "growth-negative";
         return "growth-zero";
+      }
+
+      function formatQuantity(value) {
+        if (value === null || value === undefined || value === 0) {
+          return "-";
+        }
+        return Math.round(value).toLocaleString("ko-KR");
       }
 
       loadData();

@@ -3,8 +3,8 @@ package com.mynet.sales_management_system.controller;
 
 import com.mynet.sales_management_system.dto.ProductInputDTO;
 import com.mynet.sales_management_system.dto.ViewStatisticsDTO;
-import com.mynet.sales_management_system.entity.DailySales;
 import com.mynet.sales_management_system.security.CustomUserDetails;
+import com.mynet.sales_management_system.service.MonthlyComparisonService;
 import com.mynet.sales_management_system.service.ProductService;
 import com.mynet.sales_management_system.service.SalesService;
 import com.mynet.sales_management_system.util.DateUtil;
@@ -16,10 +16,14 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.mynet.sales_management_system.dto.InputSaveRequest;
+import com.mynet.sales_management_system.dto.MonthlyComparisonDTO;
 import com.mynet.sales_management_system.service.ViewStatisticsService;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -37,6 +41,7 @@ public class SubsidiaryController {
     private final SalesService salesService;
     private final ProductService productService;
     private final ViewStatisticsService viewStatisticsService;
+    private final MonthlyComparisonService monthlyComparisonService;
 
     /**
      * 입력 테이블 페이지 (하위회사 메인 페이지)
@@ -138,59 +143,81 @@ public class SubsidiaryController {
     }
 
     /**
-     * 통계 테이블 페이지
+     * 통계 조회 페이지 (하위회사 전용)
      */
-    @GetMapping("/statistics")
+    @GetMapping("/sales-summary")
     public String statisticsPage(@AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(defaultValue = "0") int year,
-            @RequestParam(defaultValue = "0") int month,
+            @RequestParam(required = false) String date,
             Model model) {
 
         Long companyId = userDetails.getCompanyId();
+        LocalDate targetDate = date != null ? LocalDate.parse(date) : LocalDate.now();
 
-        // 기본값 설정 (현재 년/월)
-        if (year == 0)
-            year = DateUtil.getCurrentDate().getYear();
-        if (month == 0)
-            month = DateUtil.getCurrentDate().getMonthValue();
+        List<ViewStatisticsDTO> statisticsData = viewStatisticsService
+                .getViewStatistics(companyId.toString(), targetDate);
 
-        // 해당 월의 실적 데이터 조회
-        List<DailySales> monthlyData = salesService.getMonthlySalesByCompany(companyId, year, month);
+        // 카테고리별 제품 수 계산
+        Map<String, Long> categoryCount = statisticsData.stream()
+                .filter(item -> !"소계".equals(item.getCategory()) && !"합계".equals(item.getCategory()))
+                .collect(Collectors.groupingBy(
+                        ViewStatisticsDTO::getCategory,
+                        LinkedHashMap::new, // 순서 유지
+                        Collectors.counting()));
 
-        // 통계 계산
-        // TODO: 목표 대비 달성률 계산 로직 추가
+        // 카테고리별 색상 인덱스 맵 생성
+        Map<String, Integer> categoryColorIndex = new LinkedHashMap<>();
+        int colorIndex = 1;
+        for (String category : categoryCount.keySet()) {
+            categoryColorIndex.put(category, colorIndex);
+            colorIndex = (colorIndex % 4) + 1;
+        }
 
-        model.addAttribute("monthlyData", monthlyData);
-        model.addAttribute("targetYear", year);
-        model.addAttribute("targetMonth", month);
+        model.addAttribute("statisticsData", statisticsData);
+        model.addAttribute("categoryCount", categoryCount);
+        model.addAttribute("categoryColorIndex", categoryColorIndex);
+        model.addAttribute("targetDate", targetDate);
         model.addAttribute("companyName", userDetails.getCompanyName());
+        model.addAttribute("currentMonth", targetDate.getMonthValue());
+
+        log.info("하위회사 통계 조회: 회사ID={}, 날짜={}", companyId, targetDate);
 
         return "subsidiary/statistics";
     }
 
     /**
-     * 월별매출집계 페이지
+     * 월별매출집계 페이지 (당년 데이터만)
      */
-    @GetMapping("/monthly-sales")
-    public String monthlySalesPage(@AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(defaultValue = "0") int year,
+    @GetMapping("/monthly")
+    public String monthlyPage(@AuthenticationPrincipal CustomUserDetails userDetails,
             Model model) {
 
         Long companyId = userDetails.getCompanyId();
-        int currentYear = DateUtil.getCurrentDate().getYear();
+        int currentYear = LocalDate.now().getYear();
 
-        // 기본값 설정 및 당년까지만 조회 가능
-        if (year == 0 || year > currentYear) {
-            year = currentYear;
+        // 기존 서비스 재사용
+        List<MonthlyComparisonDTO.CategoryData> monthlyData = monthlyComparisonService
+                .getMonthlyComparison(currentYear, companyId);
+
+        // 전체 합계 계산
+        MonthlyComparisonDTO.GrandTotal grandTotal = monthlyComparisonService
+                .calculateGrandTotal(monthlyData);
+
+        // 카테고리별 색상 인덱스 생성 (statistics.html과 동일한 로직)
+        Map<String, Integer> categoryColorIndex = new LinkedHashMap<>();
+        int colorIndex = 1;
+        for (MonthlyComparisonDTO.CategoryData categoryData : monthlyData) {
+            categoryColorIndex.put(categoryData.getCategory(), colorIndex);
+            colorIndex = (colorIndex % 4) + 1;
         }
 
-        // 년도별 월별 집계 데이터 조회
-        // TODO: 월별 집계 로직 구현
-
-        model.addAttribute("targetYear", year);
         model.addAttribute("currentYear", currentYear);
         model.addAttribute("companyName", userDetails.getCompanyName());
+        model.addAttribute("monthlyData", monthlyData);
+        model.addAttribute("grandTotal", grandTotal);
+        model.addAttribute("categoryColorIndex", categoryColorIndex);
 
-        return "subsidiary/monthly-sales";
+        log.info("하위회사 월별매출집계 조회: 회사ID={}, 년도={}", companyId, currentYear);
+
+        return "subsidiary/monthly";
     }
 }

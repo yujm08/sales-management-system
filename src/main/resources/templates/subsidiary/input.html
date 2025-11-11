@@ -278,6 +278,22 @@
             gap: 10px;
             align-items: center;
         }
+
+        .change-password-link {
+        color: white;
+        text-decoration: none;
+        padding: 6px 12px;
+        border: 1px solid white;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: background-color 0.2s;
+        margin-right: 10px;
+        display: inline-block;
+        }
+
+        .change-password-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -286,8 +302,9 @@
         <div class="header-content">
             <div class="logo">마이넷 매출 관리 시스템</div>
             <div class="user-info">
-                <span class="user-name" th:text="${companyName}">영현아이앤씨</span>
-                <span class="user-role">(사용자)</span>
+                <a th:href="@{/change-password}" class="change-password-link">비밀번호 변경</a>
+                <span class="user-name" th:text="${#authentication.principal.username}">사용자</span>
+                <span class="user-company" th:text="'(' + ${#authentication.principal.companyName} + ')'">(회사명)</span>
                 <form th:action="@{/logout}" method="post" style="display: inline">
                     <button type="submit" class="logout-btn">로그아웃</button>
                 </form>
@@ -302,7 +319,7 @@
                 <a th:href="@{/subsidiary/input}">입력</a>
             </div>
             <div class="nav-item">
-                <a th:href="@{/subsidiary/view}">조회</a>
+                <a th:href="@{/subsidiary/sales-summary}">조회</a>
             </div>
             <div class="nav-item">
                 <a th:href="@{/subsidiary/monthly}">월별매출집계</a>

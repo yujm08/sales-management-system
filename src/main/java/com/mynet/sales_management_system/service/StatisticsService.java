@@ -41,307 +41,326 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class StatisticsService {
 
-    private final DailySalesRepository dailySalesRepository;
-    private final ProductService productService;
-    private final ProductRepository productRepository;
+        private final DailySalesRepository dailySalesRepository;
+        private final ProductService productService;
+        private final ProductRepository productRepository;
 
-    /**
-     * 실적 데이터에 가격 정보를 포함한 통계 계산
-     */
-    public SalesStatistics calculateSalesStatistics(List<DailySales> salesList) {
-        BigDecimal totalRevenue = BigDecimal.ZERO;
-        BigDecimal totalProfit = BigDecimal.ZERO;
-        int totalQuantity = 0;
+        /**
+         * 실적 데이터에 가격 정보를 포함한 통계 계산
+         */
+        public SalesStatistics calculateSalesStatistics(List<DailySales> salesList) {
+                BigDecimal totalRevenue = BigDecimal.ZERO;
+                BigDecimal totalProfit = BigDecimal.ZERO;
+                int totalQuantity = 0;
 
-        for (DailySales sales : salesList) {
-            // 해당 날짜의 가격 정보 조회
-            LocalDateTime salesDateTime = sales.getSalesDate().atStartOfDay();
-            ProductPriceHistory priceHistory = productService
-                    .getProductPriceAtDate(sales.getProduct().getId(), salesDateTime)
-                    .orElse(null);
+                for (DailySales sales : salesList) {
+                        // 해당 날짜의 가격 정보 조회
+                        LocalDateTime salesDateTime = sales.getSalesDate().atStartOfDay();
+                        ProductPriceHistory priceHistory = productService
+                                        .getProductPriceAtDate(sales.getProduct().getId(), salesDateTime)
+                                        .orElse(null);
 
-            if (priceHistory != null) {
-                BigDecimal quantity = BigDecimal.valueOf(sales.getQuantity());
-                BigDecimal revenue = priceHistory.getSupplyPrice().multiply(quantity);
-                BigDecimal cost = priceHistory.getCostPrice().multiply(quantity);
-                BigDecimal profit = revenue.subtract(cost);
+                        if (priceHistory != null) {
+                                BigDecimal quantity = BigDecimal.valueOf(sales.getQuantity());
+                                BigDecimal revenue = priceHistory.getSupplyPrice().multiply(quantity);
+                                BigDecimal cost = priceHistory.getCostPrice().multiply(quantity);
+                                BigDecimal profit = revenue.subtract(cost);
 
-                totalRevenue = totalRevenue.add(revenue);
-                totalProfit = totalProfit.add(profit);
-            }
+                                totalRevenue = totalRevenue.add(revenue);
+                                totalProfit = totalProfit.add(profit);
+                        }
 
-            totalQuantity += sales.getQuantity();
-        }
-
-        return SalesStatistics.builder()
-                .totalQuantity(totalQuantity)
-                .totalRevenue(totalRevenue)
-                .totalProfit(totalProfit)
-                .build();
-    }
-
-    /**
-     * 달성률 계산
-     */
-    public BigDecimal calculateAchievementRate(int actualQuantity, int targetQuantity) {
-        if (targetQuantity == 0) {
-            return BigDecimal.ZERO;
-        }
-
-        return BigDecimal.valueOf(actualQuantity)
-                .divide(BigDecimal.valueOf(targetQuantity), 4, BigDecimal.ROUND_HALF_UP)
-                .multiply(BigDecimal.valueOf(100));
-    }
-
-    /**
-     * 전일 대비 비교 데이터 생성
-     */
-    public ComparisonData generateDailyComparison(Long companyId, LocalDate currentDate) {
-        LocalDate previousDate = currentDate.minusDays(1);
-
-        List<DailySales> currentSales = dailySalesRepository
-                .findByCompanyIdAndSalesDateOrderByProduct_CategoryAscProduct_ProductCodeAsc(companyId, currentDate);
-        List<DailySales> previousSales = dailySalesRepository
-                .findByCompanyIdAndSalesDateOrderByProduct_CategoryAscProduct_ProductCodeAsc(companyId, previousDate);
-
-        SalesStatistics currentStats = calculateSalesStatistics(currentSales);
-        SalesStatistics previousStats = calculateSalesStatistics(previousSales);
-
-        return ComparisonData.builder()
-                .currentProfit(currentStats.getTotalProfit())
-                .previousProfit(previousStats.getTotalProfit())
-                .profitChange(currentStats.getTotalProfit().subtract(previousStats.getTotalProfit()))
-                .isIncrease(currentStats.getTotalProfit().compareTo(previousStats.getTotalProfit()) > 0)
-                .build();
-    }
-
-    /**
-     * 전월 대비 비교 데이터 생성
-     */
-    public ComparisonData generateMonthlyComparison(Long companyId, int currentYear, int currentMonth) {
-        int previousYear = currentYear;
-        int previousMonth = currentMonth - 1;
-
-        if (previousMonth == 0) {
-            previousYear = currentYear - 1;
-            previousMonth = 12;
-        }
-
-        List<DailySales> currentSales = dailySalesRepository
-                .findByCompanyIdAndYearAndMonth(companyId, currentYear, currentMonth);
-        List<DailySales> previousSales = dailySalesRepository
-                .findByCompanyIdAndYearAndMonth(companyId, previousYear, previousMonth);
-
-        SalesStatistics currentStats = calculateSalesStatistics(currentSales);
-        SalesStatistics previousStats = calculateSalesStatistics(previousSales);
-
-        return ComparisonData.builder()
-                .currentProfit(currentStats.getTotalProfit())
-                .previousProfit(previousStats.getTotalProfit())
-                .profitChange(currentStats.getTotalProfit().subtract(previousStats.getTotalProfit()))
-                .isIncrease(currentStats.getTotalProfit().compareTo(previousStats.getTotalProfit()) > 0)
-                .build();
-    }
-
-    /**
-     * 년도별 비교 데이터 조회 (제품별 × 년도별)
-     * 하위회사 전체의 제품별 연간 합계
-     */
-    public YearlyComparisonResponse getYearlyComparisonData(int startYear, int endYear) {
-        List<Product> activeProducts = productRepository
-                .findByIsActiveTrueOrderByCategoryAscProductCodeAsc();
-
-        // 카테고리별로 그룹화
-        Map<String, List<Product>> productsByCategory = activeProducts.stream()
-                .collect(Collectors.groupingBy(
-                        Product::getCategory,
-                        LinkedHashMap::new,
-                        Collectors.toList()));
-
-        List<YearlyComparisonDTO.CategoryData> categoryDataList = new ArrayList<>();
-
-        BigDecimal grandYear1 = BigDecimal.ZERO;
-        BigDecimal grandYear2 = BigDecimal.ZERO;
-        BigDecimal grandYear3 = BigDecimal.ZERO;
-
-        // 각 카테고리별로 처리
-        for (Map.Entry<String, List<Product>> entry : productsByCategory.entrySet()) {
-            String category = entry.getKey();
-            List<Product> categoryProducts = entry.getValue();
-
-            List<YearlyComparisonDTO.ProductYearlyData> productDataList = new ArrayList<>();
-
-            BigDecimal catYear1 = BigDecimal.ZERO;
-            BigDecimal catYear2 = BigDecimal.ZERO;
-            BigDecimal catYear3 = BigDecimal.ZERO;
-
-            for (Product product : categoryProducts) {
-                // 각 년도별 연간 합계 계산
-                BigDecimal year1Amount = calculateProductYearlyAmount(product.getId(), startYear);
-                BigDecimal year2Amount = calculateProductYearlyAmount(product.getId(), startYear + 1);
-                BigDecimal year3Amount = calculateProductYearlyAmount(product.getId(), endYear);
-
-                // 증감률 계산 (전년 대비 올해)
-                BigDecimal growthRate = calculateGrowthRate(year2Amount, year3Amount);
-
-                productDataList.add(YearlyComparisonDTO.ProductYearlyData.builder()
-                        .productId(product.getId())
-                        .productCode(product.getProductCode())
-                        .productName(product.getProductName())
-                        .category(category)
-                        .year1Amount(year1Amount)
-                        .year2Amount(year2Amount)
-                        .year3Amount(year3Amount)
-                        .growthRate(growthRate)
-                        .build());
-
-                catYear1 = catYear1.add(year1Amount);
-                catYear2 = catYear2.add(year2Amount);
-                catYear3 = catYear3.add(year3Amount);
-            }
-
-            // 카테고리별 합계
-            YearlyComparisonDTO.YearlyTotal categoryTotal = YearlyComparisonDTO.YearlyTotal.builder()
-                    .year1Amount(catYear1)
-                    .year2Amount(catYear2)
-                    .year3Amount(catYear3)
-                    .growthRate(calculateGrowthRate(catYear2, catYear3))
-                    .build();
-
-            categoryDataList.add(YearlyComparisonDTO.CategoryData.builder()
-                    .category(category)
-                    .products(productDataList)
-                    .categoryTotal(categoryTotal)
-                    .build());
-
-            grandYear1 = grandYear1.add(catYear1);
-            grandYear2 = grandYear2.add(catYear2);
-            grandYear3 = grandYear3.add(catYear3);
-        }
-
-        // 전체 합계
-        YearlyComparisonDTO.GrandTotal grandTotal = YearlyComparisonDTO.GrandTotal.builder()
-                .year1Amount(grandYear1)
-                .year2Amount(grandYear2)
-                .year3Amount(grandYear3)
-                .growthRate(calculateGrowthRate(grandYear2, grandYear3))
-                .build();
-
-        return YearlyComparisonResponse.builder()
-                .categories(categoryDataList)
-                .grandTotal(grandTotal)
-                .startYear(startYear)
-                .endYear(endYear)
-                .build();
-    }
-
-    /**
-     * 특정 제품의 특정 년도 연간 합계 금액 계산
-     */
-    private BigDecimal calculateProductYearlyAmount(Long productId, int year) {
-        BigDecimal totalAmount = BigDecimal.ZERO;
-
-        for (int month = 1; month <= 12; month++) {
-            List<DailySales> salesList = dailySalesRepository
-                    .findByProductIdAndYearAndMonthForComparison(productId, year, month);
-
-            for (DailySales sales : salesList) {
-                LocalDateTime salesDateTime = sales.getSalesDate().atStartOfDay();
-                Optional<ProductPriceHistory> priceHistory = productService
-                        .getProductPriceAtDate(sales.getProduct().getId(), salesDateTime);
-
-                if (priceHistory.isPresent()) {
-                    BigDecimal amount = priceHistory.get().getSupplyPrice()
-                            .multiply(BigDecimal.valueOf(sales.getQuantity()));
-                    totalAmount = totalAmount.add(amount);
+                        totalQuantity += sales.getQuantity();
                 }
-            }
+
+                return SalesStatistics.builder()
+                                .totalQuantity(totalQuantity)
+                                .totalRevenue(totalRevenue)
+                                .totalProfit(totalProfit)
+                                .build();
         }
 
-        return totalAmount;
-    }
+        /**
+         * 달성률 계산
+         */
+        public BigDecimal calculateAchievementRate(int actualQuantity, int targetQuantity) {
+                if (targetQuantity == 0) {
+                        return BigDecimal.ZERO;
+                }
 
-    /**
-     * 증감률 계산 (전년 대비 올해)
-     */
-    private BigDecimal calculateGrowthRate(BigDecimal previousAmount, BigDecimal currentAmount) {
-        if (previousAmount.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
+                return BigDecimal.valueOf(actualQuantity)
+                                .divide(BigDecimal.valueOf(targetQuantity), 4, BigDecimal.ROUND_HALF_UP)
+                                .multiply(BigDecimal.valueOf(100));
         }
 
-        return currentAmount.subtract(previousAmount)
-                .divide(previousAmount, 4, RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100));
-    }
+        /**
+         * 전일 대비 비교 데이터 생성
+         */
+        public ComparisonData generateDailyComparison(Long companyId, LocalDate currentDate) {
+                LocalDate previousDate = currentDate.minusDays(1);
 
-    // 응답 DTO
-    @Data
-    @Builder
-    public static class YearlyComparisonResponse {
-        private List<YearlyComparisonDTO.CategoryData> categories;
-        private YearlyComparisonDTO.GrandTotal grandTotal;
-        private int startYear;
-        private int endYear;
-    }
+                List<DailySales> currentSales = dailySalesRepository
+                                .findByCompanyIdAndSalesDateOrderByProduct_CategoryAscProduct_ProductCodeAsc(companyId,
+                                                currentDate);
+                List<DailySales> previousSales = dailySalesRepository
+                                .findByCompanyIdAndSalesDateOrderByProduct_CategoryAscProduct_ProductCodeAsc(companyId,
+                                                previousDate);
 
-    /**
-     * 특정 년월의 전체 하위회사 데이터 집계
-     */
-    private YearlyData calculateYearlyMonthData(int year, int month) {
-        List<DailySales> salesList = dailySalesRepository
-                .findAllByYearAndMonth(year, month);
+                SalesStatistics currentStats = calculateSalesStatistics(currentSales);
+                SalesStatistics previousStats = calculateSalesStatistics(previousSales);
 
-        int totalQuantity = 0;
-        BigDecimal totalAmount = BigDecimal.ZERO;
-
-        for (DailySales sales : salesList) {
-            totalQuantity += sales.getQuantity();
-
-            LocalDateTime salesDateTime = sales.getSalesDate().atStartOfDay();
-            Optional<ProductPriceHistory> priceHistory = productService
-                    .getProductPriceAtDate(sales.getProduct().getId(), salesDateTime);
-
-            if (priceHistory.isPresent()) {
-                BigDecimal quantity = BigDecimal.valueOf(sales.getQuantity());
-                BigDecimal amount = priceHistory.get().getSupplyPrice().multiply(quantity);
-                totalAmount = totalAmount.add(amount);
-            }
+                return ComparisonData.builder()
+                                .currentProfit(currentStats.getTotalProfit())
+                                .previousProfit(previousStats.getTotalProfit())
+                                .profitChange(currentStats.getTotalProfit().subtract(previousStats.getTotalProfit()))
+                                .isIncrease(currentStats.getTotalProfit().compareTo(previousStats.getTotalProfit()) > 0)
+                                .build();
         }
 
-        return YearlyData.builder()
-                .totalQuantity(totalQuantity)
-                .totalAmount(totalAmount)
-                .build();
-    }
+        /**
+         * 전월 대비 비교 데이터 생성
+         */
+        public ComparisonData generateMonthlyComparison(Long companyId, int currentYear, int currentMonth) {
+                int previousYear = currentYear;
+                int previousMonth = currentMonth - 1;
 
-    /**
-     * 특정 제품의 특정 년월의 전체 하위회사 데이터 집계
-     */
-    private YearlyProductData calculateYearlyProductMonthData(Long productId, int year, int month) {
-        List<DailySales> salesList = dailySalesRepository
-                .findByProductIdAndYearAndMonthForComparison(productId, year, month);
+                if (previousMonth == 0) {
+                        previousYear = currentYear - 1;
+                        previousMonth = 12;
+                }
 
-        int totalQuantity = 0;
-        BigDecimal totalAmount = BigDecimal.ZERO;
+                List<DailySales> currentSales = dailySalesRepository
+                                .findByCompanyIdAndYearAndMonth(companyId, currentYear, currentMonth);
+                List<DailySales> previousSales = dailySalesRepository
+                                .findByCompanyIdAndYearAndMonth(companyId, previousYear, previousMonth);
 
-        for (DailySales sales : salesList) {
-            totalQuantity += sales.getQuantity();
+                SalesStatistics currentStats = calculateSalesStatistics(currentSales);
+                SalesStatistics previousStats = calculateSalesStatistics(previousSales);
 
-            LocalDateTime salesDateTime = sales.getSalesDate().atStartOfDay();
-            Optional<ProductPriceHistory> priceHistory = productService
-                    .getProductPriceAtDate(sales.getProduct().getId(), salesDateTime);
-
-            if (priceHistory.isPresent()) {
-                BigDecimal quantity = BigDecimal.valueOf(sales.getQuantity());
-                BigDecimal amount = priceHistory.get().getSupplyPrice().multiply(quantity);
-                totalAmount = totalAmount.add(amount);
-            }
+                return ComparisonData.builder()
+                                .currentProfit(currentStats.getTotalProfit())
+                                .previousProfit(previousStats.getTotalProfit())
+                                .profitChange(currentStats.getTotalProfit().subtract(previousStats.getTotalProfit()))
+                                .isIncrease(currentStats.getTotalProfit().compareTo(previousStats.getTotalProfit()) > 0)
+                                .build();
         }
 
-        return YearlyProductData.builder()
-                .totalQuantity(totalQuantity)
-                .totalAmount(totalAmount)
-                .build();
-    }
+        /**
+         * 년도별 비교 데이터 조회 (제품별 × 년도별)
+         * 하위회사 전체의 제품별 연간 합계
+         */
+        public YearlyComparisonResponse getYearlyComparisonData(int startYear, int endYear) {
+                List<Product> activeProducts = productRepository
+                                .findByIsActiveTrueOrderByCategoryAscProductCodeAsc();
+
+                // 카테고리별로 그룹화
+                Map<String, List<Product>> productsByCategory = activeProducts.stream()
+                                .collect(Collectors.groupingBy(
+                                                Product::getCategory,
+                                                LinkedHashMap::new,
+                                                Collectors.toList()));
+
+                List<YearlyComparisonDTO.CategoryData> categoryDataList = new ArrayList<>();
+
+                BigDecimal grandYear1 = BigDecimal.ZERO;
+                BigDecimal grandYear2 = BigDecimal.ZERO;
+                BigDecimal grandYear3 = BigDecimal.ZERO;
+
+                // 각 카테고리별로 처리
+                for (Map.Entry<String, List<Product>> entry : productsByCategory.entrySet()) {
+                        String category = entry.getKey();
+                        List<Product> categoryProducts = entry.getValue();
+
+                        List<YearlyComparisonDTO.ProductYearlyData> productDataList = new ArrayList<>();
+
+                        BigDecimal catYear1 = BigDecimal.ZERO;
+                        BigDecimal catYear2 = BigDecimal.ZERO;
+                        BigDecimal catYear3 = BigDecimal.ZERO;
+
+                        for (Product product : categoryProducts) {
+                                // 각 년도별 연간 합계 계산
+                                YearlyProductTotal year1 = calculateProductYearlyTotal(product.getId(), startYear);
+                                YearlyProductTotal year2 = calculateProductYearlyTotal(product.getId(), startYear + 1);
+                                YearlyProductTotal year3 = calculateProductYearlyTotal(product.getId(), endYear);
+
+                                BigDecimal growthRate = calculateGrowthRate(year2.getTotalAmount(),
+                                                year3.getTotalAmount());
+
+                                productDataList.add(YearlyComparisonDTO.ProductYearlyData.builder()
+                                                .productId(product.getId())
+                                                .productCode(product.getProductCode())
+                                                .productName(product.getProductName())
+                                                .category(category)
+                                                .year1Amount(year1.getTotalAmount())
+                                                .year2Amount(year2.getTotalAmount())
+                                                .year3Amount(year3.getTotalAmount())
+                                                .year1Quantity(year1.getTotalQuantity())
+                                                .year2Quantity(year2.getTotalQuantity())
+                                                .year3Quantity(year3.getTotalQuantity())
+                                                .growthRate(growthRate)
+                                                .build());
+
+                                catYear1 = catYear1.add(year1.getTotalAmount());
+                                catYear2 = catYear2.add(year2.getTotalAmount());
+                                catYear3 = catYear3.add(year3.getTotalAmount());
+                        }
+
+                        // 카테고리별 합계
+                        YearlyComparisonDTO.YearlyTotal categoryTotal = YearlyComparisonDTO.YearlyTotal.builder()
+                                        .year1Amount(catYear1)
+                                        .year2Amount(catYear2)
+                                        .year3Amount(catYear3)
+                                        .growthRate(calculateGrowthRate(catYear2, catYear3))
+                                        .build();
+
+                        categoryDataList.add(YearlyComparisonDTO.CategoryData.builder()
+                                        .category(category)
+                                        .products(productDataList)
+                                        .categoryTotal(categoryTotal)
+                                        .build());
+
+                        grandYear1 = grandYear1.add(catYear1);
+                        grandYear2 = grandYear2.add(catYear2);
+                        grandYear3 = grandYear3.add(catYear3);
+                }
+
+                // 전체 합계
+                YearlyComparisonDTO.GrandTotal grandTotal = YearlyComparisonDTO.GrandTotal.builder()
+                                .year1Amount(grandYear1)
+                                .year2Amount(grandYear2)
+                                .year3Amount(grandYear3)
+                                .growthRate(calculateGrowthRate(grandYear2, grandYear3))
+                                .build();
+
+                return YearlyComparisonResponse.builder()
+                                .categories(categoryDataList)
+                                .grandTotal(grandTotal)
+                                .startYear(startYear)
+                                .endYear(endYear)
+                                .build();
+        }
+
+        /**
+         * 특정 제품의 특정 년도 연간 합계 금액 및 수량 계산
+         */
+        private YearlyProductTotal calculateProductYearlyTotal(Long productId, int year) {
+                BigDecimal totalAmount = BigDecimal.ZERO;
+                int totalQuantity = 0;
+
+                for (int month = 1; month <= 12; month++) {
+                        List<DailySales> salesList = dailySalesRepository
+                                        .findByProductIdAndYearAndMonthForComparison(productId, year, month);
+
+                        for (DailySales sales : salesList) {
+                                totalQuantity += sales.getQuantity();
+
+                                LocalDateTime salesDateTime = sales.getSalesDate().atTime(23, 59, 59);
+                                Optional<ProductPriceHistory> priceHistory = productService
+                                                .getProductPriceAtDate(sales.getProduct().getId(), salesDateTime);
+
+                                if (priceHistory.isPresent()) {
+                                        BigDecimal amount = priceHistory.get().getSupplyPrice()
+                                                        .multiply(BigDecimal.valueOf(sales.getQuantity()));
+                                        totalAmount = totalAmount.add(amount);
+                                }
+                        }
+                }
+
+                return YearlyProductTotal.builder()
+                                .totalAmount(totalAmount)
+                                .totalQuantity(totalQuantity)
+                                .build();
+        }
+
+        // 내부 클래스 추가 (StatisticsService 맨 아래)
+        @Data
+        @Builder
+        private static class YearlyProductTotal {
+                private BigDecimal totalAmount;
+                private Integer totalQuantity;
+        }
+
+        /**
+         * 증감률 계산 (전년 대비 올해)
+         */
+        private BigDecimal calculateGrowthRate(BigDecimal previousAmount, BigDecimal currentAmount) {
+                if (previousAmount.compareTo(BigDecimal.ZERO) == 0) {
+                        return BigDecimal.ZERO;
+                }
+
+                return currentAmount.subtract(previousAmount)
+                                .divide(previousAmount, 4, RoundingMode.HALF_UP)
+                                .multiply(BigDecimal.valueOf(100));
+        }
+
+        // 응답 DTO
+        @Data
+        @Builder
+        public static class YearlyComparisonResponse {
+                private List<YearlyComparisonDTO.CategoryData> categories;
+                private YearlyComparisonDTO.GrandTotal grandTotal;
+                private int startYear;
+                private int endYear;
+        }
+
+        /**
+         * 특정 년월의 전체 하위회사 데이터 집계
+         */
+        private YearlyData calculateYearlyMonthData(int year, int month) {
+                List<DailySales> salesList = dailySalesRepository
+                                .findAllByYearAndMonth(year, month);
+
+                int totalQuantity = 0;
+                BigDecimal totalAmount = BigDecimal.ZERO;
+
+                for (DailySales sales : salesList) {
+                        totalQuantity += sales.getQuantity();
+
+                        LocalDateTime salesDateTime = sales.getSalesDate().atStartOfDay();
+                        Optional<ProductPriceHistory> priceHistory = productService
+                                        .getProductPriceAtDate(sales.getProduct().getId(), salesDateTime);
+
+                        if (priceHistory.isPresent()) {
+                                BigDecimal quantity = BigDecimal.valueOf(sales.getQuantity());
+                                BigDecimal amount = priceHistory.get().getSupplyPrice().multiply(quantity);
+                                totalAmount = totalAmount.add(amount);
+                        }
+                }
+
+                return YearlyData.builder()
+                                .totalQuantity(totalQuantity)
+                                .totalAmount(totalAmount)
+                                .build();
+        }
+
+        /**
+         * 특정 제품의 특정 년월의 전체 하위회사 데이터 집계
+         */
+        private YearlyProductData calculateYearlyProductMonthData(Long productId, int year, int month) {
+                List<DailySales> salesList = dailySalesRepository
+                                .findByProductIdAndYearAndMonthForComparison(productId, year, month);
+
+                int totalQuantity = 0;
+                BigDecimal totalAmount = BigDecimal.ZERO;
+
+                for (DailySales sales : salesList) {
+                        totalQuantity += sales.getQuantity();
+
+                        LocalDateTime salesDateTime = sales.getSalesDate().atStartOfDay();
+                        Optional<ProductPriceHistory> priceHistory = productService
+                                        .getProductPriceAtDate(sales.getProduct().getId(), salesDateTime);
+
+                        if (priceHistory.isPresent()) {
+                                BigDecimal quantity = BigDecimal.valueOf(sales.getQuantity());
+                                BigDecimal amount = priceHistory.get().getSupplyPrice().multiply(quantity);
+                                totalAmount = totalAmount.add(amount);
+                        }
+                }
+
+                return YearlyProductData.builder()
+                                .totalQuantity(totalQuantity)
+                                .totalAmount(totalAmount)
+                                .build();
+        }
 
 }

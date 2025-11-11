@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -74,15 +75,19 @@ public class MonthlyComparisonService {
                             .mapToInt(DailySales::getQuantity)
                             .sum();
 
-                    // 금액 계산 (해당 월의 평균 가격 사용)
-                    LocalDate monthDate = LocalDate.of(year, month, 15); // 월 중간 날짜
-                    ProductPriceHistory priceHistory = productService.getProductPriceAtDate(
-                            product.getId(), monthDate.atStartOfDay()).orElse(null);
-
+                    // 금액은 각 판매일의 가격으로 계산
                     BigDecimal monthAmount = BigDecimal.ZERO;
-                    if (priceHistory != null) {
-                        monthAmount = priceHistory.getSupplyPrice()
-                                .multiply(BigDecimal.valueOf(monthQuantity));
+                    for (DailySales sales : monthlySales) {
+                        LocalDateTime salesDateTime = sales.getSalesDate().atTime(23, 59, 59);
+                        ProductPriceHistory priceHistory = productService
+                                .getProductPriceAtDate(sales.getProduct().getId(), salesDateTime)
+                                .orElse(null);
+
+                        if (priceHistory != null) {
+                            BigDecimal amount = priceHistory.getSupplyPrice()
+                                    .multiply(BigDecimal.valueOf(sales.getQuantity()));
+                            monthAmount = monthAmount.add(amount);
+                        }
                     }
 
                     monthlyData.add(MonthlyComparisonDTO.MonthData.builder()

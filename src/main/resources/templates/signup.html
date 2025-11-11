@@ -8,7 +8,7 @@
     <script th:src="@{/js/common.js}" defer></script>
     <style>
       body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #f1f3f5;
         min-height: 100vh;
         display: flex;
         align-items: center;
@@ -19,7 +19,7 @@
         background: white;
         padding: 3rem;
         border-radius: 12px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
         width: 100%;
         max-width: 500px;
       }
@@ -147,7 +147,7 @@
               <option value="">회사 선택</option>
               <option
                 th:each="company : ${companies}"
-                th:if="${!company.isMynet}"
+                th:if="${!company.isMynet and company.name != '캐논' and company.name != '마이넷(GX판매)'}"
                 th:value="${company.id}"
                 th:text="${company.name}"
               >
@@ -180,21 +180,7 @@
           </div>
         </div>
 
-        <div class="form-row full">
-          <div class="form-group">
-            <label class="form-label">역할</label>
-            <select name="role" class="form-select" required>
-              <option value="">역할 선택</option>
-              <option
-                th:each="role : ${roles}"
-                th:value="${role}"
-                th:text="${role}"
-              >
-                역할
-              </option>
-            </select>
-          </div>
-        </div>
+        <input type="hidden" name="role" value="USER" />
 
         <div class="checkbox-group">
           <input type="checkbox" name="isCanon" id="isCanon" />
@@ -231,6 +217,8 @@
                 data[key] = value;
               }
             }
+
+            data.role = "USER";
 
             if (!formData.has("isCanon")) {
               data.isCanon = false;

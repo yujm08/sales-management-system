@@ -47,7 +47,7 @@ public class SecurityConfig {
                                                 // 하위회사 전용 페이지 (입력, 통계, 월별매출집계)
                                                 .requestMatchers("/subsidiary/**").hasRole("SUBSIDIARY")
                                                 // 마이넷 전용 페이지 (조회, 비교, 제품분류)
-                                                .requestMatchers("/mynet/**").hasAnyRole("MYNET", "CANON")
+                                                .requestMatchers("/mynet/**").hasAnyRole("MYNET")
                                                 // 관리자 페이지 (사용자 관리 등) - ADMIN 권한 필요
                                                 .requestMatchers("/admin/products").hasAnyRole("MYNET", "CANON")
                                                 .requestMatchers("/admin/**").hasRole("MYNET")

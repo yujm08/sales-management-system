@@ -117,7 +117,7 @@ public class ProductComparisonService {
         for (DailySales sales : salesList) {
             totalQuantity += sales.getQuantity();
 
-            LocalDateTime salesDateTime = sales.getSalesDate().atStartOfDay();
+            LocalDateTime salesDateTime = sales.getSalesDate().atTime(23, 59, 59);
             Optional<ProductPriceHistory> priceHistory = productService
                     .getProductPriceAtDate(sales.getProduct().getId(), salesDateTime);
 
@@ -125,6 +125,11 @@ public class ProductComparisonService {
                 BigDecimal amount = priceHistory.get().getSupplyPrice()
                         .multiply(BigDecimal.valueOf(sales.getQuantity()));
                 totalAmount = totalAmount.add(amount);
+            } else {
+                log.warn("가격 정보 없음: productId={}, date={}, quantity={}",
+                        sales.getProduct().getId(),
+                        sales.getSalesDate(),
+                        sales.getQuantity());
             }
         }
 

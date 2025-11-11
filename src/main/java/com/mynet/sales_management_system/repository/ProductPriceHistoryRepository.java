@@ -19,24 +19,26 @@ import java.util.Optional;
  */
 @Repository
 public interface ProductPriceHistoryRepository extends JpaRepository<ProductPriceHistory, Long> {
-    
+
     /**
      * 제품의 현재 적용 중인 가격 조회 (effective_to가 NULL)
      */
     @Query("SELECT p FROM ProductPriceHistory p WHERE p.product.id = :productId AND p.effectiveTo IS NULL")
     Optional<ProductPriceHistory> findCurrentPriceByProductId(@Param("productId") Long productId);
-    
+
     /**
      * 특정 날짜에 적용되었던 가격 조회 (과거 데이터 계산용)
+     * 시간을 무시하고 날짜만 비교
      */
     @Query("SELECT p FROM ProductPriceHistory p WHERE p.product.id = :productId " +
-           "AND p.effectiveFrom <= :targetDate " +
-           "AND (p.effectiveTo IS NULL OR p.effectiveTo > :targetDate)")
-    Optional<ProductPriceHistory> findPriceByProductIdAndDate(@Param("productId") Long productId, 
-                                                             @Param("targetDate") LocalDateTime targetDate);
-    
+            "AND FUNCTION('DATE', p.effectiveFrom) <= FUNCTION('DATE', :targetDate) " +
+            "AND (p.effectiveTo IS NULL OR FUNCTION('DATE', p.effectiveTo) > FUNCTION('DATE', :targetDate))")
+    Optional<ProductPriceHistory> findPriceByProductIdAndDate(@Param("productId") Long productId,
+            @Param("targetDate") LocalDateTime targetDate);
+
     /**
      * 제품의 모든 가격 이력 조회 (최신순)
      */
     List<ProductPriceHistory> findByProductIdOrderByEffectiveFromDesc(Long productId);
+
 }

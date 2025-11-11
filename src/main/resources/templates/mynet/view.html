@@ -413,6 +413,23 @@
         color: #721c24;
         border: 1px solid #dc3545;
       }
+
+      .change-password-link {
+        color: white;
+        text-decoration: none;
+        padding: 6px 12px;
+        border: 1px solid white;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: background-color 0.2s;
+        margin-right: 10px;
+        display: inline-block;
+      }
+
+      .change-password-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
     </style>
   </head>
   <body>
@@ -421,12 +438,13 @@
       <div class="header-content">
         <div class="logo">마이넷 매출 관리 시스템</div>
         <div class="user-info">
+          <a th:href="@{/change-password}" class="change-password-link">비밀번호 변경</a>
           <span
             class="user-name"
-            th:text="${#authentication.principal.companyName}"
+            th:text="${#authentication.principal.username}"
             >마이넷</span
           >
-          <span class="user-role">(마이넷)</span>
+          <span class="user-company" th:text="'(' + ${#authentication.principal.companyName} + ')'">(마이넷)</span>
           <form th:action="@{/logout}" method="post" style="display: inline">
             <button type="submit" class="logout-btn">로그아웃</button>
           </form>
@@ -439,6 +457,9 @@
       <div class="nav-content">
         <div class="nav-item active">
           <a th:href="@{/mynet/view}">조회</a>
+        </div>
+        <div class="nav-item" th:classappend="${currentPage == 'daily-sales'} ? 'active'">
+          <a th:href="@{/mynet/daily-sales}">일일매출현황</a>
         </div>
         <div class="nav-item">
           <a href="javascript:void(0)">비교 ▼</a>

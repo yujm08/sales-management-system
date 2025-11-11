@@ -413,6 +413,22 @@
         color: #721c24;
         border: 1px solid #dc3545;
       }
+
+      .change-password-link {
+        color: white;
+        text-decoration: none;
+        padding: 6px 12px;
+        border: 1px solid white;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: background-color 0.2s;
+        margin-right: 10px;
+        display: inline-block;
+      }
+
+      .change-password-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
     </style>
   </head>
   <body>
@@ -421,12 +437,19 @@
       <div class="header-content">
         <div class="logo">마이넷 매출 관리 시스템</div>
         <div class="user-info">
+          <a th:href="@{/change-password}" class="change-password-link"
+            >비밀번호 변경</a
+          >
           <span
             class="user-name"
-            th:text="${#authentication.principal.companyName}"
-            >마이넷</span
+            th:text="${#authentication.principal.username}"
+            >캐논</span
           >
-          <span class="user-role">(마이넷)</span>
+          <span
+            class="user-company"
+            th:text="'(' + ${#authentication.principal.companyName} + ')'"
+            >(캐논)</span
+          >
           <form th:action="@{/logout}" method="post" style="display: inline">
             <button type="submit" class="logout-btn">로그아웃</button>
           </form>
@@ -443,10 +466,10 @@
         <div class="nav-item">
           <a href="javascript:void(0)">비교 ▼</a>
           <div class="sub-menu">
-            <a th:href="@{/mynet/compare/monthly}">월별</a>
-            <a th:href="@{/mynet/compare/yearly}">년도별</a>
-            <a th:href="@{/mynet/compare/period}">기간별</a>
-            <a th:href="@{/mynet/compare/product}">제품별</a>
+            <a th:href="@{/canon/compare/monthly}">월별</a>
+            <a th:href="@{/canon/compare/yearly}">년도별</a>
+            <a th:href="@{/canon/compare/period}">기간별</a>
+            <a th:href="@{/canon/compare/product}">제품별</a>
           </div>
         </div>
         <div class="nav-item">

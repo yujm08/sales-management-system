@@ -39,7 +39,7 @@ public class StatisticsController {
     /**
      * 마이넷 측 비교탭 - 년도별 데이터 조회
      */
-    @PreAuthorize("hasAnyRole('MYNET','CANON')")
+    @PreAuthorize("hasAnyRole('MYNET')")
     @GetMapping("/yearly-comparison")
     public ResponseEntity<StatisticsService.YearlyComparisonResponse> getYearlyComparison(
             @AuthenticationPrincipal CustomUserDetails userDetails) {

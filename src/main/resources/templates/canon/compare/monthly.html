@@ -219,7 +219,6 @@
         background: #e9ecef;
         font-weight: 600;
       }
-
       .change-password-link {
         color: white;
         text-decoration: none;
@@ -249,12 +248,12 @@
           <span
             class="user-name"
             th:text="${#authentication.principal.username}"
-            >마이넷</span
+            >캐논</span
           >
           <span
             class="user-company"
             th:text="'(' + ${#authentication.principal.companyName} + ')'"
-            >(마이넷)</span
+            >(캐논)</span
           >
           <form th:action="@{/logout}" method="post" style="display: inline">
             <button type="submit" class="logout-btn">로그아웃</button>
@@ -272,19 +271,13 @@
             >조회</a
           >
         </div>
-        <div
-          class="nav-item"
-          th:classappend="${currentPage == 'daily-sales'} ? 'active'"
-        >
-          <a th:href="@{/mynet/daily-sales}">일일매출현황</a>
-        </div>
         <div class="nav-item active">
           <a href="javascript:void(0)">비교 ▼</a>
           <div class="sub-menu">
-            <a th:href="@{/mynet/compare/monthly}" class="active">월별</a>
-            <a th:href="@{/mynet/compare/yearly}">년도별</a>
-            <a th:href="@{/mynet/compare/period}">기간별</a>
-            <a th:href="@{/mynet/compare/product}">제품별</a>
+            <a th:href="@{/canon/compare/monthly}" class="active">월별</a>
+            <a th:href="@{/canon/compare/yearly}">년도별</a>
+            <a th:href="@{/canon/compare/period}">기간별</a>
+            <a th:href="@{/canon/compare/product}">제품별</a>
           </div>
         </div>
         <div class="nav-item">
@@ -342,50 +335,37 @@
             <thead>
               <tr>
                 <th colspan="3">구분</th>
-                <th colspan="2">1월</th>
-                <th colspan="2">2월</th>
-                <th colspan="2">3월</th>
-                <th colspan="2">4월</th>
-                <th colspan="2">5월</th>
-                <th colspan="2">6월</th>
-                <th colspan="2">7월</th>
-                <th colspan="2">8월</th>
-                <th colspan="2">9월</th>
-                <th colspan="2">10월</th>
-                <th colspan="2">11월</th>
-                <th colspan="2">12월</th>
-                <th colspan="2">합계</th>
+                <th colspan="1">1월</th>
+                <th colspan="1">2월</th>
+                <th colspan="1">3월</th>
+                <th colspan="1">4월</th>
+                <th colspan="1">5월</th>
+                <th colspan="1">6월</th>
+                <th colspan="1">7월</th>
+                <th colspan="1">8월</th>
+                <th colspan="1">9월</th>
+                <th colspan="1">10월</th>
+                <th colspan="1">11월</th>
+                <th colspan="1">12월</th>
+                <th colspan="1">합계</th>
               </tr>
               <tr>
                 <th>분류</th>
                 <th>제품코드</th>
                 <th>제품명</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
                 <th>수량</th>
-                <th>금액</th>
               </tr>
             </thead>
             <tbody>
@@ -429,20 +409,12 @@
                       th:class="'green-' + ${(categoryStat.index % 4) + 1}"
                       th:text="${product.monthlyData[month - 1].quantity == null or product.monthlyData[month - 1].quantity == 0 ? '-' : #numbers.formatInteger(product.monthlyData[month - 1].quantity, 0, 'COMMA')}"
                     ></td>
-                    <td
-                      th:class="'green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
-                      th:text="${product.monthlyData[month - 1].amount == null or product.monthlyData[month - 1].amount == 0 ? '-' : '₩' + #numbers.formatInteger(product.monthlyData[month - 1].amount, 0, 'COMMA')}"
-                    ></td>
                   </th:block>
 
                   <!-- 합계 -->
                   <td
                     class="total-quantity"
                     th:text="${product.totalQuantity == null or product.totalQuantity == 0 ? '-' : #numbers.formatInteger(product.totalQuantity, 0, 'COMMA')}"
-                  ></td>
-                  <td
-                    class="total-amount amount"
-                    th:text="${product.totalAmount == null or product.totalAmount == 0 ? '-' : '₩' + #numbers.formatInteger(product.totalAmount, 0, 'COMMA')}"
                   ></td>
                 </tr>
               </th:block>
@@ -464,22 +436,12 @@
                       th:text="${grandTotal.monthlyTotals[month - 1].quantity == null or grandTotal.monthlyTotals[month - 1].quantity == 0 ? '-' : #numbers.formatInteger(grandTotal.monthlyTotals[month - 1].quantity, 0, 'COMMA')}"
                     ></strong>
                   </td>
-                  <td class="amount">
-                    <strong
-                      th:text="${grandTotal.monthlyTotals[month - 1].amount == null or grandTotal.monthlyTotals[month - 1].amount == 0 ? '-' : '₩' + #numbers.formatInteger(grandTotal.monthlyTotals[month - 1].amount, 0, 'COMMA')}"
-                    ></strong>
-                  </td>
                 </th:block>
 
                 <!-- 전체 합계 -->
                 <td>
                   <strong
                     th:text="${grandTotal.totalQuantity == null or grandTotal.totalQuantity == 0 ? '-' : #numbers.formatInteger(grandTotal.totalQuantity, 0, 'COMMA')}"
-                  ></strong>
-                </td>
-                <td class="amount">
-                  <strong
-                    th:text="${grandTotal.totalAmount == null or grandTotal.totalAmount == 0 ? '-' : '₩' + #numbers.formatInteger(grandTotal.totalAmount, 0, 'COMMA')}"
                   ></strong>
                 </td>
               </tr>
@@ -495,7 +457,7 @@
         const year = document.getElementById("year-select").value;
         const companyId = document.getElementById("company-select").value;
 
-        const url = `/mynet/compare/monthly?year=${year}&companyId=${companyId}`;
+        const url = `/canon/compare/monthly?year=${year}&companyId=${companyId}`;
         window.location.href = url;
       }
     </script>

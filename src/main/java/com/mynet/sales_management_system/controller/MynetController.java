@@ -1,12 +1,14 @@
 // MynetController.java - 마이넷 전용 컨트롤러
 package com.mynet.sales_management_system.controller;
 
+import com.mynet.sales_management_system.dto.DailySalesStatusDTO;
 import com.mynet.sales_management_system.dto.MonthlyComparisonDTO;
 import com.mynet.sales_management_system.dto.ViewStatisticsDTO;
 import com.mynet.sales_management_system.entity.Company;
 import com.mynet.sales_management_system.entity.DailySales;
 import com.mynet.sales_management_system.entity.Product;
 import com.mynet.sales_management_system.security.CustomUserDetails;
+import com.mynet.sales_management_system.service.DailySalesService;
 import com.mynet.sales_management_system.service.MonthlyComparisonService;
 import com.mynet.sales_management_system.service.ProductService;
 import com.mynet.sales_management_system.service.SalesService;
@@ -16,6 +18,7 @@ import com.mynet.sales_management_system.repository.CompanyRepository;
 import com.mynet.sales_management_system.util.DateUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -48,6 +51,7 @@ public class MynetController {
     private final ViewStatisticsService viewStatisticsService;
     private final CompanyRepository companyRepository;
     private final MonthlyComparisonService monthlyComparisonService;
+    private final DailySalesService dailySalesService;
 
     /**
      * 조회 페이지 (마이넷 메인 페이지)
@@ -531,5 +535,36 @@ public class MynetController {
             log.error("제품 상태 변경 실패", e);
             return "error:" + e.getMessage();
         }
+    }
+
+    /**
+     * 일일매출현황 페이지
+     */
+    @GetMapping("/daily-sales")
+    public String dailySalesPage(@AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) String date,
+            Model model) {
+
+        LocalDate targetDate = (date != null && !date.isEmpty())
+                ? LocalDate.parse(date)
+                : DateUtil.getCurrentDate();
+
+        // 일일매출현황 데이터 조회
+        List<DailySalesStatusDTO> statusList = dailySalesService.getDailySalesStatus(targetDate);
+
+        // 카테고리별로 그룹화
+        Map<String, List<DailySalesStatusDTO>> dailySalesData = statusList.stream()
+                .collect(Collectors.groupingBy(
+                        DailySalesStatusDTO::getCategory,
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+
+        model.addAttribute("dailySalesData", dailySalesData);
+        model.addAttribute("targetDate", targetDate);
+
+        log.info("일일매출현황 페이지 접근: 사용자={}, 날짜={}",
+                userDetails.getUsername(), targetDate);
+
+        return "mynet/daily-sales";
     }
 }

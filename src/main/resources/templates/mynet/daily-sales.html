@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+    <title>일일매출현황 - 마이넷 매출 관리 시스템</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/datepicker.css}" />
+    <script th:src="@{/js/datepicker.js}" defer></script>
+    <style>
+      /* view.html과 동일한 전체 스타일 */
+      .main-container {
+        padding: 20px;
+        background: #f8f9fa;
+        min-height: 100vh;
+        max-width: 100%;
+      }
+
+      .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .nav-item {
+        position: relative;
+      }
+
+      .sub-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        min-width: 150px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        border-radius: 4px;
+        z-index: 1000;
+        display: none;
+      }
+
+      .nav-item:hover .sub-menu {
+        display: block;
+      }
+
+      .sub-menu a {
+        display: block;
+        padding: 10px 15px;
+        color: #333;
+        text-decoration: none;
+        border-bottom: 1px solid #eee;
+      }
+
+      .sub-menu a:last-child {
+        border-bottom: none;
+        border-radius: 0 0 4px 4px;
+      }
+
+      .sub-menu a:hover {
+        background: #f8f9fa;
+      }
+
+      /* 상단 버튼 영역 */
+      .control-panel {
+        background: #e9ecef;
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* 기준 날짜 영역 */
+      .date-control-inline {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #495057;
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      .date-control-inline .label {
+        margin-right: 4px;
+        color: #6c757d;
+      }
+
+      .date-control-inline .date-nav-btn {
+        background: transparent;
+        border: 1px solid #adb5bd;
+        color: #495057;
+        padding: 3px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .date-control-inline .date-nav-btn:hover {
+        background: #f1f3f5;
+      }
+
+      .date-control-inline .current-date {
+        font-weight: 600;
+        color: #212529;
+        padding: 3px 6px;
+        border: 1px solid transparent;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+
+      .date-control-inline .current-date:hover {
+        border-color: #ced4da;
+        background: #f8f9fa;
+      }
+
+      .date-picker {
+        position: absolute;
+        left: -9999px;
+        opacity: 0;
+      }
+
+      /* 테이블 컨테이너 */
+      .table-container {
+        overflow-x: auto;
+        width: 100%;
+        padding: 0;
+      }
+
+      /* 테이블 스타일 */
+      .stats-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        background: white;
+        min-width: 2500px;
+      }
+
+      /* 헤더 스타일 */
+      .stats-table th {
+        background: #24595e;
+        color: white;
+        padding: 10px 6px;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid #ffffff;
+        font-size: 11px;
+      }
+
+      /* 서브헤더 (구분~마이넷까지) */
+      .stats-table .sub-header {
+        background: #dee2e6 !important;
+        color: #000;
+        font-weight: 500;
+      }
+
+      /* 기본 셀 */
+      .stats-table td {
+        vertical-align: middle;
+        padding: 8px 6px;
+        text-align: center;
+        border: 1px solid #ffffff;
+        font-size: 11px;
+      }
+
+      /* 카테고리 셀 */
+      .category-cell {
+        background: #dee2e6 !important;
+        color: #333;
+        font-weight: bold;
+        vertical-align: middle;
+        text-align: center;
+      }
+
+      /* 제품 정보 셀 */
+      .product-info-cell {
+        text-align: left;
+        padding-left: 10px !important;
+        max-width: 150px;
+      }
+
+      .product-code {
+        font-weight: 600;
+        font-size: 11px;
+      }
+
+      .product-name {
+        font-size: 10px;
+        color: #666;
+        margin-top: 2px;
+      }
+
+      /* 카테고리별 행 색상 (제품 데이터 영역에만 적용) */
+      .product-data-cell.row-color-1 {
+        background: #e8f5e8 !important;
+      }
+      .product-data-cell.row-color-2 {
+        background: #d4f4d4 !important;
+      }
+      .product-data-cell.row-color-3 {
+        background: #c0f0c0 !important;
+      }
+      .product-data-cell.row-color-4 {
+        background: #b3e6b3 !important;
+      }
+
+      /* 소계 행 - 기본 스타일만 */
+      .subtotal-row td {
+        font-weight: 600;
+      }
+
+      /* 소계 행 - 제품 데이터 영역만 회색 */
+      .subtotal-row .product-data-cell {
+        background: #f1f3f5 !important;
+      }
+
+      /* 합계 행 - 기본 스타일만 */
+      .total-row td {
+        font-weight: 700;
+        font-size: 12px;
+      }
+
+      /* 합계 행 - 제품 데이터 영역만 회색 */
+      .total-row .product-data-cell {
+        background: #d3d3d3 !important;
+      }
+
+      /* 컬럼별 배경색 */
+      .daily-total-col {
+        background-color: #cfe2f3 !important;
+      }
+
+      .monthly-total-col {
+        background-color: #fce4d6 !important;
+      }
+
+      .target-col {
+        background-color: #fff2cc !important;
+      }
+
+      .comparison-col-1 {
+        background-color: #e2efda !important;
+      }
+
+      .comparison-col-2 {
+        background-color: #d9dbf2 !important;
+      }
+
+      /* 숫자 정렬 */
+      .number-cell {
+        text-align: right;
+        padding-right: 8px !important;
+      }
+
+      /* 금액 포맷 */
+      .amount-cell {
+        font-weight: 500;
+      }
+
+      /* 회사별 영역 구분 */
+      .company-group {
+        border-left: 2px solid #adb5bd;
+      }
+
+      .company-group:first-of-type {
+        border-left: 1px solid #ffffff;
+      }
+
+      .change-password-link {
+        color: white;
+        text-decoration: none;
+        padding: 6px 12px;
+        border: 1px solid white;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: background-color 0.2s;
+        margin-right: 10px;
+        display: inline-block;
+      }
+
+      .change-password-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .stats-table th.daily-total-col,
+      .stats-table th.monthly-total-col,
+      .stats-table th.target-col,
+      .stats-table th.comparison-col-1,
+      .stats-table th.comparison-col-2,
+      .stats-table .sub-header th.daily-total-col,
+      .stats-table .sub-header th.monthly-total-col {
+        color: #000 !important;
+      }
+
+      .subtotal-row td.daily-total-col,
+      .subtotal-row td.monthly-total-col,
+      .subtotal-row td.target-col,
+      .subtotal-row td.comparison-col-1,
+      .subtotal-row td.comparison-col-2 {
+        background-color: #f1f3f5 !important;
+      }
+
+      .total-row td.daily-total-col,
+      .total-row td.monthly-total-col,
+      .total-row td.target-col,
+      .total-row td.comparison-col-1,
+      .total-row td.comparison-col-2 {
+        background-color: #d3d3d3 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 헤더 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">마이넷 매출 관리 시스템</div>
+        <div class="user-info">
+          <a th:href="@{/change-password}" class="change-password-link"
+            >비밀번호 변경</a
+          >
+          <span
+            class="user-name"
+            th:text="${#authentication.principal.username}"
+            >마이넷</span
+          >
+          <span
+            class="user-company"
+            th:text="'(' + ${#authentication.principal.companyName} + ')'"
+            >(마이넷)</span
+          >
+          <form th:action="@{/logout}" method="post" style="display: inline">
+            <button type="submit" class="logout-btn">로그아웃</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <!-- 네비게이션 -->
+    <nav class="nav-menu">
+      <div class="nav-content">
+        <div class="nav-item">
+          <a th:href="@{/mynet/view}">조회</a>
+        </div>
+        <div class="nav-item active">
+          <a th:href="@{/mynet/daily-sales}">일일매출현황</a>
+        </div>
+        <div class="nav-item">
+          <a href="javascript:void(0)">비교 ▼</a>
+          <div class="sub-menu">
+            <a th:href="@{/mynet/compare/monthly}">월별</a>
+            <a th:href="@{/mynet/compare/yearly}">년도별</a>
+            <a th:href="@{/mynet/compare/period}">기간별</a>
+            <a th:href="@{/mynet/compare/product}">제품별</a>
+          </div>
+        </div>
+        <div class="nav-item">
+          <a th:href="@{/admin/products}">제품 분류</a>
+        </div>
+        <div class="nav-item">
+          <a th:href="@{/admin/users}">사용자 관리</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="main-container">
+      <div class="card">
+        <!-- 상단 날짜 영역 -->
+        <div class="control-panel">
+          <!-- 기준 날짜 영역 -->
+          <div class="date-control-inline">
+            <span>기준 날짜 : </span>
+            <button class="date-nav-btn" onclick="changeDate(-1)">◀</button>
+            <span
+              class="current-date"
+              id="current-date"
+              onclick="showDatePicker()"
+              th:text="${#temporals.format(targetDate, 'yyyy-MM-dd')}"
+              >2025-11-04</span
+            >
+            <button class="date-nav-btn" onclick="changeDate(1)">▶</button>
+            <input
+              type="date"
+              class="date-picker"
+              id="date-picker"
+              th:value="${targetDate}"
+              onchange="selectDate()"
+            />
+          </div>
+        </div>
+
+        <!-- 통계 테이블 -->
+        <div class="table-container">
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th rowspan="2" colspan="2" style="min-width: 100px">구분</th>
+                <th rowspan="2" style="min-width: 80px">공급가</th>
+
+                <!-- 회사별 컬럼 (7개 회사) -->
+                <th colspan="3" class="company-group" style="min-width: 180px">
+                  영현아이앤씨
+                </th>
+                <th colspan="3" class="company-group" style="min-width: 180px">
+                  마이씨앤에스
+                </th>
+                <th colspan="3" class="company-group" style="min-width: 180px">
+                  우리STM
+                </th>
+                <th colspan="3" class="company-group" style="min-width: 180px">
+                  엠에스앤샵
+                </th>
+                <th colspan="3" class="company-group" style="min-width: 180px">
+                  원이스토리(쿠팡)
+                </th>
+                <th colspan="3" class="company-group" style="min-width: 180px">
+                  대현씨앤씨
+                </th>
+                <th colspan="3" class="company-group" style="min-width: 180px">
+                  마이넷(GX판매)
+                </th>
+
+                <!-- 합계 및 비교 -->
+                <th
+                  colspan="2"
+                  class="daily-total-col"
+                  style="min-width: 120px"
+                >
+                  일 합계
+                </th>
+                <th
+                  colspan="2"
+                  class="monthly-total-col"
+                  style="min-width: 120px"
+                >
+                  월 합계
+                </th>
+                <th
+                  rowspan="2"
+                  class="target-col"
+                  style="min-width: 80px"
+                  th:text="${#temporals.format(targetDate, 'M')} + '월 목표수량'"
+                >
+                  11월 목표수량
+                </th>
+                <th
+                  rowspan="2"
+                  class="comparison-col-1"
+                  style="min-width: 80px"
+                >
+                  전월 판매량
+                </th>
+                <th
+                  rowspan="2"
+                  class="comparison-col-1"
+                  style="min-width: 100px"
+                  th:text="${#temporals.format(targetDate, 'yyyy')} + '년 ' 
+                  + ${#temporals.format(targetDate.minusMonths(1), 'M')} + '-' 
+                  + ${#temporals.format(targetDate, 'M')} + '월 판매량'"
+                >
+                  2025년 1-11월 판매량
+                </th>
+                <th
+                  rowspan="2"
+                  class="comparison-col-2"
+                  style="min-width: 100px"
+                  th:text="${#temporals.format(targetDate.minusYears(1), 'yyyy')} + '년 ' + ${#temporals.format(targetDate.minusMonths(1), 'M')} + '월 판매량'"
+                >
+                  2024년 10월 판매량
+                </th>
+                <th
+                  rowspan="2"
+                  class="comparison-col-2"
+                  style="min-width: 100px"
+                  th:text="${#temporals.format(targetDate.minusYears(1), 'yyyy')} + '년 ' + ${#temporals.format(targetDate, 'M')} + '월 판매량'"
+                >
+                  2024년 11월 판매량
+                </th>
+                <th
+                  rowspan="2"
+                  class="comparison-col-2"
+                  style="min-width: 120px"
+                  th:text="${#temporals.format(targetDate.minusYears(1), 'yyyy')} + '년 ' 
+                  + ${#temporals.format(targetDate.minusMonths(1), 'M')} + '-' 
+                  + ${#temporals.format(targetDate, 'M')} + '월 판매량'"
+                >
+                  2024년 10-11월 판매량
+                </th>
+              </tr>
+              <tr class="sub-header">
+                <!-- 각 회사별 서브헤더 (7회 반복) -->
+                <th:block th:each="i : ${#numbers.sequence(1, 7)}">
+                  <th>일 수량</th>
+                  <th>월 수량</th>
+                  <th>금액</th>
+                </th:block>
+
+                <!-- 합계 서브헤더 -->
+                <th class="daily-total-col">수량</th>
+                <th class="daily-total-col">금액</th>
+                <th class="monthly-total-col">수량</th>
+                <th class="monthly-total-col">금액</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 카테고리별 데이터 -->
+              <th:block
+                th:each="categoryEntry, categoryStat : ${dailySalesData}"
+              >
+                <th:block th:each="item, itemStat : ${categoryEntry.value}">
+                  <tr>
+                    <!-- 카테고리 셀 (첫 번째 행에만 표시) -->
+                    <td
+                      th:if="${itemStat.first}"
+                      class="category-cell"
+                      th:rowspan="${categoryEntry.value.size()}"
+                      th:text="${item.category}"
+                    >
+                      카테고리
+                    </td>
+
+                    <!-- 제품 정보 (제품코드 + 제품명) -->
+                    <td
+                      class="product-info-cell product-data-cell"
+                      th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
+                    >
+                      <div class="product-code" th:text="${item.productCode}">
+                        제품코드
+                      </div>
+                      <div class="product-name" th:text="${item.productName}">
+                        제품명
+                      </div>
+                    </td>
+
+                    <!-- 공급가 -->
+                    <td
+                      class="number-cell product-data-cell"
+                      th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${#numbers.formatInteger(item.supplyPrice, 0, 'COMMA')}"
+                    >
+                      126,900
+                    </td>
+
+                    <!-- 회사별 데이터 (7개 회사 * 3컬럼) -->
+                    <!-- 영현아이앤씨 -->
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['영현아이앤씨'] != null ? (item.companySalesMap['영현아이앤씨'].dailyQuantity > 0 ? item.companySalesMap['영현아이앤씨'].dailyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell product-data-cell"
+                      th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['영현아이앤씨'] != null ? (item.companySalesMap['영현아이앤씨'].monthlyQuantity > 0 ? item.companySalesMap['영현아이앤씨'].monthlyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['영현아이앤씨'] != null && item.companySalesMap['영현아이앤씨'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['영현아이앤씨'].amount, 0, 'COMMA') : '-'}"
+                    >
+                      -
+                    </td>
+
+                    <!-- 마이씨앤에스 -->
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['마이씨앤에스'] != null ? (item.companySalesMap['마이씨앤에스'].dailyQuantity > 0 ? item.companySalesMap['마이씨앤에스'].dailyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell product-data-cell"
+                      th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['마이씨앤에스'] != null ? (item.companySalesMap['마이씨앤에스'].monthlyQuantity > 0 ? item.companySalesMap['마이씨앤에스'].monthlyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['마이씨앤에스'] != null && item.companySalesMap['마이씨앤에스'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['마이씨앤에스'].amount, 0, 'COMMA') : '-'}"
+                    >
+                      -
+                    </td>
+
+                    <!-- 우리STM -->
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['우리STM'] != null ? (item.companySalesMap['우리STM'].dailyQuantity > 0 ? item.companySalesMap['우리STM'].dailyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell product-data-cell"
+                      th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['우리STM'] != null ? (item.companySalesMap['우리STM'].monthlyQuantity > 0 ? item.companySalesMap['우리STM'].monthlyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['우리STM'] != null && item.companySalesMap['우리STM'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['우리STM'].amount, 0, 'COMMA') : '-'}"
+                    >
+                      -
+                    </td>
+
+                    <!-- 엠에스앤샵 -->
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['엠에스앤샵'] != null ? (item.companySalesMap['엠에스앤샵'].dailyQuantity > 0 ? item.companySalesMap['엠에스앤샵'].dailyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell product-data-cell"
+                      th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['엠에스앤샵'] != null ? (item.companySalesMap['엠에스앤샵'].monthlyQuantity > 0 ? item.companySalesMap['엠에스앤샵'].monthlyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['엠에스앤샵'] != null && item.companySalesMap['엠에스앤샵'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['엠에스앤샵'].amount, 0, 'COMMA') : '-'}"
+                    >
+                      -
+                    </td>
+
+                    <!-- 원이스토리(쿠팡) -->
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['원이스토리(쿠팡)'] != null ? (item.companySalesMap['원이스토리(쿠팡)'].dailyQuantity > 0 ? item.companySalesMap['원이스토리(쿠팡)'].dailyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell product-data-cell"
+                      th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['원이스토리(쿠팡)'] != null ? (item.companySalesMap['원이스토리(쿠팡)'].monthlyQuantity > 0 ? item.companySalesMap['원이스토리(쿠팡)'].monthlyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['원이스토리(쿠팡)'] != null && item.companySalesMap['원이스토리(쿠팡)'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['원이스토리(쿠팡)'].amount, 0, 'COMMA') : '-'}"
+                    >
+                      -
+                    </td>
+
+                    <!-- 대현씨앤씨 -->
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['대현씨앤씨'] != null ? (item.companySalesMap['대현씨앤씨'].dailyQuantity > 0 ? item.companySalesMap['대현씨앤씨'].dailyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell product-data-cell"
+                      th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['대현씨앤씨'] != null ? (item.companySalesMap['대현씨앤씨'].monthlyQuantity > 0 ? item.companySalesMap['대현씨앤씨'].monthlyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['대현씨앤씨'] != null && item.companySalesMap['대현씨앤씨'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['대현씨앤씨'].amount, 0, 'COMMA') : '-'}"
+                    >
+                      -
+                    </td>
+
+                    <!-- 마이넷(GX판매) -->
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['마이넷(GX판매)'] != null ? (item.companySalesMap['마이넷(GX판매)'].dailyQuantity > 0 ? item.companySalesMap['마이넷(GX판매)'].dailyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell product-data-cell"
+                      th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['마이넷(GX판매)'] != null ? (item.companySalesMap['마이넷(GX판매)'].monthlyQuantity > 0 ? item.companySalesMap['마이넷(GX판매)'].monthlyQuantity : '-') : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
+                      th:text="${item.companySalesMap['마이넷(GX판매)'] != null && item.companySalesMap['마이넷(GX판매)'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['마이넷(GX판매)'].amount, 0, 'COMMA') : '-'}"
+                    >
+                      -
+                    </td>
+
+                    <!-- 일 합계 -->
+                    <td
+                      class="number-cell daily-total-col"
+                      th:text="${item.dailyTotal.quantity > 0 ? item.dailyTotal.quantity : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell amount-cell daily-total-col"
+                      th:text="${item.dailyTotal.amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.dailyTotal.amount, 0, 'COMMA') : '-'}"
+                    >
+                      -
+                    </td>
+
+                    <!-- 월 합계 -->
+                    <td
+                      class="number-cell monthly-total-col"
+                      th:text="${item.monthlyTotal.quantity > 0 ? item.monthlyTotal.quantity : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell amount-cell monthly-total-col"
+                      th:text="${item.monthlyTotal.amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.monthlyTotal.amount, 0, 'COMMA') : '-'}"
+                    >
+                      -
+                    </td>
+
+                    <!-- 비교 데이터 -->
+                    <td
+                      class="number-cell target-col"
+                      th:text="${item.targetQuantity > 0 ? item.targetQuantity : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell comparison-col-1"
+                      th:text="${item.prevMonthSales > 0 ? item.prevMonthSales : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell comparison-col-1"
+                      th:text="${item.yearToDateSales > 0 ? item.yearToDateSales : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell comparison-col-2"
+                      th:text="${item.lastYearPrevMonthSales > 0 ? item.lastYearPrevMonthSales : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell comparison-col-2"
+                      th:text="${item.lastYearCurrentMonthSales > 0 ? item.lastYearCurrentMonthSales : '-'}"
+                    >
+                      -
+                    </td>
+                    <td
+                      class="number-cell comparison-col-2"
+                      th:text="${item.lastYearYearToDateSales > 0 ? item.lastYearYearToDateSales : '-'}"
+                    >
+                      -
+                    </td>
+                  </tr>
+                </th:block>
+
+                <!-- 소계 행 -->
+                <tr
+                  class="subtotal-row"
+                  th:attr="data-category-index=${categoryStat.index}"
+                >
+                  <td
+                    colspan="2"
+                    class="product-data-cell"
+                    style="text-align: left; padding-left: 15px"
+                  >
+                    소계
+                  </td>
+                  <td class="number-cell product-data-cell">-</td>
+                  <!-- 각 회사별 소계 (7개 회사 * 3컬럼 = 21개) -->
+                  <td
+                    th:each="i : ${#numbers.sequence(1, 21)}"
+                    class="number-cell product-data-cell"
+                  >
+                    -
+                  </td>
+                  <!-- 일 합계 (2칸) -->
+                  <td class="number-cell daily-total-col">-</td>
+                  <td class="number-cell daily-total-col">-</td>
+                  <!-- 월 합계 (2칸) -->
+                  <td class="number-cell monthly-total-col">-</td>
+                  <td class="number-cell monthly-total-col">-</td>
+                  <!-- 목표 (1칸) -->
+                  <td class="number-cell target-col">-</td>
+                  <!-- 비교1 (2칸) -->
+                  <td class="number-cell comparison-col-1">-</td>
+                  <td class="number-cell comparison-col-1">-</td>
+                  <!-- 비교2 (3칸) -->
+                  <td
+                    th:each="i : ${#numbers.sequence(1, 3)}"
+                    class="number-cell comparison-col-2"
+                  >
+                    -
+                  </td>
+                </tr>
+              </th:block>
+
+              <!-- 합계 행 -->
+              <tr class="total-row">
+                <td
+                  colspan="2"
+                  class="product-data-cell"
+                  style="text-align: left; padding-left: 15px"
+                >
+                  <strong>합계</strong>
+                </td>
+                <td class="number-cell product-data-cell">-</td>
+                <!-- 각 회사별 합계 (21개) -->
+                <td
+                  th:each="i : ${#numbers.sequence(1, 21)}"
+                  class="number-cell product-data-cell"
+                >
+                  -
+                </td>
+                <!-- 일 합계 (2칸) -->
+                <td class="number-cell daily-total-col">-</td>
+                <td class="number-cell daily-total-col">-</td>
+                <!-- 월 합계 (2칸) -->
+                <td class="number-cell monthly-total-col">-</td>
+                <td class="number-cell monthly-total-col">-</td>
+                <!-- 목표 (1칸) -->
+                <td class="number-cell target-col">-</td>
+                <!-- 비교1 (2칸) -->
+                <td class="number-cell comparison-col-1">-</td>
+                <td class="number-cell comparison-col-1">-</td>
+                <!-- 비교2 (3칸) -->
+                <td
+                  th:each="i : ${#numbers.sequence(1, 3)}"
+                  class="number-cell comparison-col-2"
+                >
+                  -
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <script th:src="@{/js/common.js}"></script>
+
+    <!-- JavaScript -->
+    <script th:inline="javascript">
+      document.addEventListener("DOMContentLoaded", () => {
+        // 테이블 계산 실행
+        calculateCategorySubtotals();
+        calculateTotalRow();
+      });
+
+      /**
+       * 카테고리별 소계 계산
+       */
+      function calculateCategorySubtotals() {
+        const table = document.querySelector(".stats-table");
+        if (!table) return;
+
+        const tbody = table.querySelector("tbody");
+        if (!tbody) return;
+
+        const subtotalRows = tbody.querySelectorAll("tr.subtotal-row");
+
+        subtotalRows.forEach((subtotalRow) => {
+          // 소계행 이전의 데이터행 수집
+          let prev = subtotalRow.previousElementSibling;
+          const dataRows = [];
+          while (
+            prev &&
+            !prev.classList.contains("subtotal-row") &&
+            !prev.classList.contains("total-row")
+          ) {
+            dataRows.unshift(prev);
+            prev = prev.previousElementSibling;
+          }
+
+          // 전체 합계 대상 컬럼 수 (회사7x3 + 일2 + 월2 + 목표1 + 비교1x2 + 비교2x3 = 31)
+          const totalCols = 31;
+          const subtotalValues = Array(totalCols).fill(0);
+
+          dataRows.forEach((row) => {
+            const tds = row.querySelectorAll("td.number-cell");
+            for (let i = 0; i < totalCols; i++) {
+              const td = tds[i];
+              if (!td) continue;
+              const val = parseInt(td.textContent.replace(/,/g, ""), 10);
+              if (!isNaN(val)) subtotalValues[i] += val;
+            }
+          });
+
+          // 소계행에 채우기
+          const subtotalCells = subtotalRow.querySelectorAll("td.number-cell");
+          subtotalValues.forEach((v, i) => {
+            if (subtotalCells[i])
+              subtotalCells[i].textContent = v > 0 ? v.toLocaleString() : "-";
+          });
+        });
+      }
+
+      /**
+       * 전체 합계 계산
+       */
+      function calculateTotalRow() {
+        const table = document.querySelector(".stats-table");
+        if (!table) return;
+
+        const tbody = table.querySelector("tbody");
+        const subtotalRows = tbody.querySelectorAll("tr.subtotal-row");
+        const totalRow = tbody.querySelector("tr.total-row");
+        if (!totalRow) return;
+
+        const totalCols = 31;
+        const totalValues = Array(totalCols).fill(0);
+
+        subtotalRows.forEach((subtotalRow) => {
+          const tds = subtotalRow.querySelectorAll("td.number-cell");
+          for (let i = 0; i < totalCols; i++) {
+            const td = tds[i];
+            if (!td) continue;
+            const val = parseInt(td.textContent.replace(/,/g, ""), 10);
+            if (!isNaN(val)) totalValues[i] += val;
+          }
+        });
+
+        // 합계행 채우기
+        const totalCells = totalRow.querySelectorAll("td.number-cell");
+        totalValues.forEach((v, i) => {
+          if (totalCells[i])
+            totalCells[i].textContent = v > 0 ? v.toLocaleString() : "-";
+        });
+      }
+
+      /*<![CDATA[*/
+      let currentDate = new Date(/*[[${targetDate}]]*/ "2025-11-04");
+
+      // 페이지 로드 시 DatePicker 초기화
+      document.addEventListener("DOMContentLoaded", function () {
+        const targetDateElement = document.getElementById("current-date");
+        if (targetDateElement) {
+          currentDate = new Date(targetDateElement.textContent);
+        }
+
+        // DatePicker 초기화
+        if (typeof globalDatePicker !== "undefined") {
+          globalDatePicker.selectedDate = new Date(currentDate);
+          globalDatePicker.init(document.getElementById("current-date"), {
+            onSelect: function (dateString) {
+              location.href = `/mynet/daily-sales?date=${dateString}`;
+            },
+          });
+        }
+
+        updateDateDisplay();
+      });
+
+      // 날짜 변경
+      function changeDate(days) {
+        const newDate = new Date(currentDate);
+        newDate.setDate(newDate.getDate() + days);
+        const dateStr = newDate.toISOString().split("T")[0];
+        location.href = `/mynet/daily-sales?date=${dateStr}`;
+      }
+
+      // 날짜 피커 표시
+      function showDatePicker() {
+        console.log("showDatePicker 호출");
+
+        if (typeof globalDatePicker !== "undefined") {
+          globalDatePicker.currentDate = new Date(currentDate);
+          globalDatePicker.selectedDate = new Date(currentDate);
+          globalDatePicker.show();
+        } else {
+          console.log("globalDatePicker 없음, fallback 사용");
+          const datePicker = document.getElementById("date-picker");
+          if (datePicker) {
+            datePicker.click();
+          }
+        }
+      }
+
+      // 날짜 선택
+      function selectDate() {
+        const datePicker = document.getElementById("date-picker");
+        const dateValue = datePicker.value;
+        location.href = `/mynet/daily-sales?date=${dateValue}`;
+      }
+
+      // 날짜 표시 업데이트
+      function updateDateDisplay() {
+        const dateElement = document.getElementById("current-date");
+        const datePicker = document.getElementById("date-picker");
+        const dateStr = currentDate.toISOString().split("T")[0];
+        if (dateElement) dateElement.textContent = dateStr;
+        if (datePicker) datePicker.value = dateStr;
+      }
+      /*]]>*/
+    </script>
+  </body>
+</html>

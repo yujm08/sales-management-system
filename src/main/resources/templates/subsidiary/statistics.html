@@ -5,91 +5,94 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="_csrf" th:content="${_csrf.token}" />
     <meta name="_csrf_header" th:content="${_csrf.headerName}" />
-    <title>매출 통계 - 하위회사</title>
+    <title>매출 통계 - 마이넷 매출 관리 시스템</title>
     <link rel="stylesheet" th:href="@{/css/style.css}" />
     <link rel="stylesheet" th:href="@{/css/datepicker.css}" />
+    <script th:src="@{/js/datepicker.js}"></script>
     <style>
-      /* 페이지 전체 스타일 */
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #f8f9fa;
-        margin: 0;
+      /* 전체 스타일 */
+      .main-container {
         padding: 20px;
+        background: #f8f9fa;
+        min-height: 100vh;
       }
 
-      .container {
-        max-width: 1400px;
-        margin: 0 auto;
+      .card {
         background: white;
-        padding: 30px;
         border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
       }
 
-      .page-header {
-        text-align: center;
-        margin-bottom: 30px;
+      /* 상단 컨트롤 영역 */
+      .control-panel {
+        background: #e9ecef;
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
 
-      .page-header h1 {
-        margin: 0 0 10px 0;
-        color: #212529;
-      }
-
-      .company-name {
-        color: #6c757d;
-        font-size: 16px;
-      }
-
-      /* 날짜 네비게이션 */
+      /* 기준 날짜 영역 */
       .date-control-inline {
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 20px;
-      }
-
-      .date-nav-btn {
-        background: #24595e;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 4px;
-        cursor: pointer;
+        gap: 6px;
+        color: #495057;
+        font-weight: 500;
         font-size: 14px;
       }
 
-      .date-nav-btn:hover {
-        background: #1e474b;
+      .date-control-inline .label {
+        margin-right: 4px;
+        color: #6c757d;
       }
 
-      .current-date {
-        font-size: 18px;
+      .date-control-inline .date-nav-btn {
+        background: transparent;
+        border: 1px solid #adb5bd;
+        color: #495057;
+        padding: 3px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .date-control-inline .date-nav-btn:hover {
+        background: #f1f3f5;
+      }
+
+      .date-control-inline .current-date {
         font-weight: 600;
         color: #212529;
-        padding: 8px 16px;
-        background: #f8f9fa;
-        border-radius: 4px;
+        padding: 3px 6px;
+        border: 1px solid transparent;
+        border-radius: 3px;
         cursor: pointer;
-        min-width: 120px;
-        text-align: center;
       }
 
-      .current-date:hover {
-        background: #e9ecef;
+      .date-control-inline .current-date:hover {
+        border-color: #ced4da;
+        background: #f8f9fa;
       }
 
       .date-picker {
-        display: none;
+        position: absolute;
+        left: -9999px;
+        opacity: 0;
       }
 
       /* 테이블 스타일 */
+      .table-container {
+        overflow-x: auto;
+      }
+
       .stats-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 20px;
-        font-size: 14px;
+        font-size: 13px;
+        background: white;
       }
 
       .stats-table th {
@@ -98,38 +101,41 @@
         padding: 12px 8px;
         text-align: center;
         font-weight: 600;
-        border: 1px solid #1e474b;
+        border: 1px solid #ffffff;
+        font-size: 12px;
       }
 
       .stats-table td {
-        padding: 10px 8px;
+        padding: 8px;
         text-align: center;
-        border: 1px solid #dee2e6;
+        border: 1px solid #ffffff;
+        font-size: 12px;
       }
 
-      /* 카테고리 셀 */
+      /* 카테고리 셀 스타일 */
       .category-cell {
         background: #dee2e6;
-        color: #000;
-        font-weight: 600;
+        color: #333;
+        font-weight: bold;
         vertical-align: middle;
+        text-align: center;
       }
 
-      /* 제품 데이터 행 - 4단계 초록색 */
-      .green-1 {
-        background-color: #e8f5e8;
+      /* 카테고리별 배경색 */
+      .data-cell.green-1 {
+        background: #e8f5e8;
       }
 
-      .green-2 {
-        background-color: #d4f4d4;
+      .data-cell.green-2 {
+        background: #d4f4d4;
       }
 
-      .green-3 {
-        background-color: #c0f0c0;
+      .data-cell.green-3 {
+        background: #c0f0c0;
       }
 
-      .green-4 {
-        background-color: #b3e6b3;
+      .data-cell.green-4 {
+        background: #b3e6b3;
       }
 
       /* 소계/합계 행 */
@@ -141,7 +147,26 @@
       .total-row td {
         background-color: #d3d3d3 !important;
         font-weight: 700;
-        font-size: 15px;
+        font-size: 13px;
+      }
+
+      /* 제품 정보 */
+      .product-info {
+        text-align: left;
+        padding-left: 10px;
+      }
+
+      .product-name {
+        font-weight: 600;
+        font-size: 12px;
+      }
+
+      /* 수치 표시 */
+      .amount {
+        font-weight: 600;
+        color: #000000;
+        text-align: right;
+        padding-right: 10px;
       }
 
       /* 달성률 */
@@ -173,268 +198,334 @@
         transition: width 0.3s ease;
       }
 
-      /* 금액 우측 정렬 */
-      .amount {
-        text-align: right;
+      /* 알림 */
+      .alert {
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        border-radius: 4px;
+        font-weight: 500;
       }
 
-      /* 제품명 좌측 정렬 */
-      .product-name {
-        text-align: left;
-        padding-left: 8px;
+      .alert-success {
+        background-color: #d1edff;
+        color: #0c5460;
+        border: 1px solid #28a745;
       }
 
-      /* 반응형 */
-      @media (max-width: 1200px) {
-        .stats-table {
-          font-size: 12px;
-        }
+      .alert-error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #dc3545;
+      }
 
-        .stats-table th,
-        .stats-table td {
-          padding: 8px 4px;
-        }
+      .change-password-link {
+        color: white;
+        text-decoration: none;
+        padding: 6px 12px;
+        border: 1px solid white;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: background-color 0.2s;
+        margin-right: 10px;
+        display: inline-block;
+      }
+
+      .change-password-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <!-- 페이지 헤더 -->
-      <div class="page-header">
-        <h1>매출 통계</h1>
-        <p class="company-name" th:text="${companyName}">회사명</p>
+    <!-- 헤더 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">마이넷 매출 관리 시스템</div>
+        <div class="user-info">
+          <a th:href="@{/change-password}" class="change-password-link"
+            >비밀번호 변경</a
+          >
+          <span
+            class="user-name"
+            th:text="${#authentication.principal.username}"
+            >사용자</span
+          >
+          <span
+            class="user-company"
+            th:text="'(' + ${#authentication.principal.companyName} + ')'"
+            >(회사명)</span
+          >
+          <form th:action="@{/logout}" method="post" style="display: inline">
+            <button type="submit" class="logout-btn">로그아웃</button>
+          </form>
+        </div>
       </div>
+    </header>
 
-      <!-- 기준 날짜 영역 -->
-      <div class="date-control-inline">
-        <span>기준 날짜 : </span>
-        <button class="date-nav-btn" onclick="changeDate(-1)">◀</button>
-        <span
-          class="current-date"
-          id="current-date"
-          onclick="showDatePicker()"
-          th:text="${#temporals.format(targetDate, 'yyyy-MM-dd')}"
-        >
-          2025-10-28
-        </span>
-        <button class="date-nav-btn" onclick="changeDate(1)">▶</button>
-        <input
-          type="date"
-          class="date-picker"
-          id="date-picker"
-          th:value="${targetDate}"
-          onchange="selectDate()"
-        />
+    <!-- 네비게이션 -->
+    <nav class="nav-menu">
+      <div class="nav-content">
+        <div class="nav-item">
+          <a th:href="@{/subsidiary/input}">입력</a>
+        </div>
+        <div class="nav-item active">
+          <a th:href="@{/subsidiary/sales-summary}">조회</a>
+        </div>
+        <div class="nav-item">
+          <a th:href="@{/subsidiary/monthly}">월별매출집계</a>
+        </div>
       </div>
+    </nav>
 
-      <!-- 통계 테이블 -->
-      <table class="stats-table">
-        <thead>
-          <tr>
-            <th rowspan="2">분류</th>
-            <th colspan="3">제품</th>
-            <th colspan="2">일 합계</th>
-            <th colspan="2">월 합계</th>
-            <th colspan="2">목표수량</th>
-          </tr>
-          <tr>
-            <th>제품코드</th>
-            <th>제품명</th>
-            <th>공급가</th>
-            <th>수량</th>
-            <th>금액</th>
-            <th>수량</th>
-            <th>금액</th>
-            <th th:text="${#temporals.format(targetDate, 'M')} + '월'">N월</th>
-            <th>달성률</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- 데이터가 없는 경우 -->
-          <tr th:if="${#lists.isEmpty(statisticsData)}">
-            <td
-              colspan="11"
-              style="text-align: center; padding: 40px; color: #6c757d"
+    <!-- 메인 컨텐츠 -->
+    <main class="main-container">
+      <div id="alert-container"></div>
+
+      <div class="card">
+        <!-- 상단 컨트롤 영역 -->
+        <div class="control-panel">
+          <!-- 기준 날짜 영역 (중앙) -->
+          <div class="date-control-inline">
+            <span>기준 날짜 : </span>
+            <button class="date-nav-btn" onclick="changeDate(-1)">◀</button>
+            <span
+              class="current-date"
+              id="current-date"
+              onclick="showDatePicker()"
+              th:text="${#temporals.format(targetDate, 'yyyy-MM-dd')}"
+              >2025-10-28</span
             >
-              표시할 데이터가 없습니다.
-            </td>
-          </tr>
+            <button class="date-nav-btn" onclick="changeDate(1)">▶</button>
+            <input
+              type="date"
+              class="date-picker"
+              id="date-picker"
+              th:value="${targetDate}"
+              onchange="selectDate()"
+            />
+          </div>
+        </div>
 
-          <!-- 통계 데이터 반복 -->
-          <th:block th:each="item, itemStat : ${statisticsData}">
-            <!-- 소계 행 -->
-            <tr th:if="${item.category == '소계'}" class="subtotal-row">
-              <td colspan="3" th:text="${item.productName}">소계</td>
-              <td></td>
-              <td th:text="${item.dailySummary?.quantity ?: 0}">0</td>
-              <td
-                class="amount"
-                th:text="${#numbers.formatInteger(item.dailySummary?.amount ?: 0, 0, 'COMMA')}"
-              >
-                0
-              </td>
-              <td th:text="${item.monthlySummary?.quantity ?: 0}">0</td>
-              <td
-                class="amount"
-                th:text="${#numbers.formatInteger(item.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
-              >
-                0
-              </td>
-              <td th:text="${item.targetData?.targetQuantity ?: 0}">0</td>
-              <td>
-                <div class="achievement-rate">
-                  <span
-                    class="rate-text"
-                    th:text="${#numbers.formatDecimal(item.targetData?.achievementRate ?: 0, 0, 0)} + '%'"
-                    >0%</span
+        <!-- 테이블 -->
+        <div class="table-container">
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th rowspan="2">분류</th>
+                <th colspan="3">제품</th>
+                <th colspan="2">일 합계</th>
+                <th colspan="2">월 합계</th>
+                <th colspan="2">목표수량</th>
+              </tr>
+              <tr>
+                <th>제품코드</th>
+                <th>제품명</th>
+                <th>공급가</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th th:text="${currentMonth + '월'}">N월</th>
+                <th>달성률</th>
+              </tr>
+            </thead>
+            <tbody id="stats-tbody">
+              <!-- 데이터가 없는 경우 -->
+              <tr th:if="${#lists.isEmpty(statisticsData)}">
+                <td
+                  colspan="11"
+                  style="text-align: center; padding: 40px; color: #6c757d"
+                >
+                  표시할 데이터가 없습니다.
+                </td>
+              </tr>
+
+              <!-- 통계 데이터 반복 -->
+              <th:block th:each="item, itemStat : ${statisticsData}">
+                <!-- 소계 행 -->
+                <tr th:if="${item.category == '소계'}" class="subtotal-row">
+                  <td colspan="3" style="text-align: left; padding-left: 15px">
+                    <strong th:text="${item.productName}">소계</strong>
+                  </td>
+                  <td></td>
+                  <td th:text="${item.dailySummary?.quantity ?: 0}">0</td>
+                  <td
+                    class="amount"
+                    th:text="${#numbers.formatInteger(item.dailySummary?.amount ?: 0, 0, 'COMMA')}"
                   >
-                  <div class="rate-bar">
-                    <div
-                      class="rate-fill"
-                      th:style="'width: ' + ${(item.targetData?.achievementRate ?: 0) > 100 ? 100 : (item.targetData?.achievementRate ?: 0)} + '%'"
-                    ></div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-
-            <!-- 합계 행 -->
-            <tr th:if="${item.category == '합계'}" class="total-row">
-              <td colspan="3" th:text="${item.productName}">합계</td>
-              <td></td>
-              <td th:text="${item.dailySummary?.quantity ?: 0}">0</td>
-              <td
-                class="amount"
-                th:text="${#numbers.formatInteger(item.dailySummary?.amount ?: 0, 0, 'COMMA')}"
-              >
-                0
-              </td>
-              <td th:text="${item.monthlySummary?.quantity ?: 0}">0</td>
-              <td
-                class="amount"
-                th:text="${#numbers.formatInteger(item.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
-              >
-                0
-              </td>
-              <td th:text="${item.targetData?.targetQuantity ?: 0}">0</td>
-              <td>
-                <div class="achievement-rate">
-                  <span
-                    class="rate-text"
-                    th:text="${#numbers.formatDecimal(item.targetData?.achievementRate ?: 0, 0, 0)} + '%'"
-                    >0%</span
+                    0
+                  </td>
+                  <td th:text="${item.monthlySummary?.quantity ?: 0}">0</td>
+                  <td
+                    class="amount"
+                    th:text="${#numbers.formatInteger(item.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
                   >
-                  <div class="rate-bar">
-                    <div
-                      class="rate-fill"
-                      th:style="'width: ' + ${(item.targetData?.achievementRate ?: 0) > 100 ? 100 : (item.targetData?.achievementRate ?: 0)} + '%'"
-                    ></div>
-                  </div>
-                </div>
-              </td>
-            </tr>
+                    0
+                  </td>
+                  <td th:text="${item.targetData?.targetQuantity ?: 0}">0</td>
+                  <td>
+                    <div class="achievement-rate">
+                      <span
+                        class="rate-text"
+                        th:text="${#numbers.formatDecimal(item.targetData?.achievementRate ?: 0, 0, 0)} + '%'"
+                        >0%</span
+                      >
+                      <div class="rate-bar">
+                        <div
+                          class="rate-fill"
+                          th:style="'width: ' + ${(item.targetData?.achievementRate ?: 0) > 100 ? 100 : (item.targetData?.achievementRate ?: 0)} + '%'"
+                        ></div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
 
-            <!-- 제품 데이터 행 -->
-            <tr th:if="${item.category != '소계' and item.category != '합계'}">
-              <!-- 카테고리 셀 (같은 카테고리의 첫 번째 행에만 표시) -->
-              <td
-                th:if="${itemStat.index == 0 or statisticsData[itemStat.index - 1].category != item.category}"
-                class="category-cell"
-                th:rowspan="${statisticsData.stream().filter(i -> i.category == item.category and i.category != '소계' and i.category != '합계').count()}"
-                th:text="${item.category}"
-              >
-                카테고리
-              </td>
-
-              <!-- 제품 정보 -->
-              <td
-                th:class="'green-' + ${(itemStat.index % 4) + 1}"
-                th:text="${item.productCode}"
-              >
-                0001
-              </td>
-              <td
-                th:class="'green-' + ${(itemStat.index % 4) + 1} + ' product-name'"
-                th:text="${item.productName}"
-              >
-                제품명
-              </td>
-              <td
-                th:class="'green-' + ${(itemStat.index % 4) + 1} + ' amount'"
-                th:text="${'₩' + #numbers.formatInteger(item.supplyPrice, 0, 'COMMA')}"
-              >
-                ₩0
-              </td>
-
-              <!-- 일 합계 -->
-              <td
-                th:class="'green-' + ${(itemStat.index % 4) + 1}"
-                th:text="${item.dailySummary?.quantity ?: 0}"
-              >
-                0
-              </td>
-              <td
-                th:class="'green-' + ${(itemStat.index % 4) + 1} + ' amount'"
-                th:text="${#numbers.formatInteger(item.dailySummary?.amount ?: 0, 0, 'COMMA')}"
-              >
-                0
-              </td>
-
-              <!-- 월 합계 -->
-              <td
-                th:class="'green-' + ${(itemStat.index % 4) + 1}"
-                th:text="${item.monthlySummary?.quantity ?: 0}"
-              >
-                0
-              </td>
-              <td
-                th:class="'green-' + ${(itemStat.index % 4) + 1} + ' amount'"
-                th:text="${#numbers.formatInteger(item.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
-              >
-                0
-              </td>
-
-              <!-- 목표수량 -->
-              <td
-                th:class="'green-' + ${(itemStat.index % 4) + 1}"
-                th:text="${item.targetData?.targetQuantity ?: 0}"
-              >
-                0
-              </td>
-
-              <!-- 달성률 -->
-              <td th:class="'green-' + ${(itemStat.index % 4) + 1}">
-                <div class="achievement-rate">
-                  <span
-                    class="rate-text"
-                    th:text="${#numbers.formatDecimal(item.targetData?.achievementRate ?: 0, 0, 0)} + '%'"
-                    >0%</span
+                <!-- 합계 행 -->
+                <tr th:if="${item.category == '합계'}" class="total-row">
+                  <td colspan="3" style="text-align: left; padding-left: 15px">
+                    <strong th:text="${item.productName}">합계</strong>
+                  </td>
+                  <td></td>
+                  <td th:text="${item.dailySummary?.quantity ?: 0}">0</td>
+                  <td
+                    class="amount"
+                    th:text="${#numbers.formatInteger(item.dailySummary?.amount ?: 0, 0, 'COMMA')}"
                   >
-                  <div class="rate-bar">
-                    <div
-                      class="rate-fill"
-                      th:style="'width: ' + ${(item.targetData?.achievementRate ?: 0) > 100 ? 100 : (item.targetData?.achievementRate ?: 0)} + '%'"
-                    ></div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </th:block>
-        </tbody>
-      </table>
-    </div>
+                    0
+                  </td>
+                  <td th:text="${item.monthlySummary?.quantity ?: 0}">0</td>
+                  <td
+                    class="amount"
+                    th:text="${#numbers.formatInteger(item.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
+                  >
+                    0
+                  </td>
+                  <td th:text="${item.targetData?.targetQuantity ?: 0}">0</td>
+                  <td>
+                    <div class="achievement-rate">
+                      <span
+                        class="rate-text"
+                        th:text="${#numbers.formatDecimal(item.targetData?.achievementRate ?: 0, 0, 0)} + '%'"
+                        >0%</span
+                      >
+                      <div class="rate-bar">
+                        <div
+                          class="rate-fill"
+                          th:style="'width: ' + ${(item.targetData?.achievementRate ?: 0) > 100 ? 100 : (item.targetData?.achievementRate ?: 0)} + '%'"
+                        ></div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
 
-    <script th:src="@{/js/datepicker.js}"></script>
+                <!-- 제품 데이터 행 -->
+                <tr
+                  th:if="${item.category != '소계' and item.category != '합계'}"
+                >
+                  <!-- 카테고리 셀 (같은 카테고리의 첫 번째 행에만 표시) -->
+                  <td
+                    th:if="${itemStat.index == 0 or statisticsData[itemStat.index - 1].category != item.category}"
+                    class="category-cell"
+                    th:rowspan="${categoryCount[item.category]}"
+                    th:text="${item.category}"
+                  >
+                    카테고리
+                  </td>
+
+                  <!-- 제품 정보 -->
+                  <td
+                    th:class="'data-cell green-' + ${categoryColorIndex[item.category]}"
+                    th:text="${item.productCode}"
+                  >
+                    0001
+                  </td>
+                  <td
+                    th:class="'data-cell green-' + ${categoryColorIndex[item.category]} + ' product-info'"
+                  >
+                    <div class="product-name" th:text="${item.productName}">
+                      제품명
+                    </div>
+                  </td>
+                  <td
+                    th:class="'data-cell green-' + ${categoryColorIndex[item.category]} + ' amount'"
+                    th:text="${#numbers.formatInteger(item.supplyPrice, 0, 'COMMA')}"
+                  >
+                    0
+                  </td>
+
+                  <!-- 일 합계 -->
+                  <td
+                    th:class="'data-cell green-' + ${categoryColorIndex[item.category]}"
+                    th:text="${item.dailySummary?.quantity ?: 0}"
+                  >
+                    0
+                  </td>
+                  <td
+                    th:class="'data-cell green-' + ${categoryColorIndex[item.category]} + ' amount'"
+                    th:text="${#numbers.formatInteger(item.dailySummary?.amount ?: 0, 0, 'COMMA')}"
+                  >
+                    0
+                  </td>
+
+                  <!-- 월 합계 -->
+                  <td
+                    th:class="'data-cell green-' + ${categoryColorIndex[item.category]}"
+                    th:text="${item.monthlySummary?.quantity ?: 0}"
+                  >
+                    0
+                  </td>
+                  <td
+                    th:class="'data-cell green-' + ${categoryColorIndex[item.category]} + ' amount'"
+                    th:text="${#numbers.formatInteger(item.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
+                  >
+                    0
+                  </td>
+
+                  <!-- 목표수량 -->
+                  <td
+                    th:class="'data-cell green-' + ${categoryColorIndex[item.category]}"
+                    th:text="${item.targetData?.targetQuantity ?: 0}"
+                  >
+                    0
+                  </td>
+
+                  <!-- 달성률 -->
+                  <td
+                    th:class="'data-cell green-' + ${categoryColorIndex[item.category]}"
+                  >
+                    <div class="achievement-rate">
+                      <span
+                        class="rate-text"
+                        th:text="${#numbers.formatDecimal(item.targetData?.achievementRate ?: 0, 0, 0)} + '%'"
+                        >0%</span
+                      >
+                      <div class="rate-bar">
+                        <div
+                          class="rate-fill"
+                          th:style="'width: ' + ${(item.targetData?.achievementRate ?: 0) > 100 ? 100 : (item.targetData?.achievementRate ?: 0)} + '%'"
+                        ></div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </th:block>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <script th:src="@{/js/common.js}"></script>
+
     <script>
-      let currentDate = new Date(/*[[${targetDate}]]*/ "2025-10-28");
+      let currentDate = new Date("[[${targetDate}]]");
 
-      // 페이지 로드 시 DatePicker 초기화
       document.addEventListener("DOMContentLoaded", function () {
+        // 날짜 피커 초기화
         if (typeof globalDatePicker !== "undefined") {
           globalDatePicker.selectedDate = new Date(currentDate);
           globalDatePicker.init(document.getElementById("current-date"), {
             onSelect: function (dateString) {
-              location.href = `/subsidiary/statistics?date=${dateString}`;
+              location.href = "/subsidiary/sales-summary?date=" + dateString;
             },
           });
         }
@@ -443,9 +534,9 @@
       // 날짜 변경 (화살표 버튼)
       function changeDate(days) {
         const newDate = new Date(currentDate);
-        newDate.setDate(newDate.getDate() + days);
-        const dateStr = newDate.toISOString().split("T")[0];
-        location.href = `/subsidiary/statistics?date=${dateStr}`;
+        newDate.setDate(currentDate.getDate() + days);
+        const dateStr = formatDate(newDate);
+        location.href = "/subsidiary/sales-summary?date=" + dateStr;
       }
 
       // 날짜 피커 표시
@@ -463,7 +554,27 @@
       function selectDate() {
         const datePicker = document.getElementById("date-picker");
         const dateValue = datePicker.value;
-        location.href = `/subsidiary/statistics?date=${dateValue}`;
+        location.href = "/subsidiary/sales-summary?date=" + dateValue;
+      }
+
+      // 유틸리티 함수
+      function formatDate(date) {
+        return (
+          date.getFullYear() +
+          "-" +
+          String(date.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(date.getDate()).padStart(2, "0")
+        );
+      }
+
+      function showAlert(message, type = "info") {
+        const container = document.getElementById("alert-container");
+        const alert = document.createElement("div");
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        container.appendChild(alert);
+        setTimeout(() => alert.remove(), 3000);
       }
     </script>
   </body>

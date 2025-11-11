@@ -88,4 +88,5 @@ public class CustomUserDetails implements UserDetails {
     public boolean isCanon() {
         return user.getIsCanon();
     }
+
 }

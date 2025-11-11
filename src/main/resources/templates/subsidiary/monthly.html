@@ -3,9 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>월별 비교 - 마이넷 매출 관리 시스템</title>
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+    <title>월별 매출 집계 - 마이넷 매출 관리 시스템</title>
     <link rel="stylesheet" th:href="@{/css/style.css}" />
     <style>
+      /* 전체 스타일 */
       .main-container {
         padding: 20px;
         background: #f8f9fa;
@@ -20,47 +23,23 @@
         margin-bottom: 20px;
       }
 
-      .filter-section {
-        padding: 15px 20px;
+      /* 헤더 영역 */
+      .page-header {
+        padding: 20px;
         background: #e9ecef;
         border-bottom: 1px solid #dee2e6;
-        display: flex;
-        gap: 15px;
-        align-items: flex-end;
       }
 
-      .filter-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
+      .page-header h2 {
+        margin: 0;
+        color: #212529;
+        font-size: 20px;
       }
 
-      .filter-group label {
-        font-weight: 600;
+      .page-header .year-info {
+        margin-top: 5px;
+        color: #6c757d;
         font-size: 14px;
-        color: #495057;
-      }
-
-      .filter-group select {
-        padding: 8px 12px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        font-size: 14px;
-        min-width: 150px;
-      }
-
-      .btn-primary {
-        background: #007bff;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-
-      .btn-primary:hover {
-        background: #0056b3;
       }
 
       /* 월별 비교 표 */
@@ -177,49 +156,6 @@
         padding-right: 10px;
       }
 
-      /* 네비게이션 서브메뉴 */
-      .nav-item {
-        position: relative;
-      }
-
-      .sub-menu {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        background: white;
-        min-width: 150px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        border-radius: 4px;
-        z-index: 1000;
-        display: none;
-      }
-
-      .nav-item:hover .sub-menu {
-        display: block;
-      }
-
-      .sub-menu a {
-        display: block;
-        padding: 10px 15px;
-        color: #333;
-        text-decoration: none;
-        border-bottom: 1px solid #eee;
-      }
-
-      .sub-menu a:last-child {
-        border-bottom: none;
-        border-radius: 0 0 4px 4px;
-      }
-
-      .sub-menu a:hover {
-        background: #f8f9fa;
-      }
-
-      .sub-menu a.active {
-        background: #e9ecef;
-        font-weight: 600;
-      }
-
       .change-password-link {
         color: white;
         text-decoration: none;
@@ -249,12 +185,12 @@
           <span
             class="user-name"
             th:text="${#authentication.principal.username}"
-            >마이넷</span
+            >사용자</span
           >
           <span
             class="user-company"
             th:text="'(' + ${#authentication.principal.companyName} + ')'"
-            >(마이넷)</span
+            >(회사명)</span
           >
           <form th:action="@{/logout}" method="post" style="display: inline">
             <button type="submit" class="logout-btn">로그아웃</button>
@@ -267,73 +203,23 @@
     <nav class="nav-menu">
       <div class="nav-content">
         <div class="nav-item">
-          <a
-            th:href="@{${#authentication.principal.canon ? '/canon/view' : '/mynet/view'}}"
-            >조회</a
-          >
-        </div>
-        <div
-          class="nav-item"
-          th:classappend="${currentPage == 'daily-sales'} ? 'active'"
-        >
-          <a th:href="@{/mynet/daily-sales}">일일매출현황</a>
-        </div>
-        <div class="nav-item active">
-          <a href="javascript:void(0)">비교 ▼</a>
-          <div class="sub-menu">
-            <a th:href="@{/mynet/compare/monthly}" class="active">월별</a>
-            <a th:href="@{/mynet/compare/yearly}">년도별</a>
-            <a th:href="@{/mynet/compare/period}">기간별</a>
-            <a th:href="@{/mynet/compare/product}">제품별</a>
-          </div>
+          <a th:href="@{/subsidiary/input}">입력</a>
         </div>
         <div class="nav-item">
-          <a th:href="@{/admin/products}">제품 분류</a>
+          <a th:href="@{/subsidiary/sales-summary}">조회</a>
         </div>
-        <div class="nav-item" th:if="${!isCanon}">
-          <a th:href="@{/admin/users}">사용자 관리</a>
+        <div class="nav-item active">
+          <a th:href="@{/subsidiary/monthly}">월별매출집계</a>
         </div>
       </div>
     </nav>
 
     <!-- 메인 컨텐츠 -->
     <main class="main-container">
-      <h2 style="margin-bottom: 20px">월별 비교</h2>
-
       <div class="card">
-        <!-- 필터 섹션 -->
-        <div class="filter-section">
-          <div class="filter-group">
-            <label>연도 선택</label>
-            <select id="year-select" onchange="loadMonthlyData()">
-              <option
-                th:each="year : ${years}"
-                th:value="${year}"
-                th:text="${year + '년'}"
-                th:selected="${year == selectedYear}"
-              ></option>
-            </select>
-          </div>
-
-          <div class="filter-group">
-            <label>회사 선택</label>
-            <select id="company-select" onchange="loadMonthlyData()">
-              <option
-                value="all"
-                th:selected="${selectedCompanyId == null or selectedCompanyId == 'all'}"
-              >
-                전체
-              </option>
-              <option
-                th:each="company : ${companies}"
-                th:value="${company.id}"
-                th:text="${company.name}"
-                th:selected="${company.id == selectedCompanyId}"
-              ></option>
-            </select>
-          </div>
-
-          <button class="btn-primary" onclick="loadMonthlyData()">조회</button>
+        <!-- 헤더 영역 -->
+        <div class="page-header">
+          <h3 th:text=" ${currentYear} + '년 데이터'">N년</h3>
         </div>
 
         <!-- 월별 비교 표 -->
@@ -395,7 +281,7 @@
                   colspan="29"
                   style="padding: 40px; text-align: center; color: #6c757d"
                 >
-                  조회 버튼을 클릭하여 월별 데이터를 확인하세요.
+                  표시할 데이터가 없습니다.
                 </td>
               </tr>
 
@@ -426,11 +312,11 @@
                   <!-- 1월 ~ 12월 데이터 -->
                   <th:block th:each="month : ${#numbers.sequence(1, 12)}">
                     <td
-                      th:class="'green-' + ${(categoryStat.index % 4) + 1}"
+                      th:class="'green-' + ${categoryColorIndex != null ? categoryColorIndex[categoryData.category] : ((categoryStat.index % 4) + 1)}"
                       th:text="${product.monthlyData[month - 1].quantity == null or product.monthlyData[month - 1].quantity == 0 ? '-' : #numbers.formatInteger(product.monthlyData[month - 1].quantity, 0, 'COMMA')}"
                     ></td>
                     <td
-                      th:class="'green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
+                      th:class="'green-' + ${categoryColorIndex != null ? categoryColorIndex[categoryData.category] : ((categoryStat.index % 4) + 1)} + ' amount'"
                       th:text="${product.monthlyData[month - 1].amount == null or product.monthlyData[month - 1].amount == 0 ? '-' : '₩' + #numbers.formatInteger(product.monthlyData[month - 1].amount, 0, 'COMMA')}"
                     ></td>
                   </th:block>
@@ -490,14 +376,5 @@
     </main>
 
     <script th:src="@{/js/common.js}"></script>
-    <script>
-      function loadMonthlyData() {
-        const year = document.getElementById("year-select").value;
-        const companyId = document.getElementById("company-select").value;
-
-        const url = `/mynet/compare/monthly?year=${year}&companyId=${companyId}`;
-        window.location.href = url;
-      }
-    </script>
   </body>
 </html>
