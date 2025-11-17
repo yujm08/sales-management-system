@@ -73,7 +73,6 @@ CREATE INDEX idx_daily_sales_product ON daily_sales(product_id);
 CREATE INDEX idx_price_history_effective ON product_price_history(product_id, effective_from, effective_to);
 CREATE INDEX idx_targets_period ON targets(target_year, target_month);
 
--- 기본 데이터 삽입
 -- 마이넷 회사 생성
 INSERT INTO companies (name, is_mynet) VALUES ('마이넷', TRUE);
 
@@ -84,6 +83,7 @@ INSERT INTO companies (name, is_mynet) VALUES ('우리STM', FALSE);
 INSERT INTO companies (name, is_mynet) VALUES ('엠에스앤샵', FALSE);
 INSERT INTO companies (name, is_mynet) VALUES ('원이스토리 (쿠팡)', FALSE);
 INSERT INTO companies (name, is_mynet) VALUES ('대현씨앤씨', FALSE);
+INSERT INTO companies (name, is_mynet) VALUES ('마이넷 (GX판매)', FALSE);
 
 -- 캐논 계정용 더미 회사 생성
 INSERT INTO companies (name, is_mynet) VALUES ('캐논', FALSE);
