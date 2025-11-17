@@ -1,0 +1,32 @@
+# Gradle 빌드 캐시 및 출력물
+# 도커 빌드 시 자체적으로 빌드하므로 로컬 빌드 결과물 제외
+.gradle
+build/
+out/
+
+# IDE 설정 파일 (IntelliJ IDEA)
+# 개발 환경 설정은 컨테이너에 불필요
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# 환경 변수 파일 (절대 올리면 안 됨!)
+# DB 비밀번호 등 민감 정보 포함, Render에서 따로 설정
+.env
+.env.local
+.env.production
+
+# 로그 파일
+# 실행 중 생성되는 로그는 도커 이미지에 포함 불필요
+*.log
+logs/
+
+# 운영체제 파일
+.DS_Store
+Thumbs.db
+
+# Git 관련
+.git
+.gitignore
+.gitattributes
