@@ -28,7 +28,7 @@ WORKDIR /app
 COPY --from=build /home/gradle/src/build/libs/*.jar app.jar
 
 # 메모리 최적화 (Render 512MB RAM 환경)
-ENV JAVA_OPTS="-Xmx384m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Djava.security.egd=file:/dev/./urandom"
+ENV JAVA_OPTS="-XX:+UseG1GC -Xms64m -Xmx256m -XX:MaxMetaspaceSize=128m -Djava.security.egd=file:/dev/./urandom"
 
 # Render 기본 포트
 EXPOSE 10000

@@ -183,8 +183,8 @@ class DatePicker {
     const todayYear = new Date().getFullYear();
 
     // (현재 기준으로만 고정된 범위 설정)
-    let startYear = this.restrictions.minYear || todayYear - 10;
-    let endYear = this.restrictions.maxYear || todayYear + 10;
+    let startYear = this.restrictions.minYear || todayYear - 2;
+    let endYear = this.restrictions.maxYear || todayYear + 2;
 
     if (this.restrictions.currentYearOnly) {
       startYear = todayYear;

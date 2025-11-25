@@ -32,7 +32,7 @@ public class PasswordChangeController {
         model.addAttribute("companyName", userDetails.getCompanyName());
 
         log.info("비밀번호 변경 페이지 접근: 사용자={}", userDetails.getUsername());
-        return "/changePassword";
+        return "changePassword";
     }
 
     /**
