@@ -746,10 +746,10 @@
 <td class="${inactiveClass}" style="text-align:center; border-right:1px solid #ccc;">${
               product.productName
             }</td>
-<td class="${inactiveClass}" style="text-align:right; border-right:1px solid #ccc;">₩${formatNumber(
+<td class="${inactiveClass}" style="text-align:right; border-right:1px solid #ccc;">${formatNumber(
               product.currentCostPrice
             )}</td>
-<td class="${inactiveClass}" style="text-align:right;">₩${formatNumber(
+<td class="${inactiveClass}" style="text-align:right;">${formatNumber(
               product.currentSupplyPrice
             )}</td>
 `;
@@ -1116,7 +1116,7 @@
 
       function formatDisplayCurrency(value) {
         if (value === null || value === undefined || value === 0) return "-";
-        return "₩" + formatNumber(value);
+        return formatNumber(value);
       }
     </script>
   </body>

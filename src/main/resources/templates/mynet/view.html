@@ -626,13 +626,13 @@
                     </td>
                     <td
                       th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
-                      th:text="${'₩' + #numbers.formatInteger(item.costPrice, 0, 'COMMA')}"
+                      th:text="${#numbers.formatInteger(item.costPrice, 0, 'COMMA')}"
                     >
                       원가
                     </td>
                     <td
                       th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' amount'"
-                      th:text="${'₩' + #numbers.formatInteger(item.supplyPrice, 0, 'COMMA')}"
+                      th:text="${#numbers.formatInteger(item.supplyPrice, 0, 'COMMA')}"
                     >
                       공급가
                     </td>
@@ -670,7 +670,7 @@
                       <div class="profit-detail">
                         <span
                           class="profit-amount"
-                          th:text="${'₩' + #numbers.formatInteger(item.dailySummary?.profit ?: 0, 0, 'COMMA')}"
+                          th:text="${#numbers.formatInteger(item.dailySummary?.profit ?: 0, 0, 'COMMA')}"
                           >이익</span
                         >
                         <div
@@ -714,7 +714,7 @@
                       <div class="profit-detail">
                         <span
                           class="profit-amount"
-                          th:text="${'₩' + #numbers.formatInteger(item.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
+                          th:text="${#numbers.formatInteger(item.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
                           >월이익</span
                         >
                         <div
@@ -789,13 +789,13 @@
                   </td>
                   <td class="amount">
                     <strong
-                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.dailySummary?.amount ?: 0, 0, 'COMMA')}"
+                      th:text="${#numbers.formatInteger(subtotalItem?.dailySummary?.amount ?: 0, 0, 'COMMA')}"
                       >소계금액</strong
                     >
                   </td>
                   <td class="profit">
                     <strong
-                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.dailySummary?.profit ?: 0, 0, 'COMMA')}"
+                      th:text="${#numbers.formatInteger(subtotalItem?.dailySummary?.profit ?: 0, 0, 'COMMA')}"
                       >소계이익</strong
                     >
                   </td>
@@ -807,13 +807,13 @@
                   </td>
                   <td class="amount">
                     <strong
-                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
+                      th:text="${#numbers.formatInteger(subtotalItem?.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
                       >소계월금액</strong
                     >
                   </td>
                   <td class="profit">
                     <strong
-                      th:text="${'₩' + #numbers.formatInteger(subtotalItem?.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
+                      th:text="${#numbers.formatInteger(subtotalItem?.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
                       >소계월이익</strong
                     >
                   </td>
@@ -858,13 +858,13 @@
                 </td>
                 <td class="amount">
                   <strong
-                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.dailySummary?.amount ?: 0, 0, 'COMMA')}"
+                    th:text="${#numbers.formatInteger(grandTotalData.dailySummary?.amount ?: 0, 0, 'COMMA')}"
                     >합계금액</strong
                   >
                 </td>
                 <td class="profit">
                   <strong
-                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.dailySummary?.profit ?: 0, 0, 'COMMA')}"
+                    th:text="${#numbers.formatInteger(grandTotalData.dailySummary?.profit ?: 0, 0, 'COMMA')}"
                     >합계이익</strong
                   >
                 </td>
@@ -876,13 +876,13 @@
                 </td>
                 <td class="amount">
                   <strong
-                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
+                    th:text="${#numbers.formatInteger(grandTotalData.monthlySummary?.amount ?: 0, 0, 'COMMA')}"
                     >합계월금액</strong
                   >
                 </td>
                 <td class="profit">
                   <strong
-                    th:text="${'₩' + #numbers.formatInteger(grandTotalData.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
+                    th:text="${#numbers.formatInteger(grandTotalData.monthlySummary?.profit ?: 0, 0, 'COMMA')}"
                     >합계월이익</strong
                   >
                 </td>

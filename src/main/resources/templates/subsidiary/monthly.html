@@ -317,7 +317,7 @@
                     ></td>
                     <td
                       th:class="'green-' + ${categoryColorIndex != null ? categoryColorIndex[categoryData.category] : ((categoryStat.index % 4) + 1)} + ' amount'"
-                      th:text="${product.monthlyData[month - 1].amount == null or product.monthlyData[month - 1].amount == 0 ? '-' : '₩' + #numbers.formatInteger(product.monthlyData[month - 1].amount, 0, 'COMMA')}"
+                      th:text="${product.monthlyData[month - 1].amount == null or product.monthlyData[month - 1].amount == 0 ? '-' : #numbers.formatInteger(product.monthlyData[month - 1].amount, 0, 'COMMA')}"
                     ></td>
                   </th:block>
 
@@ -328,7 +328,7 @@
                   ></td>
                   <td
                     class="total-amount amount"
-                    th:text="${product.totalAmount == null or product.totalAmount == 0 ? '-' : '₩' + #numbers.formatInteger(product.totalAmount, 0, 'COMMA')}"
+                    th:text="${product.totalAmount == null or product.totalAmount == 0 ? '-' : #numbers.formatInteger(product.totalAmount, 0, 'COMMA')}"
                   ></td>
                 </tr>
               </th:block>
@@ -352,7 +352,7 @@
                   </td>
                   <td class="amount">
                     <strong
-                      th:text="${grandTotal.monthlyTotals[month - 1].amount == null or grandTotal.monthlyTotals[month - 1].amount == 0 ? '-' : '₩' + #numbers.formatInteger(grandTotal.monthlyTotals[month - 1].amount, 0, 'COMMA')}"
+                      th:text="${grandTotal.monthlyTotals[month - 1].amount == null or grandTotal.monthlyTotals[month - 1].amount == 0 ? '-' : #numbers.formatInteger(grandTotal.monthlyTotals[month - 1].amount, 0, 'COMMA')}"
                     ></strong>
                   </td>
                 </th:block>
@@ -365,7 +365,7 @@
                 </td>
                 <td class="amount">
                   <strong
-                    th:text="${grandTotal.totalAmount == null or grandTotal.totalAmount == 0 ? '-' : '₩' + #numbers.formatInteger(grandTotal.totalAmount, 0, 'COMMA')}"
+                    th:text="${grandTotal.totalAmount == null or grandTotal.totalAmount == 0 ? '-' : #numbers.formatInteger(grandTotal.totalAmount, 0, 'COMMA')}"
                   ></strong>
                 </td>
               </tr>

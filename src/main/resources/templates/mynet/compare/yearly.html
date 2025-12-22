@@ -407,7 +407,7 @@
         if (value === null || value === undefined || value === 0) {
           return "-";
         }
-        return "₩" + Math.round(value).toLocaleString("ko-KR");
+        return Math.round(value).toLocaleString("ko-KR");
       }
 
       function formatGrowthRate(rate) {
