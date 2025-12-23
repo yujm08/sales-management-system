@@ -1,13 +1,16 @@
 // CustomUserDetails.java - 사용자 정보를 담는 클래스
 package com.mynet.sales_management_system.security;
 
+import com.mynet.sales_management_system.entity.Role;
 import com.mynet.sales_management_system.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Spring Security UserDetails 구현체
@@ -23,18 +26,23 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // 캐논 계정인 경우
+        List<GrantedAuthority> authorities = new ArrayList<>();
+
+        // 관리 권한
+        if (user.getRole() == Role.ADMIN) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+
+        // 업무 영역 권한 (단일)
         if (user.getIsCanon()) {
-            return Collections.singletonList(new SimpleGrantedAuthority("ROLE_CANON"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_CANON"));
+        } else if (user.getCompany().getIsMynet()) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_MYNET"));
+        } else {
+            authorities.add(new SimpleGrantedAuthority("ROLE_SUBSIDIARY"));
         }
-        // 마이넷 계정인 경우
-        else if (user.getCompany().getIsMynet()) {
-            return Collections.singletonList(new SimpleGrantedAuthority("ROLE_MYNET"));
-        }
-        // 하위회사 계정인 경우
-        else {
-            return Collections.singletonList(new SimpleGrantedAuthority("ROLE_SUBSIDIARY"));
-        }
+
+        return authorities;
     }
 
     @Override

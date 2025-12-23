@@ -44,15 +44,21 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 // 로그인, 회원가입, 에러 페이지는 모든 사용자 접근 허용
                                                 .requestMatchers("/login", "/signup", "/", "/error").permitAll()
+
                                                 // 하위회사 전용 페이지 (입력, 통계, 월별매출집계)
                                                 .requestMatchers("/subsidiary/**").hasRole("SUBSIDIARY")
+
                                                 // 마이넷 전용 페이지 (조회, 비교, 제품분류)
-                                                .requestMatchers("/mynet/**").hasAnyRole("MYNET")
-                                                // 관리자 페이지 (사용자 관리 등) - ADMIN 권한 필요
-                                                .requestMatchers("/admin/products").hasAnyRole("MYNET", "CANON")
-                                                .requestMatchers("/admin/**").hasRole("MYNET")
+                                                .requestMatchers("/mynet/**").hasAnyRole("MYNET", "ADMIN")
+
+                                                // 관리자 페이지 (사용자 관리 등)
+                                                .requestMatchers("/admin/products")
+                                                .hasAnyRole("MYNET", "CANON", "ADMIN")
+                                                .requestMatchers("/admin/**").hasAnyRole("MYNET", "ADMIN")
+
                                                 // 캐논 전용 페이지 (조회, 비교)
-                                                .requestMatchers("/canon/**").hasRole("CANON")
+                                                .requestMatchers("/canon/**").hasAnyRole("CANON", "ADMIN")
+
                                                 // 나머지 모든 요청은 인증 필요
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form

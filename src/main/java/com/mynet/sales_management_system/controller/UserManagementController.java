@@ -29,11 +29,7 @@ public class UserManagementController {
      */
     @GetMapping("/users")
     public String userManagementPage(@AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
-        // 마이넷 관리자가 아니면 접근 불가
-        if (!userDetails.isMynet() || !userDetails.getUser().getRole().equals(Role.ADMIN)) {
-            return "redirect:/access-denied";
-        }
-
+        // Spring Security가 ADMIN 체크 (수동 체크 제거)
         List<User> users = userService.getAllUsers();
         List<Company> companies = companyRepository.findAll();
 
@@ -56,14 +52,9 @@ public class UserManagementController {
             @RequestParam Role role,
             @RequestParam(defaultValue = "false") boolean isCanon) {
         try {
-            // 권한 체크
-            if (!userDetails.isMynet() || !userDetails.getUser().getRole().equals(Role.ADMIN)) {
-                return "error:권한이 없습니다.";
-            }
-
+            // Spring Security가 ADMIN 체크 (수동 체크 제거)
             userService.createUser(username, password, companyId, role, isCanon);
             log.info("사용자 생성: 관리자={}, 새사용자={}", userDetails.getUsername(), username);
-
             return "success";
         } catch (Exception e) {
             log.error("사용자 생성 실패", e);
@@ -79,11 +70,7 @@ public class UserManagementController {
     public String deleteUser(@AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam Long userId) {
         try {
-            // 권한 체크
-            if (!userDetails.isMynet() || !userDetails.getUser().getRole().equals(Role.ADMIN)) {
-                return "error:권한이 없습니다.";
-            }
-
+            // Spring Security가 ADMIN 체크 (수동 체크 제거)
             // 자기 자신은 삭제 불가
             if (userDetails.getUser().getId().equals(userId)) {
                 return "error:자기 자신은 삭제할 수 없습니다.";
