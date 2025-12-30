@@ -181,7 +181,9 @@ public class ProductController {
             ProductPriceHistory price = currentPrice.get();
             dto.setCurrentCostPrice(price.getCostPrice());
             dto.setCurrentSupplyPrice(price.getSupplyPrice());
-            dto.setLastModifiedAt(price.getCreatedAt());
+
+            // UTC → KST 변환 (+9시간)
+            dto.setLastModifiedAt(price.getCreatedAt() != null ? price.getCreatedAt().plusHours(9) : null);
             dto.setLastModifiedBy(price.getCreatedBy());
         } else {
             dto.setCurrentCostPrice(BigDecimal.ZERO);

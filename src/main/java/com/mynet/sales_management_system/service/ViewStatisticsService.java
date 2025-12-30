@@ -194,7 +194,7 @@ public class ViewStatisticsService {
                                 .profitRate(PriceCalculator.calculateProfitRate(salesAmount.getProfit(),
                                                 salesAmount.getRevenue()))
                                 .comparison(comparison)
-                                .lastModifiedAt(lastModified)
+                                .lastModifiedAt(lastModified != null ? lastModified.plusHours(9) : null) // UTC → KST
                                 .modifiedBy(modifiedBy)
                                 .build();
         }
@@ -224,7 +224,9 @@ public class ViewStatisticsService {
                                 .profitRate(PriceCalculator.calculateProfitRate(salesAmount.getProfit(),
                                                 salesAmount.getRevenue()))
                                 .comparison(comparison)
-                                .lastModifiedAt(dailySales != null ? dailySales.getLastModifiedAt() : null)
+                                .lastModifiedAt(dailySales != null && dailySales.getLastModifiedAt() != null
+                                                ? dailySales.getLastModifiedAt().plusHours(9)
+                                                : null) // UTC → KST
                                 .modifiedBy(dailySales != null ? dailySales.getModifiedBy() : null)
                                 .build();
         }
@@ -412,7 +414,8 @@ public class ViewStatisticsService {
                                                         .quantity(totalQuantity)
                                                         .amount(totalRevenue)
                                                         .profit(totalProfit)
-                                                        .lastModifiedAt(lastModified)
+                                                        .lastModifiedAt(lastModified != null ? lastModified.plusHours(9)
+                                                                        : null) // UTC → KST
                                                         .modifiedBy(modifiedBy)
                                                         .build();
                                 })
