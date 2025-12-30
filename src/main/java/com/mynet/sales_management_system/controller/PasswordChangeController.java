@@ -67,7 +67,7 @@ public class PasswordChangeController {
             if (userDetails.isCanon()) {
                 return "redirect:/canon/view";
             } else if (userDetails.isMynet()) {
-                return "redirect:/mynet/view";
+                return "redirect:/mynet/daily-sales";
             } else {
                 return "redirect:/subsidiary/input";
             }

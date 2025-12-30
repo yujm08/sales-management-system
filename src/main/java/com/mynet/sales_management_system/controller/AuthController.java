@@ -53,7 +53,7 @@ public class AuthController {
             return "redirect:/canon/view";
         } else if (userDetails.isMynet()) {
             // 마이넷 계정 → 조회 페이지로
-            return "redirect:/mynet/view";
+            return "redirect:/mynet/daily-sales";
         } else {
             // 하위회사 계정 → 입력 페이지로
             return "redirect:/subsidiary/input";

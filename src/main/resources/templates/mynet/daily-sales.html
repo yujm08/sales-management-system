@@ -181,14 +181,14 @@
       }
 
       .product-code {
-        font-weight: 600;
-        font-size: 11px;
+        font-size: 9px;
+        color: #666;
+        margin-top: 2px;
       }
 
       .product-name {
-        font-size: 10px;
-        color: #666;
-        margin-top: 2px;
+        font-weight: 600;
+        font-size: 12px;
       }
 
       /* 카테고리별 행 색상 (제품 데이터 영역에만 적용) */
@@ -308,6 +308,102 @@
       .total-row td.comparison-col-2 {
         background-color: #d3d3d3 !important;
       }
+
+      /* ===== 고정 컬럼 (왼쪽 3개) ===== */
+
+      /* 1. 구분 */
+      .stats-table th.category-cell {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background: #24595e !important;
+        color: white !important;
+        width: 70px;
+        min-width: 70px;
+        max-width: 70px;
+      }
+
+      .stats-table td.category-cell {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background: #dee2e6 !important;
+        width: 70px;
+        min-width: 70px;
+        max-width: 70px;
+      }
+
+      /* 2. 제품 정보 */
+      .stats-table th.product-info-cell {
+        position: sticky;
+        left: 70px;
+        z-index: 9;
+        background: #24595e !important;
+        color: white !important;
+        width: 90px;
+        min-width: 90px;
+        max-width: 90px;
+      }
+
+      .stats-table td.product-info-cell {
+        position: sticky;
+        left: 70px;
+        z-index: 9;
+        background: #ffffff !important;
+        width: 90px;
+        min-width: 90px;
+        max-width: 90px;
+      }
+
+      /* 3. 공급가 */
+      .stats-table th.supply-price-cell {
+        position: sticky;
+        left: 160px; /* 70 + 90 */
+        z-index: 8;
+        background: #24595e !important;
+        color: white !important;
+        width: 70px;
+        min-width: 70px;
+        max-width: 70px;
+      }
+
+      .stats-table td.supply-price-cell {
+        position: sticky;
+        left: 160px;
+        z-index: 8;
+        background: #ffffff !important;
+        width: 70px;
+        min-width: 70px;
+        max-width: 70px;
+      }
+
+      /* 소계/합계 행 */
+      .subtotal-row td.category-cell,
+      .total-row td.category-cell {
+        background: #dee2e6 !important;
+      }
+
+      .subtotal-row td.product-info-cell,
+      .subtotal-row td.supply-price-cell {
+        background: #f1f3f5 !important;
+      }
+
+      .total-row td.product-info-cell,
+      .total-row td.supply-price-cell {
+        background: #d3d3d3 !important;
+      }
+
+      /* 행 색상 제거 */
+      .product-data-cell.row-color-1.product-info-cell,
+      .product-data-cell.row-color-2.product-info-cell,
+      .product-data-cell.row-color-3.product-info-cell,
+      .product-data-cell.row-color-4.product-info-cell,
+      .product-data-cell.row-color-1.supply-price-cell,
+      .product-data-cell.row-color-2.supply-price-cell,
+      .product-data-cell.row-color-3.supply-price-cell,
+      .product-data-cell.row-color-4.supply-price-cell {
+        background: #ffffff !important;
+      }
     </style>
   </head>
   <body>
@@ -339,11 +435,11 @@
     <!-- 네비게이션 -->
     <nav class="nav-menu">
       <div class="nav-content">
-        <div class="nav-item">
-          <a th:href="@{/mynet/view}">조회</a>
-        </div>
         <div class="nav-item active">
           <a th:href="@{/mynet/daily-sales}">일일매출현황</a>
+        </div>
+        <div class="nav-item">
+          <a th:href="@{/mynet/view}">조회</a>
         </div>
         <div class="nav-item">
           <a href="javascript:void(0)">비교 ▼</a>
@@ -395,8 +491,9 @@
           <table class="stats-table">
             <thead>
               <tr>
-                <th rowspan="2" colspan="2" style="min-width: 100px">구분</th>
-                <th rowspan="2" style="min-width: 80px">공급가</th>
+                <th rowspan="2" class="category-cell">구분</th>
+                <th rowspan="2" class="product-info-cell">제품</th>
+                <th rowspan="2" class="supply-price-cell">공급가</th>
 
                 <!-- 회사별 컬럼 (7개 회사) -->
                 <th colspan="3" class="company-group" style="min-width: 180px">
@@ -525,17 +622,17 @@
                       class="product-info-cell product-data-cell"
                       th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
                     >
-                      <div class="product-code" th:text="${item.productCode}">
-                        제품코드
-                      </div>
                       <div class="product-name" th:text="${item.productName}">
                         제품명
+                      </div>
+                      <div class="product-code" th:text="${item.productCode}">
+                        제품코드
                       </div>
                     </td>
 
                     <!-- 공급가 -->
                     <td
-                      class="number-cell product-data-cell"
+                      class="number-cell product-data-cell supply-price-cell"
                       th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
                       th:text="${#numbers.formatInteger(item.supplyPrice, 0, 'COMMA')}"
                     >
@@ -763,14 +860,16 @@
                   class="subtotal-row"
                   th:attr="data-category-index=${categoryStat.index}"
                 >
+                  <td class="category-cell"></td>
                   <td
-                    colspan="2"
-                    class="product-data-cell"
+                    class="product-info-cell product-data-cell"
                     style="text-align: left; padding-left: 15px"
                   >
-                    소계
+                    <strong>소계</strong>
                   </td>
-                  <td class="number-cell product-data-cell">-</td>
+                  <td
+                    class="number-cell product-data-cell supply-price-cell"
+                  ></td>
                   <!-- 각 회사별 소계 (7개 회사 * 3컬럼 = 21개) -->
                   <td
                     th:each="i : ${#numbers.sequence(1, 21)}"
@@ -801,14 +900,16 @@
 
               <!-- 합계 행 -->
               <tr class="total-row">
+                <td class="category-cell"></td>
                 <td
-                  colspan="2"
-                  class="product-data-cell"
+                  class="product-info-cell product-data-cell"
                   style="text-align: left; padding-left: 15px"
                 >
-                  <strong>합계</strong>
+                  <strong>전체 합계</strong>
                 </td>
-                <td class="number-cell product-data-cell">-</td>
+                <td
+                  class="number-cell product-data-cell supply-price-cell"
+                ></td>
                 <!-- 각 회사별 합계 (21개) -->
                 <td
                   th:each="i : ${#numbers.sequence(1, 21)}"
@@ -890,11 +991,17 @@
             }
           });
 
-          // 소계행에 채우기
-          const subtotalCells = subtotalRow.querySelectorAll("td.number-cell");
+          // 소계행에 채우기 (공급가 셀 제외)
+          const subtotalCells = subtotalRow.querySelectorAll(
+            "td.number-cell:not(.supply-price-cell)"
+          );
+          let cellIndex = 0;
           subtotalValues.forEach((v, i) => {
-            if (subtotalCells[i])
-              subtotalCells[i].textContent = v > 0 ? v.toLocaleString() : "-";
+            if (subtotalCells[cellIndex]) {
+              subtotalCells[cellIndex].textContent =
+                v > 0 ? v.toLocaleString() : "-";
+              cellIndex++;
+            }
           });
         });
       }
@@ -924,11 +1031,17 @@
           }
         });
 
-        // 합계행 채우기
-        const totalCells = totalRow.querySelectorAll("td.number-cell");
+        // 합계행 채우기 (공급가 셀 제외)
+        const totalCells = totalRow.querySelectorAll(
+          "td.number-cell:not(.supply-price-cell)"
+        );
+        let cellIndex = 0;
         totalValues.forEach((v, i) => {
-          if (totalCells[i])
-            totalCells[i].textContent = v > 0 ? v.toLocaleString() : "-";
+          if (totalCells[cellIndex]) {
+            totalCells[cellIndex].textContent =
+              v > 0 ? v.toLocaleString() : "-";
+            cellIndex++;
+          }
         });
       }
 

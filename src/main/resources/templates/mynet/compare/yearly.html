@@ -221,17 +221,17 @@
     <!-- 네비게이션 -->
     <nav class="nav-menu">
       <div class="nav-content">
-        <div class="nav-item">
-          <a
-            th:href="@{${#authentication.principal.canon ? '/canon/view' : '/mynet/view'}}"
-            >조회</a
-          >
-        </div>
         <div
           class="nav-item"
           th:classappend="${currentPage == 'daily-sales'} ? 'active'"
         >
           <a th:href="@{/mynet/daily-sales}">일일매출현황</a>
+        </div>
+        <div class="nav-item">
+          <a
+            th:href="@{${#authentication.principal.canon ? '/canon/view' : '/mynet/view'}}"
+            >조회</a
+          >
         </div>
         <div class="nav-item">
           <a href="javascript:void(0)">비교 ▼</a>
