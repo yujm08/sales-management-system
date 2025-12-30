@@ -31,7 +31,7 @@ public class ViewStatisticsService {
          * 마이넷 조회 페이지용 통계 데이터 생성
          */
         public List<ViewStatisticsDTO> getViewStatistics(String companyFilter, LocalDate targetDate) {
-                List<Product> activeProducts = productRepository.findByIsActiveTrueOrderByCategoryAscProductCodeAsc();
+                List<Product> activeProducts = productRepository.findByIsActiveTrueOrderByCategoryDescProductNameAsc();
 
                 if ("all".equals(companyFilter)) {
                         return generateAllCompanyStatistics(activeProducts, targetDate);

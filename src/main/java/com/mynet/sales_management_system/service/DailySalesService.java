@@ -55,7 +55,7 @@ public class DailySalesService {
                 log.info("조회된 회사 수: {}", companies.size());
 
                 // 2. 활성화된 제품 목록 조회
-                List<Product> products = productRepository.findByIsActiveTrueOrderByCategoryAscProductCodeAsc();
+                List<Product> products = productRepository.findByIsActiveTrueOrderByCategoryDescProductNameAsc();
                 log.info("활성화된 제품 수: {}", products.size());
 
                 // 3. 각 제품별로 DTO 생성

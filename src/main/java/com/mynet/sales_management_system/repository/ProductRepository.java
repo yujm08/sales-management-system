@@ -65,4 +65,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     @Query("SELECT p FROM Product p WHERE p.isActive = true ORDER BY p.category ASC, p.productCode ASC")
     List<Product> findByIsActiveTrueOrderByCategoryAscProductCodeAsc();
+
+    /**
+     * 활성화된 제품만 조회 (카테고리 내림차순, 제품명 오름차순)
+     */
+    @Query("SELECT p FROM Product p WHERE p.isActive = true ORDER BY p.category DESC, p.productName ASC")
+    List<Product> findByIsActiveTrueOrderByCategoryDescProductNameAsc();
 }
