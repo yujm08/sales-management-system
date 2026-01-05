@@ -1027,8 +1027,8 @@
         const card = document.createElement("div");
         card.className = "period-result-card";
 
-        const startDate = formatDate(periodData.startDate);
-        const endDate = formatDate(periodData.endDate);
+        const startDate = formatDateWithYear(periodData.startDate);
+        const endDate = formatDateWithYear(periodData.endDate);
 
         card.innerHTML = `
         <div class="period-result-header">
@@ -1102,11 +1102,12 @@
         return Math.round(value).toLocaleString("ko-KR");
       }
 
-      function formatDate(dateStr) {
+      function formatDateWithYear(dateStr) {
         const date = new Date(dateStr);
+        const year = date.getFullYear();
         const month = date.getMonth() + 1;
         const day = date.getDate();
-        return `${month}/${day}`;
+        return `${year}/${month}/${day}`;
       }
 
       function formatDisplay(value) {

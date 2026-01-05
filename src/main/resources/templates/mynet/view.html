@@ -924,6 +924,7 @@
       let isEditMode = false;
       let selectedCells = new Set();
       let pendingChanges = new Map();
+      let currentEditingCell = null; // 현재 편집 중인 셀 추적
 
       // 페이지 로드 시 DatePicker 초기화
       document.addEventListener("DOMContentLoaded", function () {
@@ -979,12 +980,101 @@
           document.body.classList.add("multi-select-mode");
           enableMultiSelectEditing();
         } else {
+          // 저장 전에 모든 활성 input의 값을 먼저 수집
+          collectAllPendingChanges();
+          
           editBtn.textContent = "수정";
           editBtn.classList.remove("active");
           document.body.classList.remove("multi-select-mode");
-          savePendingChanges(); // 자동 저장
-          clearSelections();
+          
+          // 저장 완료 후에 정리 작업 수행
+          savePendingChanges().then(() => {
+            clearSelections();
+          });
         }
+      }
+
+      function collectAllPendingChanges() {
+        console.log("=== collectAllPendingChanges 시작 ===");
+        
+        // ✅ 현재 편집 중인 셀이 있으면 먼저 처리
+        if (currentEditingCell) {
+          const cell = currentEditingCell.cell;
+          const input = currentEditingCell.input;
+          
+          if (input && cell) {
+            const cellKey = `${cell.dataset.productId}-${cell.dataset.type}`;
+            const newValue = parseInt(input.value) || 0;
+            
+            console.log("현재 편집 중인 셀 저장:", {
+              productId: cell.dataset.productId,
+              type: cell.dataset.type,
+              value: newValue
+            });
+            
+            pendingChanges.set(cellKey, {
+              productId: cell.dataset.productId,
+              companyId: cell.dataset.companyId,
+              type: cell.dataset.type,
+              value: newValue,
+              cell: cell,
+            });
+            
+            // display span 생성
+            const displaySpan = document.createElement('span');
+            displaySpan.className = 'cell-display';
+            displaySpan.textContent = newValue;
+            
+            // input 숨기고 display 보이기
+            input.style.display = 'none';
+            const existingDisplay = cell.querySelector('.cell-display');
+            if (existingDisplay) {
+              existingDisplay.textContent = newValue;
+              existingDisplay.style.display = 'inline';
+            }
+          }
+          
+          currentEditingCell = null; // 초기화
+        }
+        
+        // ✅ 나머지 활성 input 처리 (기존 로직)
+        const allInputs = document.querySelectorAll('.editable-cell input[type="number"]');
+        console.log("전체 input:", allInputs.length);
+        
+        allInputs.forEach((input, index) => {
+          // display:none이 아닌 것만
+          if (input.style.display !== 'none' && input.offsetParent !== null) {
+            const cell = input.closest('.editable-cell');
+            
+            if (cell) {
+              const cellKey = `${cell.dataset.productId}-${cell.dataset.type}`;
+              const newValue = parseInt(input.value) || 0;
+              
+              console.log(`Input ${index} 처리:`, {
+                productId: cell.dataset.productId,
+                value: newValue
+              });
+              
+              pendingChanges.set(cellKey, {
+                productId: cell.dataset.productId,
+                companyId: cell.dataset.companyId,
+                type: cell.dataset.type,
+                value: newValue,
+                cell: cell,
+              });
+              
+              // input 숨기기
+              input.style.display = 'none';
+              const displaySpan = cell.querySelector('.cell-display');
+              if (displaySpan) {
+                displaySpan.textContent = newValue;
+                displaySpan.style.display = 'inline';
+              }
+            }
+          }
+        });
+        
+        console.log("최종 pendingChanges:", Array.from(pendingChanges.entries()));
       }
 
       // 다중 선택 활성화
@@ -1130,7 +1220,9 @@
 
       // 대기 중인 변경사항 저장
       function savePendingChanges() {
-        if (pendingChanges.size === 0) return;
+        if (pendingChanges.size === 0) {
+          return Promise.resolve(); // 빈 Promise 반환
+        }
 
         const quantityChanges = [];
         const targetChanges = [];
@@ -1151,10 +1243,14 @@
           promises.push(saveBulkChanges("target", targetChanges));
         }
 
-        Promise.all(promises).then(() => {
+        // Promise 반환
+        return Promise.all(promises).then(() => {
           showAlert("모든 변경사항이 저장되었습니다.", "success");
-          pendingChanges.clear();
+          pendingChanges.clear(); // 저장 완료 후 clear
           setTimeout(() => location.reload(), 1000);
+        }).catch(error => {
+          showAlert("저장 중 오류가 발생했습니다.", "error");
+          console.error("Save error:", error);
         });
       }
 
@@ -1217,7 +1313,6 @@
       // 선택 해제
       function clearSelections() {
         selectedCells.clear();
-        pendingChanges.clear();
         document.querySelectorAll(".selected").forEach((cell) => {
           cell.classList.remove("selected");
         });
@@ -1301,46 +1396,53 @@
       function enableDirectCellEdit() {
         const companyFilter = document.getElementById('company-select');
         if (!companyFilter || companyFilter.value === '' || companyFilter.value === 'all') {
-
-            // 이미 등록된 클릭 이벤트 제거 및 커서 초기화
           document.querySelectorAll('.editable-cell').forEach(cell => {
-              cell.style.cursor = 'default';
-              cell.dataset.autoEditEnabled = 'false';
-              const clone = cell.cloneNode(true); // 이벤트 제거용 복제
-              cell.parentNode.replaceChild(clone, cell);
+            cell.style.cursor = 'default';
+            cell.dataset.autoEditEnabled = 'false';
+            const clone = cell.cloneNode(true);
+            cell.parentNode.replaceChild(clone, cell);
           });
-
-            return;
+          return;
         }
         
         const editableCells = document.querySelectorAll('.editable-cell');
         editableCells.forEach(cell => {
-            if (cell.dataset.autoEditEnabled === 'true') return;
+          if (cell.dataset.autoEditEnabled === 'true') return;
 
-            cell.dataset.autoEditEnabled = 'true';
-            cell.style.cursor = 'pointer';
+          cell.dataset.autoEditEnabled = 'true';
+          cell.style.cursor = 'pointer';
 
-            cell.addEventListener('click', function(e) {
-                // 이미 편집 모드면 무시
-                if (isEditMode) return;
+          cell.addEventListener('click', function(e) {
+            if (isEditMode) return;
 
-                // 편집 모드로 전환
-                toggleEdit();
+            // 편집 모드로 전환
+            toggleEdit();
 
-                setTimeout(() => {
-                    const display = this.querySelector('.cell-display');
-                    const input = this.querySelector('input');
+            setTimeout(() => {
+              const display = this.querySelector('.cell-display');
+              const input = this.querySelector('input');
 
-                    if (display && input) {
-                        display.style.display = 'none';
-                        input.style.display = 'inline-block';
-                        input.focus();
-                        input.select();
-                    }
-                }, 100);
-            });
+              if (display && input) {
+                display.style.display = 'none';
+                input.style.display = 'inline-block';
+                input.focus();
+                input.select();
+                
+                // 현재 편집 중인 셀 추적
+                currentEditingCell = {
+                  cell: this,
+                  input: input
+                };
+                
+                console.log("편집 시작:", {
+                  productId: this.dataset.productId,
+                  type: this.dataset.type
+                });
+              }
+            }, 100);
+          });
         });
-    }
+      }
 
       // 사용하지 않는 함수들 제거
       function updateData() {

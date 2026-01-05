@@ -9,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -18,6 +17,7 @@ import java.util.List;
  * - 권한을 마이넷/하위회사/캐논으로 구분하여 설정
  */
 public class CustomUserDetails implements UserDetails {
+
     private final User user;
 
     public CustomUserDetails(User user) {
