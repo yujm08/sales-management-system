@@ -982,7 +982,9 @@
           const subtotalValues = Array(totalCols).fill(0);
 
           dataRows.forEach((row) => {
-            const tds = row.querySelectorAll("td.number-cell");
+            const tds = row.querySelectorAll(
+              "td.number-cell:not(.supply-price-cell)"
+            );
             for (let i = 0; i < totalCols; i++) {
               const td = tds[i];
               if (!td) continue;
@@ -1022,7 +1024,9 @@
         const totalValues = Array(totalCols).fill(0);
 
         subtotalRows.forEach((subtotalRow) => {
-          const tds = subtotalRow.querySelectorAll("td.number-cell");
+          const tds = subtotalRow.querySelectorAll(
+            "td.number-cell:not(.supply-price-cell)"
+          );
           for (let i = 0; i < totalCols; i++) {
             const td = tds[i];
             if (!td) continue;
