@@ -332,9 +332,14 @@ public class DailySalesService {
          * (M-1)년 (N-1)~N월 판매량 (작년 최근 2개월 누적)
          */
         private Integer getLastYearYearToDateSales(Long productId, int year, int month) {
+                // 작년 전월 계산 (연도 넘어가는 경우 처리)
+                LocalDate lastYearPrevMonth = LocalDate.of(year - 1, month, 1).minusMonths(1);
+                int prevMonthYear = lastYearPrevMonth.getYear();
+                int prevMonthValue = lastYearPrevMonth.getMonthValue();
+
                 // 작년 전월 판매량
                 int prevMonthQty = dailySalesRepository
-                                .findByProductIdAndYearAndMonthForComparison(productId, year - 1, month - 1)
+                                .findByProductIdAndYearAndMonthForComparison(productId, prevMonthYear, prevMonthValue)
                                 .stream()
                                 .mapToInt(DailySales::getQuantity)
                                 .sum();

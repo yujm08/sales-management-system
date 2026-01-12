@@ -551,20 +551,19 @@
                 <th
                   rowspan="2"
                   class="comparison-col-1"
-                  style="min-width: 100px"
-                  th:text="${#temporals.format(targetDate, 'yyyy')} + '년 ' 
-                  + ${#temporals.format(targetDate.minusMonths(1), 'M')} + '-' 
-                  + ${#temporals.format(targetDate, 'M')} + '월 판매량'"
+                  style="min-width: 120px"
+                  th:text="${#temporals.format(targetDate.minusMonths(1), 'yyyy.M')} + ' - ' 
+  + ${#temporals.format(targetDate, 'yyyy.M')} + ' 판매량'"
                 >
-                  2025년 1-11월 판매량
+                  2025.10 - 2025.11 판매량
                 </th>
                 <th
                   rowspan="2"
                   class="comparison-col-2"
                   style="min-width: 100px"
-                  th:text="${#temporals.format(targetDate.minusYears(1), 'yyyy')} + '년 ' + ${#temporals.format(targetDate.minusMonths(1), 'M')} + '월 판매량'"
+                  th:text="${#temporals.format(targetDate.minusYears(1).minusMonths(1), 'yyyy년 M월')} + ' 판매량'"
                 >
-                  2024년 10월 판매량
+                  2024년 12월 판매량
                 </th>
                 <th
                   rowspan="2"
@@ -577,12 +576,11 @@
                 <th
                   rowspan="2"
                   class="comparison-col-2"
-                  style="min-width: 120px"
-                  th:text="${#temporals.format(targetDate.minusYears(1), 'yyyy')} + '년 ' 
-                  + ${#temporals.format(targetDate.minusMonths(1), 'M')} + '-' 
-                  + ${#temporals.format(targetDate, 'M')} + '월 판매량'"
+                  style="min-width: 140px"
+                  th:text="${#temporals.format(targetDate.minusYears(1).minusMonths(1), 'yyyy.M')} + ' - ' 
+  + ${#temporals.format(targetDate.minusYears(1), 'yyyy.M')} + ' 판매량'"
                 >
-                  2024년 10-11월 판매량
+                  2024.10 - 2024.11 판매량
                 </th>
               </tr>
               <tr class="sub-header">
@@ -643,20 +641,20 @@
                     <!-- 영현아이앤씨 -->
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['영현아이앤씨'] != null ? (item.companySalesMap['영현아이앤씨'].dailyQuantity > 0 ? item.companySalesMap['영현아이앤씨'].dailyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['영현아이앤씨'] != null ? (item.companySalesMap['영현아이앤씨'].dailyQuantity != 0 ? item.companySalesMap['영현아이앤씨'].dailyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell product-data-cell"
                       th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['영현아이앤씨'] != null ? (item.companySalesMap['영현아이앤씨'].monthlyQuantity > 0 ? item.companySalesMap['영현아이앤씨'].monthlyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['영현아이앤씨'] != null ? (item.companySalesMap['영현아이앤씨'].monthlyQuantity != 0 ? item.companySalesMap['영현아이앤씨'].monthlyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['영현아이앤씨'] != null && item.companySalesMap['영현아이앤씨'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['영현아이앤씨'].amount, 0, 'COMMA') : '-'}"
+                      th:text="${item.companySalesMap['영현아이앤씨'] != null && item.companySalesMap['영현아이앤씨'].amount.compareTo(T(java.math.BigDecimal).ZERO) != 0 ? #numbers.formatInteger(item.companySalesMap['영현아이앤씨'].amount, 0, 'COMMA') : '-'}"
                     >
                       -
                     </td>
@@ -664,20 +662,20 @@
                     <!-- 마이씨앤에스 -->
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['마이씨앤에스'] != null ? (item.companySalesMap['마이씨앤에스'].dailyQuantity > 0 ? item.companySalesMap['마이씨앤에스'].dailyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['마이씨앤에스'] != null ? (item.companySalesMap['마이씨앤에스'].dailyQuantity != 0 ? item.companySalesMap['마이씨앤에스'].dailyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell product-data-cell"
                       th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['마이씨앤에스'] != null ? (item.companySalesMap['마이씨앤에스'].monthlyQuantity > 0 ? item.companySalesMap['마이씨앤에스'].monthlyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['마이씨앤에스'] != null ? (item.companySalesMap['마이씨앤에스'].monthlyQuantity != 0 ? item.companySalesMap['마이씨앤에스'].monthlyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['마이씨앤에스'] != null && item.companySalesMap['마이씨앤에스'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['마이씨앤에스'].amount, 0, 'COMMA') : '-'}"
+                      th:text="${item.companySalesMap['마이씨앤에스'] != null && item.companySalesMap['마이씨앤에스'].amount.compareTo(T(java.math.BigDecimal).ZERO) != 0 ? #numbers.formatInteger(item.companySalesMap['마이씨앤에스'].amount, 0, 'COMMA') : '-'}"
                     >
                       -
                     </td>
@@ -685,20 +683,20 @@
                     <!-- 우리STM -->
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['우리STM'] != null ? (item.companySalesMap['우리STM'].dailyQuantity > 0 ? item.companySalesMap['우리STM'].dailyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['우리STM'] != null ? (item.companySalesMap['우리STM'].dailyQuantity != 0 ? item.companySalesMap['우리STM'].dailyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell product-data-cell"
                       th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['우리STM'] != null ? (item.companySalesMap['우리STM'].monthlyQuantity > 0 ? item.companySalesMap['우리STM'].monthlyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['우리STM'] != null ? (item.companySalesMap['우리STM'].monthlyQuantity != 0 ? item.companySalesMap['우리STM'].monthlyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['우리STM'] != null && item.companySalesMap['우리STM'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['우리STM'].amount, 0, 'COMMA') : '-'}"
+                      th:text="${item.companySalesMap['우리STM'] != null && item.companySalesMap['우리STM'].amount.compareTo(T(java.math.BigDecimal).ZERO) != 0 ? #numbers.formatInteger(item.companySalesMap['우리STM'].amount, 0, 'COMMA') : '-'}"
                     >
                       -
                     </td>
@@ -706,20 +704,20 @@
                     <!-- 엠에스앤샵 -->
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['엠에스앤샵'] != null ? (item.companySalesMap['엠에스앤샵'].dailyQuantity > 0 ? item.companySalesMap['엠에스앤샵'].dailyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['엠에스앤샵'] != null ? (item.companySalesMap['엠에스앤샵'].dailyQuantity != 0 ? item.companySalesMap['엠에스앤샵'].dailyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell product-data-cell"
                       th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['엠에스앤샵'] != null ? (item.companySalesMap['엠에스앤샵'].monthlyQuantity > 0 ? item.companySalesMap['엠에스앤샵'].monthlyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['엠에스앤샵'] != null ? (item.companySalesMap['엠에스앤샵'].monthlyQuantity != 0 ? item.companySalesMap['엠에스앤샵'].monthlyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['엠에스앤샵'] != null && item.companySalesMap['엠에스앤샵'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['엠에스앤샵'].amount, 0, 'COMMA') : '-'}"
+                      th:text="${item.companySalesMap['엠에스앤샵'] != null && item.companySalesMap['엠에스앤샵'].amount.compareTo(T(java.math.BigDecimal).ZERO) != 0 ? #numbers.formatInteger(item.companySalesMap['엠에스앤샵'].amount, 0, 'COMMA') : '-'}"
                     >
                       -
                     </td>
@@ -727,20 +725,20 @@
                     <!-- 원이스토리(쿠팡) -->
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['원이스토리(쿠팡)'] != null ? (item.companySalesMap['원이스토리(쿠팡)'].dailyQuantity > 0 ? item.companySalesMap['원이스토리(쿠팡)'].dailyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['원이스토리(쿠팡)'] != null ? (item.companySalesMap['원이스토리(쿠팡)'].dailyQuantity != 0 ? item.companySalesMap['원이스토리(쿠팡)'].dailyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell product-data-cell"
                       th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['원이스토리(쿠팡)'] != null ? (item.companySalesMap['원이스토리(쿠팡)'].monthlyQuantity > 0 ? item.companySalesMap['원이스토리(쿠팡)'].monthlyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['원이스토리(쿠팡)'] != null ? (item.companySalesMap['원이스토리(쿠팡)'].monthlyQuantity != 0 ? item.companySalesMap['원이스토리(쿠팡)'].monthlyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['원이스토리(쿠팡)'] != null && item.companySalesMap['원이스토리(쿠팡)'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['원이스토리(쿠팡)'].amount, 0, 'COMMA') : '-'}"
+                      th:text="${item.companySalesMap['원이스토리(쿠팡)'] != null && item.companySalesMap['원이스토리(쿠팡)'].amount.compareTo(T(java.math.BigDecimal).ZERO) != 0 ? #numbers.formatInteger(item.companySalesMap['원이스토리(쿠팡)'].amount, 0, 'COMMA') : '-'}"
                     >
                       -
                     </td>
@@ -748,20 +746,20 @@
                     <!-- 대현씨앤씨 -->
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['대현씨앤씨'] != null ? (item.companySalesMap['대현씨앤씨'].dailyQuantity > 0 ? item.companySalesMap['대현씨앤씨'].dailyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['대현씨앤씨'] != null ? (item.companySalesMap['대현씨앤씨'].dailyQuantity != 0 ? item.companySalesMap['대현씨앤씨'].dailyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell product-data-cell"
                       th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['대현씨앤씨'] != null ? (item.companySalesMap['대현씨앤씨'].monthlyQuantity > 0 ? item.companySalesMap['대현씨앤씨'].monthlyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['대현씨앤씨'] != null ? (item.companySalesMap['대현씨앤씨'].monthlyQuantity != 0 ? item.companySalesMap['대현씨앤씨'].monthlyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['대현씨앤씨'] != null && item.companySalesMap['대현씨앤씨'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['대현씨앤씨'].amount, 0, 'COMMA') : '-'}"
+                      th:text="${item.companySalesMap['대현씨앤씨'] != null && item.companySalesMap['대현씨앤씨'].amount.compareTo(T(java.math.BigDecimal).ZERO) != 0 ? #numbers.formatInteger(item.companySalesMap['대현씨앤씨'].amount, 0, 'COMMA') : '-'}"
                     >
                       -
                     </td>
@@ -769,20 +767,20 @@
                     <!-- 마이넷(GX판매) -->
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['마이넷(GX판매)'] != null ? (item.companySalesMap['마이넷(GX판매)'].dailyQuantity > 0 ? item.companySalesMap['마이넷(GX판매)'].dailyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['마이넷(GX판매)'] != null ? (item.companySalesMap['마이넷(GX판매)'].dailyQuantity != 0 ? item.companySalesMap['마이넷(GX판매)'].dailyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell product-data-cell"
                       th:classappend="|row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['마이넷(GX판매)'] != null ? (item.companySalesMap['마이넷(GX판매)'].monthlyQuantity > 0 ? item.companySalesMap['마이넷(GX판매)'].monthlyQuantity : '-') : '-'}"
+                      th:text="${item.companySalesMap['마이넷(GX판매)'] != null ? (item.companySalesMap['마이넷(GX판매)'].monthlyQuantity != 0 ? item.companySalesMap['마이넷(GX판매)'].monthlyQuantity : '-') : '-'}"
                     >
                       -
                     </td>
                     <td
                       th:class="|number-cell product-data-cell row-color-${(categoryStat.index % 4) + 1}|"
-                      th:text="${item.companySalesMap['마이넷(GX판매)'] != null && item.companySalesMap['마이넷(GX판매)'].amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.companySalesMap['마이넷(GX판매)'].amount, 0, 'COMMA') : '-'}"
+                      th:text="${item.companySalesMap['마이넷(GX판매)'] != null && item.companySalesMap['마이넷(GX판매)'].amount.compareTo(T(java.math.BigDecimal).ZERO) != 0 ? #numbers.formatInteger(item.companySalesMap['마이넷(GX판매)'].amount, 0, 'COMMA') : '-'}"
                     >
                       -
                     </td>
@@ -790,13 +788,13 @@
                     <!-- 일 합계 -->
                     <td
                       class="number-cell daily-total-col"
-                      th:text="${item.dailyTotal.quantity > 0 ? item.dailyTotal.quantity : '-'}"
+                      th:text="${item.dailyTotal.quantity != 0 ? item.dailyTotal.quantity : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell amount-cell daily-total-col"
-                      th:text="${item.dailyTotal.amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.dailyTotal.amount, 0, 'COMMA') : '-'}"
+                      th:text="${item.dailyTotal.amount.compareTo(T(java.math.BigDecimal).ZERO) != 0 ? #numbers.formatInteger(item.dailyTotal.amount, 0, 'COMMA') : '-'}"
                     >
                       -
                     </td>
@@ -804,13 +802,13 @@
                     <!-- 월 합계 -->
                     <td
                       class="number-cell monthly-total-col"
-                      th:text="${item.monthlyTotal.quantity > 0 ? item.monthlyTotal.quantity : '-'}"
+                      th:text="${item.monthlyTotal.quantity != 0 ? item.monthlyTotal.quantity : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell amount-cell monthly-total-col"
-                      th:text="${item.monthlyTotal.amount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? #numbers.formatInteger(item.monthlyTotal.amount, 0, 'COMMA') : '-'}"
+                      th:text="${item.monthlyTotal.amount.compareTo(T(java.math.BigDecimal).ZERO) != 0 ? #numbers.formatInteger(item.monthlyTotal.amount, 0, 'COMMA') : '-'}"
                     >
                       -
                     </td>
@@ -818,37 +816,37 @@
                     <!-- 비교 데이터 -->
                     <td
                       class="number-cell target-col"
-                      th:text="${item.targetQuantity > 0 ? item.targetQuantity : '-'}"
+                      th:text="${item.targetQuantity != 0 ? item.targetQuantity : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell comparison-col-1"
-                      th:text="${item.prevMonthSales > 0 ? item.prevMonthSales : '-'}"
+                      th:text="${item.prevMonthSales != 0 ? item.prevMonthSales : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell comparison-col-1"
-                      th:text="${item.yearToDateSales > 0 ? item.yearToDateSales : '-'}"
+                      th:text="${item.yearToDateSales != 0 ? item.yearToDateSales : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell comparison-col-2"
-                      th:text="${item.lastYearPrevMonthSales > 0 ? item.lastYearPrevMonthSales : '-'}"
+                      th:text="${item.lastYearPrevMonthSales != 0 ? item.lastYearPrevMonthSales : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell comparison-col-2"
-                      th:text="${item.lastYearCurrentMonthSales > 0 ? item.lastYearCurrentMonthSales : '-'}"
+                      th:text="${item.lastYearCurrentMonthSales != 0 ? item.lastYearCurrentMonthSales : '-'}"
                     >
                       -
                     </td>
                     <td
                       class="number-cell comparison-col-2"
-                      th:text="${item.lastYearYearToDateSales > 0 ? item.lastYearYearToDateSales : '-'}"
+                      th:text="${item.lastYearYearToDateSales != 0 ? item.lastYearYearToDateSales : '-'}"
                     >
                       -
                     </td>
@@ -1001,7 +999,7 @@
           subtotalValues.forEach((v, i) => {
             if (subtotalCells[cellIndex]) {
               subtotalCells[cellIndex].textContent =
-                v > 0 ? v.toLocaleString() : "-";
+                v != 0 ? v.toLocaleString() : "-";
               cellIndex++;
             }
           });
@@ -1043,7 +1041,7 @@
         totalValues.forEach((v, i) => {
           if (totalCells[cellIndex]) {
             totalCells[cellIndex].textContent =
-              v > 0 ? v.toLocaleString() : "-";
+              v != 0 ? v.toLocaleString() : "-";
             cellIndex++;
           }
         });
