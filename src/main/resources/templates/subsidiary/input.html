@@ -558,17 +558,34 @@
         }
 
         function saveSalesData() {
+            console.log("===== 저장 시작 =====");
+            console.log("currentValues:", currentValues);
+            console.log("originalData:", originalData);
+
             const quantities = {};
             const inputs = document.querySelectorAll('.quantity-input[data-editable="true"]');
             
+            // 변경된 값만 추출
             inputs.forEach(input => {
                 const productId = parseInt(input.dataset.productId, 10);
                 const type = input.dataset.type;
                 const key = `${productId}-${type}`;
-                quantities[productId] = currentValues[key] || 0;
+                const currentValue = currentValues[key] || 0;
+                const originalValue = originalData[key] || 0;
+
+                // 변경된 값만 서버로 보냄
+                if (Number(currentValue) !== Number(originalValue)) {
+                    quantities[productId] = currentValue;
+                }
             });
             
-            console.log("=== 저장할 데이터 ===", quantities);
+            console.log("=== 변경된 데이터 ===", quantities);
+
+            // 변경 사항 없으면 조기 리턴
+            if (Object.keys(quantities).length === 0) {
+                showAlert('변경된 값이 없습니다.', 'info');
+                return;
+            }
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/subsidiary/input/save', true);
@@ -585,8 +602,15 @@
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
                     if (xhr.status === 200) {
+                        // originalData 갱신
+                        Object.keys(quantities).forEach(id => {
+                            const key = `${id}-quantity`;
+                            originalData[key] = quantities[id];
+                        });
+
                         showAlert('저장되었습니다.', 'success');
                         toggleEdit();
+                        calculateTotals();
                     } else {
                         showAlert('저장 중 오류가 발생했습니다.', 'error');
                     }
@@ -641,7 +665,6 @@
             });
         }
 
-        // 나머지 함수들은 그대로...
         function changeDate(days) {
             const newDate = new Date(currentDate);
             newDate.setDate(currentDate.getDate() + days);

@@ -3,6 +3,8 @@ package com.mynet.sales_management_system.controller;
 
 import com.mynet.sales_management_system.dto.DailySalesStatusDTO;
 import com.mynet.sales_management_system.dto.MonthlyComparisonDTO;
+import com.mynet.sales_management_system.dto.MynetQuantityUpdateRequest;
+import com.mynet.sales_management_system.dto.MynetTargetUpdateRequest;
 import com.mynet.sales_management_system.dto.ViewStatisticsDTO;
 import com.mynet.sales_management_system.entity.Company;
 import com.mynet.sales_management_system.entity.DailySales;
@@ -133,246 +135,154 @@ public class MynetController {
     }
 
     /**
-     * 수량 수정 (단일 + 다중 통합)
-     * 기존: 단일 파라미터만 받음
-     * 변경후: 단일/배열 파라미터 모두 지원
+     * 수량 수정 - JSON 방식
      */
     @PostMapping("/update-quantity")
     @ResponseBody
-    public Map<String, Object> updateQuantity(@AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam Long companyId,
-            @RequestParam(required = false) Long productId, // 단일용
-            @RequestParam(required = false) Long[] productIds, // 다중용
-            @RequestParam String salesDate,
-            @RequestParam(required = false) Integer quantity, // 단일용
-            @RequestParam(required = false) Integer[] quantities) { // 다중용
+    public Map<String, Object> updateQuantity(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody MynetQuantityUpdateRequest request) { // ✅ 새 DTO 사용
 
         Map<String, Object> response = new HashMap<>();
 
         try {
-            if (companyId == null) {
+            log.info("===== 수량 수정 요청 =====");
+            log.info("요청 데이터: {}", request);
+
+            // 파라미터 검증
+            if (request.getCompanyId() == null || request.getCompanyId().isEmpty()) {
                 response.put("success", false);
-                response.put("message", "전체 통계에서는 수정할 수 없습니다.");
+                response.put("message", "회사 ID가 필요합니다");
                 return response;
             }
 
-            LocalDate date = LocalDate.parse(salesDate);
-
-            // ===== 핵심 변경: 단일/다중 분기 처리 =====
-            if (productIds != null && quantities != null) {
-                // 다중 처리
-                return processBulkQuantityUpdate(userDetails, companyId, productIds, quantities, date);
-            } else if (productId != null && quantity != null) {
-                // 단일 처리
-                return processSingleQuantityUpdate(userDetails, companyId, productId, quantity, date, salesDate);
-            } else {
+            if (request.getSalesDate() == null || request.getSalesDate().isEmpty()) {
                 response.put("success", false);
-                response.put("message", "필수 파라미터가 누락되었습니다.");
+                response.put("message", "날짜가 필요합니다");
+                return response;
             }
 
+            Long companyId = Long.parseLong(request.getCompanyId());
+            LocalDate date = LocalDate.parse(request.getSalesDate());
+
+            int successCount = 0;
+            List<Map<String, Object>> results = new ArrayList<>();
+
+            // 각 제품별로 저장
+            for (Map.Entry<Long, Integer> entry : request.getQuantities().entrySet()) {
+                Long productId = entry.getKey();
+                Integer quantity = entry.getValue();
+
+                Map<String, Object> itemResult = new HashMap<>();
+                itemResult.put("productId", productId);
+
+                try {
+                    salesService.saveDailySales(companyId, productId, date, quantity,
+                            userDetails.getUsername());
+                    itemResult.put("success", true);
+                    successCount++;
+
+                    log.info("제품 {} 수량 수정 성공: {}", productId, quantity);
+                } catch (Exception e) {
+                    itemResult.put("success", false);
+                    itemResult.put("message", e.getMessage());
+                    log.error("제품 {} 수량 수정 실패", productId, e);
+                }
+                results.add(itemResult);
+            }
+
+            response.put("success", true);
+            response.put("successCount", successCount);
+            response.put("totalCount", request.getQuantities().size());
+            response.put("results", results);
+
+            log.info("수량 수정 완료: 성공 {}/{}", successCount, request.getQuantities().size());
+
+        } catch (NumberFormatException e) {
+            log.error("companyId 파싱 실패: {}", request.getCompanyId(), e);
+            response.put("success", false);
+            response.put("message", "잘못된 회사 ID 형식입니다");
         } catch (Exception e) {
             log.error("수량 수정 실패", e);
             response.put("success", false);
-            response.put("message", "수정 실패: " + e.getMessage());
+            response.put("message", "서버 에러: " + e.getMessage());
         }
 
         return response;
     }
 
     /**
-     * 단일 수량 수정 로직 (기존 로직을 별도 메서드로 분리)
-     */
-    private Map<String, Object> processSingleQuantityUpdate(CustomUserDetails userDetails,
-            Long companyId, Long productId, Integer quantity, LocalDate date, String salesDate) {
-
-        Map<String, Object> response = new HashMap<>();
-
-        try {
-            log.info("수량 수정 시작: companyId={}, productId={}, quantity={}, date={}",
-                    companyId, productId, quantity, salesDate);
-
-            DailySales result = salesService.saveDailySales(companyId, productId, date, quantity,
-                    userDetails.getUsername());
-
-            log.info("수량 수정 성공: 결과ID={}", result.getId());
-
-            response.put("success", true);
-            response.put("message", "수량이 성공적으로 수정되었습니다.");
-            response.put("type", "single");
-
-        } catch (Exception e) {
-            log.error("수량 수정 실패: companyId={}, productId={}", companyId, productId, e);
-            response.put("success", false);
-            response.put("message", "수정 실패: " + e.getMessage());
-        }
-
-        return response;
-    }
-
-    /**
-     * 다중 수량 수정 로직 (새로 추가)
-     */
-    private Map<String, Object> processBulkQuantityUpdate(CustomUserDetails userDetails,
-            Long companyId, Long[] productIds, Integer[] quantities, LocalDate date) {
-
-        Map<String, Object> response = new HashMap<>();
-
-        if (productIds.length != quantities.length) {
-            response.put("success", false);
-            response.put("message", "제품 수와 수량 수가 일치하지 않습니다.");
-            return response;
-        }
-
-        List<Map<String, Object>> results = new ArrayList<>();
-        int successCount = 0;
-
-        for (int i = 0; i < productIds.length; i++) {
-            Map<String, Object> itemResult = new HashMap<>();
-            itemResult.put("productId", productIds[i]);
-
-            try {
-                salesService.saveDailySales(companyId, productIds[i], date, quantities[i], userDetails.getUsername());
-                itemResult.put("success", true);
-                itemResult.put("message", "성공");
-                successCount++;
-            } catch (Exception e) {
-                itemResult.put("success", false);
-                itemResult.put("message", e.getMessage());
-                log.error("제품 {} 수량 수정 실패", productIds[i], e);
-            }
-            results.add(itemResult);
-        }
-
-        log.info("다중 수량 수정: 수정자={}, 총 {}개, 성공 {}개",
-                userDetails.getUsername(), productIds.length, successCount);
-
-        response.put("success", true);
-        response.put("type", "bulk");
-        response.put("successCount", successCount);
-        response.put("totalCount", productIds.length);
-        response.put("results", results);
-
-        return response;
-    }
-
-    /**
-     * 목표 수정 (단일 + 다중 통합) - 수량과 동일한 패턴
+     * 목표 수정 - JSON 방식
      */
     @PostMapping("/update-target")
     @ResponseBody
-    public Map<String, Object> updateTarget(@AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam Long companyId,
-            @RequestParam(required = false) Long productId, // 단일용
-            @RequestParam(required = false) Long[] productIds, // 다중용 ← 새로 추가
-            @RequestParam String targetDate,
-            @RequestParam(required = false) Integer targetQuantity, // 단일용
-            @RequestParam(required = false) Integer[] targetQuantities) { // 다중용 ← 새로 추가
+    public Map<String, Object> updateTarget(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody MynetTargetUpdateRequest request) { // ✅ 새 DTO 사용
 
         Map<String, Object> response = new HashMap<>();
 
         try {
-            if (companyId == null) {
+            log.info("===== 목표 수정 요청 =====");
+            log.info("요청 데이터: {}", request);
+
+            if (request.getCompanyId() == null || request.getCompanyId().isEmpty()) {
                 response.put("success", false);
-                response.put("message", "전체 통계에서는 수정할 수 없습니다.");
+                response.put("message", "회사 ID가 필요합니다");
                 return response;
             }
 
-            LocalDate date = LocalDate.parse(targetDate);
-
-            // 단일/다중 분기 처리
-            if (productIds != null && targetQuantities != null) {
-                // 다중 처리
-                return processBulkTargetUpdate(userDetails, companyId, productIds, targetQuantities, date);
-            } else if (productId != null && targetQuantity != null) {
-                // 단일 처리
-                return processSingleTargetUpdate(userDetails, companyId, productId, targetQuantity, date, targetDate);
-            } else {
+            if (request.getTargetDate() == null || request.getTargetDate().isEmpty()) {
                 response.put("success", false);
-                response.put("message", "필수 파라미터가 누락되었습니다.");
+                response.put("message", "날짜가 필요합니다");
+                return response;
             }
 
+            Long companyId = Long.parseLong(request.getCompanyId());
+            LocalDate date = LocalDate.parse(request.getTargetDate());
+
+            int successCount = 0;
+            List<Map<String, Object>> results = new ArrayList<>();
+
+            for (Map.Entry<Long, Integer> entry : request.getTargetQuantities().entrySet()) {
+                Long productId = entry.getKey();
+                Integer targetQuantity = entry.getValue();
+
+                Map<String, Object> itemResult = new HashMap<>();
+                itemResult.put("productId", productId);
+
+                try {
+                    targetService.saveTarget(companyId, productId, date.getYear(),
+                            date.getMonthValue(), targetQuantity,
+                            userDetails.getUsername());
+                    itemResult.put("success", true);
+                    successCount++;
+
+                    log.info("제품 {} 목표 수정 성공: {}", productId, targetQuantity);
+                } catch (Exception e) {
+                    itemResult.put("success", false);
+                    itemResult.put("message", e.getMessage());
+                    log.error("제품 {} 목표 수정 실패", productId, e);
+                }
+                results.add(itemResult);
+            }
+
+            response.put("success", true);
+            response.put("successCount", successCount);
+            response.put("totalCount", request.getTargetQuantities().size());
+            response.put("results", results);
+
+            log.info("목표 수정 완료: 성공 {}/{}", successCount, request.getTargetQuantities().size());
+
+        } catch (NumberFormatException e) {
+            log.error("companyId 파싱 실패: {}", request.getCompanyId(), e);
+            response.put("success", false);
+            response.put("message", "잘못된 회사 ID 형식입니다");
         } catch (Exception e) {
             log.error("목표 수정 실패", e);
             response.put("success", false);
-            response.put("message", "수정 실패: " + e.getMessage());
+            response.put("message", "서버 에러: " + e.getMessage());
         }
-
-        return response;
-    }
-
-    /**
-     * 단일 목표 수정 로직
-     */
-    private Map<String, Object> processSingleTargetUpdate(CustomUserDetails userDetails,
-            Long companyId, Long productId, Integer targetQuantity, LocalDate date, String targetDate) {
-
-        Map<String, Object> response = new HashMap<>();
-
-        try {
-            // TargetService를 사용해야 함 (salesService가 아니라)
-            targetService.saveTarget(companyId, productId, date.getYear(), date.getMonthValue(),
-                    targetQuantity, userDetails.getUsername());
-
-            log.info("단일 목표 수정: 수정자={}, 회사ID={}, 제품ID={}, 날짜={}, 목표수량={}",
-                    userDetails.getUsername(), companyId, productId, targetDate, targetQuantity);
-
-            response.put("success", true);
-            response.put("message", "목표 수량이 성공적으로 수정되었습니다.");
-            response.put("type", "single");
-
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "목표 수정 실패: " + e.getMessage());
-            log.error("단일 목표 수정 실패: productId={}", productId, e);
-        }
-
-        return response;
-    }
-
-    /**
-     * 다중 목표 수정 로직
-     */
-    private Map<String, Object> processBulkTargetUpdate(CustomUserDetails userDetails,
-            Long companyId, Long[] productIds, Integer[] targetQuantities, LocalDate date) {
-
-        Map<String, Object> response = new HashMap<>();
-
-        if (productIds.length != targetQuantities.length) {
-            response.put("success", false);
-            response.put("message", "제품 수와 목표 수량 수가 일치하지 않습니다.");
-            return response;
-        }
-
-        List<Map<String, Object>> results = new ArrayList<>();
-        int successCount = 0;
-
-        for (int i = 0; i < productIds.length; i++) {
-            Map<String, Object> itemResult = new HashMap<>();
-            itemResult.put("productId", productIds[i]);
-
-            try {
-                // TargetService 사용
-                targetService.saveTarget(companyId, productIds[i], date.getYear(), date.getMonthValue(),
-                        targetQuantities[i], userDetails.getUsername());
-                itemResult.put("success", true);
-                itemResult.put("message", "성공");
-                successCount++;
-            } catch (Exception e) {
-                itemResult.put("success", false);
-                itemResult.put("message", e.getMessage());
-                log.error("제품 {} 목표 수정 실패", productIds[i], e);
-            }
-            results.add(itemResult);
-        }
-
-        log.info("다중 목표 수정: 수정자={}, 총 {}개, 성공 {}개",
-                userDetails.getUsername(), productIds.length, successCount);
-
-        response.put("success", true);
-        response.put("type", "bulk");
-        response.put("successCount", successCount);
-        response.put("totalCount", productIds.length);
-        response.put("results", results);
 
         return response;
     }

@@ -1104,77 +1104,152 @@
 
       // 저장
       function saveAll() {
-        console.log("저장 데이터:", currentValues);
+        console.log("===== 저장 시작 =====");
+        console.log("currentCompanyFilter:", currentCompanyFilter);
+        console.log("currentDate:", currentDate);
+        console.log("currentValues:", currentValues);
 
-        const quantityData = [];
-        const targetData = [];
+        // 필수 체크
+        if (
+          !currentCompanyFilter ||
+          currentCompanyFilter === "" ||
+          currentCompanyFilter === "all"
+        ) {
+          showAlert("회사를 선택해주세요", "error");
+          return;
+        }
+
+        // quantity와 target 데이터를 Map 형태로 변환
+        const quantities = {};
+        const targetQuantities = {};
 
         Object.entries(currentValues).forEach(([key, value]) => {
           const [productId, type] = key.split("-");
+          const id = parseInt(productId, 10);
+          const originalValue = originalValues[key];
 
-          if (type === "quantity") {
-            quantityData.push({ productId, value });
-          } else if (type === "target") {
-            targetData.push({ productId, value });
+          // 변경된 값만 서버로 보냄
+          if (value !== originalValue) {
+            if (type === "quantity") {
+              quantities[id] = value;
+            } else if (type === "target") {
+              targetQuantities[id] = value;
+            }
           }
         });
 
+        console.log("quantities:", quantities);
+        console.log("targetQuantities:", targetQuantities);
+
         const promises = [];
 
-        // 수량 저장
-        if (quantityData.length > 0) {
-          const formData = new FormData();
-          formData.append("companyId", currentCompanyFilter);
-          formData.append("salesDate", formatDate(currentDate));
+        // 수량 저장 - JSON 구조
+        if (Object.keys(quantities).length > 0) {
+          const requestData = {
+            companyId: currentCompanyFilter,
+            salesDate: formatDate(currentDate),
+            quantities: quantities,
+          };
 
-          quantityData.forEach((item) => {
-            formData.append("productIds", item.productId);
-            formData.append("quantities", item.value);
-          });
+          console.log("=== 수량 저장 요청 데이터 ===", requestData);
 
           promises.push(
             fetch("/mynet/update-quantity", {
               method: "POST",
               headers: {
+                "Content-Type": "application/json",
                 [document.querySelector('meta[name="_csrf_header"]').content]:
                   document.querySelector('meta[name="_csrf"]').content,
               },
-              body: formData,
+              body: JSON.stringify(requestData),
             })
+              .then((response) => {
+                console.log("수량 저장 응답:", response.status, response.ok);
+
+                if (!response.ok) {
+                  return response.text().then((text) => {
+                    console.error("수량 저장 실패 응답:", text);
+                    throw new Error(
+                      `수량 저장 실패 (${response.status}): ${text}`
+                    );
+                  });
+                }
+
+                return response.json();
+              })
+              .then((data) => {
+                console.log("수량 저장 성공:", data);
+              })
           );
         }
 
-        // 목표 저장
-        if (targetData.length > 0) {
-          const formData = new FormData();
-          formData.append("companyId", currentCompanyFilter);
-          formData.append("targetDate", formatDate(currentDate));
+        // 목표 저장 - JSON 구조
+        if (Object.keys(targetQuantities).length > 0) {
+          const requestData = {
+            companyId: currentCompanyFilter,
+            targetDate: formatDate(currentDate),
+            targetQuantities: targetQuantities,
+          };
 
-          targetData.forEach((item) => {
-            formData.append("productIds", item.productId);
-            formData.append("targetQuantities", item.value);
-          });
+          console.log("=== 목표 저장 요청 데이터 ===", requestData);
 
           promises.push(
             fetch("/mynet/update-target", {
               method: "POST",
               headers: {
+                "Content-Type": "application/json",
                 [document.querySelector('meta[name="_csrf_header"]').content]:
                   document.querySelector('meta[name="_csrf"]').content,
               },
-              body: formData,
+              body: JSON.stringify(requestData),
             })
+              .then((response) => {
+                console.log("목표 저장 응답:", response.status, response.ok);
+
+                if (!response.ok) {
+                  return response.text().then((text) => {
+                    console.error("목표 저장 실패 응답:", text);
+                    throw new Error(
+                      `목표 저장 실패 (${response.status}): ${text}`
+                    );
+                  });
+                }
+
+                return response.json();
+              })
+              .then((data) => {
+                console.log("목표 저장 성공:", data);
+              })
           );
+        }
+
+        if (
+          Object.keys(quantities).length === 0 &&
+          Object.keys(targetQuantities).length === 0
+        ) {
+          showAlert("변경된 값이 없습니다.", "info");
+          return;
         }
 
         Promise.all(promises)
           .then(() => {
+            console.log("=== 모든 저장 성공 ===");
+
+            // originalValues 갱신
+            Object.keys(quantities).forEach((id) => {
+              originalValues[`${id}-quantity`] = quantities[id];
+            });
+
+            Object.keys(targetQuantities).forEach((id) => {
+              originalValues[`${id}-target`] = targetQuantities[id];
+            });
+
             showAlert("저장되었습니다.", "success");
             setTimeout(() => location.reload(), 1000);
           })
           .catch((err) => {
-            console.error(err);
-            showAlert("저장 중 오류 발생", "error");
+            console.error("=== 저장 에러 ===", err);
+            showAlert("저장 실패: " + err.message, "error");
           });
       }
 
