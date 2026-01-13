@@ -430,6 +430,50 @@
         background-color: rgba(255, 255, 255, 0.1);
       }
 
+      /* input을 span처럼 보이게 */
+      .quantity-input {
+        width: 60px;
+        text-align: center;
+        border: none;
+        background: transparent;
+        font-size: 12px;
+        font-family: inherit;
+        color: inherit;
+        padding: 0;
+        margin: 0;
+        outline: none;
+
+        padding-right: 0;
+        padding-left: 14px;
+
+        /* 브라우저 기본 스타일 제거*/
+        -webkit-appearance: none;
+        -moz-appearance: textfield;
+        appearance: none;
+      }
+
+      /* 수정 모드일 때 */
+      .quantity-input.editable {
+        border: 1px solid #007bff;
+        background: white;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+
+      /* 포커스 시 */
+      .quantity-input:focus {
+        outline: 2px solid #007bff;
+        outline-offset: 1px;
+      }
+
+      /* readonly일 때 커서 */
+      .quantity-input[readonly] {
+        cursor: default;
+      }
+
+      .quantity-input:not([readonly]) {
+        cursor: text;
+      }
     </style>
   </head>
   <body>
@@ -438,13 +482,19 @@
       <div class="header-content">
         <div class="logo">마이넷 매출 관리 시스템</div>
         <div class="user-info">
-          <a th:href="@{/change-password}" class="change-password-link">비밀번호 변경</a>
+          <a th:href="@{/change-password}" class="change-password-link"
+            >비밀번호 변경</a
+          >
           <span
             class="user-name"
             th:text="${#authentication.principal.username}"
             >마이넷</span
           >
-          <span class="user-company" th:text="'(' + ${#authentication.principal.companyName} + ')'">(마이넷)</span>
+          <span
+            class="user-company"
+            th:text="'(' + ${#authentication.principal.companyName} + ')'"
+            >(마이넷)</span
+          >
           <form th:action="@{/logout}" method="post" style="display: inline">
             <button type="submit" class="logout-btn">로그아웃</button>
           </form>
@@ -455,7 +505,10 @@
     <!-- 네비게이션 -->
     <nav class="nav-menu">
       <div class="nav-content">
-        <div class="nav-item" th:classappend="${currentPage == 'daily-sales'} ? 'active'">
+        <div
+          class="nav-item"
+          th:classappend="${currentPage == 'daily-sales'} ? 'active'"
+        >
           <a th:href="@{/mynet/daily-sales}">일일매출현황</a>
         </div>
         <div class="nav-item active">
@@ -639,19 +692,22 @@
 
                     <!-- 일별 수량 (수정 가능) -->
                     <td
-                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + 
-                        ${(companyFilter != '' and !isCanon) ? ' tooltip editable-cell' : ' tooltip'}"
-                      th:data-tooltip="${item.dailySummary?.lastModifiedAt != null ? 
-                        ('수정: ' + #temporals.format(item.dailySummary.lastModifiedAt, 'yyyy-MM-dd HH:mm') + 
+                      class="data-cell green-1 tooltip"
+                      th:classappend="${companyFilter != '' and !isCanon} ? ' editable-cell' : ''"
+                      th:data-tooltip="${item.dailySummary?.lastModifiedAt != null ?
+                        ('수정: ' + #temporals.format(item.dailySummary.lastModifiedAt, 'yyyy-MM-dd HH:mm') +
                         ' by ' + item.dailySummary.modifiedBy) : '수정 기록 없음'}"
-                      th:data-company-id="${companyFilter != '' ? companyFilter : ''}"
-                      th:data-product-id="${item.productId}"
-                      th:data-type="'quantity'"
                     >
-                      <span class="cell-display" th:text="${item.dailySummary?.quantity ?: 0}">수량</span>
-                      <input type="number" 
-                            th:value="${item.dailySummary?.quantity ?: 0}" 
-                            style="display:none; width: 60px;">
+                      <input
+                        type="number"
+                        class="quantity-input"
+                        th:value="${item.dailySummary?.quantity ?: 0}"
+                        th:data-product-id="${item.productId}"
+                        th:data-company-id="${companyFilter}"
+                        th:data-type="'quantity'"
+                        readonly
+                        min="-999999"
+                      />
                     </td>
 
                     <!-- 일별 금액 -->
@@ -736,17 +792,20 @@
 
                     <!-- 목표 수량 (수정 가능) -->
                     <td
-                      th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + 
-                        ${(companyFilter != '' and !isCanon) ? ' tooltip editable-cell' : ' tooltip'}"
+                      class="data-cell green-1 tooltip"
+                      th:classappend="${companyFilter != '' and !isCanon} ? ' editable-cell' : ''"
                       th:data-tooltip="'목표 수량'"
-                      th:data-company-id="${companyFilter != '' ? companyFilter : ''}"
-                      th:data-product-id="${item.productId}"
-                      th:data-type="'target'"
                     >
-                      <span class="cell-display" th:text="${item.targetData?.targetQuantity ?: 0}">목표</span>
-                      <input type="number" 
-                            th:value="${item.targetData?.targetQuantity ?: 0}" 
-                            style="display:none; width: 60px;">
+                      <input
+                        type="number"
+                        class="quantity-input"
+                        th:value="${item.targetData?.targetQuantity ?: 0}"
+                        th:data-product-id="${item.productId}"
+                        th:data-company-id="${companyFilter}"
+                        th:data-type="'target'"
+                        readonly
+                        min="-999999"
+                      />
                     </td>
 
                     <!-- 달성률 -->
@@ -920,534 +979,268 @@
       let currentDate = new Date();
       let currentCompanyFilter = "";
       let isEditMode = false;
-      let selectedCells = new Set();
-      let pendingChanges = new Map();
-      let currentEditingCell = null; // 현재 편집 중인 셀 추적
 
-      // 페이지 로드 시 DatePicker 초기화
-      document.addEventListener("DOMContentLoaded", function () {
-        const targetDateElement = document.getElementById("current-date");
-        const companySelectElement = document.getElementById("company-select");
+      const currentValues = {};
+      const originalValues = {};
 
-        if (targetDateElement) {
-          currentDate = new Date(targetDateElement.textContent);
+      // 페이지 로드
+      document.addEventListener("DOMContentLoaded", () => {
+        const dateEl = document.getElementById("current-date");
+        const companySelect = document.getElementById("company-select");
+
+        if (dateEl) currentDate = new Date(dateEl.textContent);
+        if (companySelect) currentCompanyFilter = companySelect.value || "";
+
+        initDatePicker();
+        initializeInputTracking();
+        updateButtonStates();
+
+        // 노란색 셀 직접 편집 활성화
+        if (currentCompanyFilter && currentCompanyFilter !== "") {
+          enableDirectCellEdit();
         }
-        if (companySelectElement) {
-          currentCompanyFilter = companySelectElement.value || "";
-        }
+      });
 
-        // DatePicker 초기화 추가
+      function initDatePicker() {
         if (typeof globalDatePicker !== "undefined") {
           globalDatePicker.selectedDate = new Date(currentDate);
           globalDatePicker.init(document.getElementById("current-date"), {
-            onSelect: function (dateString) {
-              const companyId = currentCompanyFilter || "";
-              location.href = `/mynet/view?companyFilter=${companyId}&date=${dateString}`;
+            onSelect: (dateString) => {
+              location.href = `/mynet/view?companyFilter=${currentCompanyFilter}&date=${dateString}`;
             },
           });
         }
+      }
 
-        updateDateDisplay();
-        updateButtonStates();
+      function initializeInputTracking() {
+        const inputs = document.querySelectorAll(".quantity-input");
 
-        // 하위 회사 선택 시 노란색 셀 클릭으로 자동 수정 모드
-        const companyFilter = document.getElementById("company-select");
-        if (companyFilter && companyFilter.value !== "all") {
-          enableDirectCellEdit();
-        }
+        inputs.forEach((input) => {
+          const productId = input.dataset.productId;
+          const type = input.dataset.type;
+          const key = `${productId}-${type}`;
 
-        // 회사 필터 변경 시
-        if (companyFilter) {
-          companyFilter.addEventListener("change", function () {
-            if (this.value !== "all") {
-              // 페이지 새로고침 후 자동으로 활성화됨
-              setTimeout(() => enableDirectCellEdit(), 100);
+          // 음수 허용
+          const value = parseInt(input.value, 10);
+          const initialValue = isNaN(value) ? 0 : value;
+
+          currentValues[key] = initialValue;
+          originalValues[key] = initialValue;
+
+          input.addEventListener("input", () => {
+            const newValue = parseInt(input.value, 10);
+            currentValues[key] = isNaN(newValue) ? 0 : newValue; // 음수 허용
+          });
+
+          input.addEventListener("blur", () => {
+            const savedValue = currentValues[key];
+            if (input.value !== savedValue.toString()) {
+              input.value = savedValue;
             }
           });
-        }
-      });
+        });
+
+        console.log("초기 currentValues:", currentValues);
+      }
+
+      // 노란색 셀 직접 클릭 편집
+      function enableDirectCellEdit() {
+        const editableCells = document.querySelectorAll(".editable-cell");
+
+        editableCells.forEach((cell) => {
+          const input = cell.querySelector(".quantity-input");
+          if (!input) return;
+
+          // 이미 이벤트 리스너 있으면 스킵
+          if (cell.dataset.clickEnabled === "true") return;
+          cell.dataset.clickEnabled = "true";
+
+          cell.addEventListener("click", function () {
+            // 이미 수정 모드면 그냥 포커스만
+            if (isEditMode) {
+              input.focus();
+              input.select();
+              return;
+            }
+
+            // 수정 모드 진입
+            toggleEdit();
+
+            // 클릭한 input에 포커스
+            setTimeout(() => {
+              input.focus();
+              input.select();
+            }, 50);
+          });
+        });
+      }
 
       // 수정 모드 토글
       function toggleEdit() {
         isEditMode = !isEditMode;
         const editBtn = document.getElementById("edit-btn");
+        const inputs = document.querySelectorAll(".quantity-input");
 
         if (isEditMode) {
           editBtn.textContent = "저장";
           editBtn.classList.add("active");
-          document.body.classList.add("multi-select-mode");
-          enableMultiSelectEditing();
+
+          inputs.forEach((input) => {
+            input.readOnly = false;
+            input.classList.add("editable");
+          });
         } else {
-          // 저장 전에 모든 활성 input의 값을 먼저 수집
-          collectAllPendingChanges();
-          
           editBtn.textContent = "수정";
           editBtn.classList.remove("active");
-          document.body.classList.remove("multi-select-mode");
-          
-          // 저장 완료 후에 정리 작업 수행
-          savePendingChanges().then(() => {
-            clearSelections();
+
+          inputs.forEach((input) => {
+            input.readOnly = true;
+            input.classList.remove("editable");
           });
+
+          saveAll();
         }
       }
 
-      function collectAllPendingChanges() {
-        console.log("=== collectAllPendingChanges 시작 ===");
-        
-        // ✅ 현재 편집 중인 셀이 있으면 먼저 처리
-        if (currentEditingCell) {
-          const cell = currentEditingCell.cell;
-          const input = currentEditingCell.input;
-          
-          if (input && cell) {
-            const cellKey = `${cell.dataset.productId}-${cell.dataset.type}`;
-            const newValue = parseInt(input.value) || 0;
-            
-            console.log("현재 편집 중인 셀 저장:", {
-              productId: cell.dataset.productId,
-              type: cell.dataset.type,
-              value: newValue
-            });
-            
-            pendingChanges.set(cellKey, {
-              productId: cell.dataset.productId,
-              companyId: cell.dataset.companyId,
-              type: cell.dataset.type,
-              value: newValue,
-              cell: cell,
-            });
-            
-            // display span 생성
-            const displaySpan = document.createElement('span');
-            displaySpan.className = 'cell-display';
-            displaySpan.textContent = newValue;
-            
-            // input 숨기고 display 보이기
-            input.style.display = 'none';
-            const existingDisplay = cell.querySelector('.cell-display');
-            if (existingDisplay) {
-              existingDisplay.textContent = newValue;
-              existingDisplay.style.display = 'inline';
-            }
-          }
-          
-          currentEditingCell = null; // 초기화
-        }
-        
-        // ✅ 나머지 활성 input 처리 (기존 로직)
-        const allInputs = document.querySelectorAll('.editable-cell input[type="number"]');
-        console.log("전체 input:", allInputs.length);
-        
-        allInputs.forEach((input, index) => {
-          // display:none이 아닌 것만
-          if (input.style.display !== 'none' && input.offsetParent !== null) {
-            const cell = input.closest('.editable-cell');
-            
-            if (cell) {
-              const cellKey = `${cell.dataset.productId}-${cell.dataset.type}`;
-              const newValue = parseInt(input.value) || 0;
-              
-              console.log(`Input ${index} 처리:`, {
-                productId: cell.dataset.productId,
-                value: newValue
-              });
-              
-              pendingChanges.set(cellKey, {
-                productId: cell.dataset.productId,
-                companyId: cell.dataset.companyId,
-                type: cell.dataset.type,
-                value: newValue,
-                cell: cell,
-              });
-              
-              // input 숨기기
-              input.style.display = 'none';
-              const displaySpan = cell.querySelector('.cell-display');
-              if (displaySpan) {
-                displaySpan.textContent = newValue;
-                displaySpan.style.display = 'inline';
-              }
-            }
-          }
-        });
-        
-        console.log("최종 pendingChanges:", Array.from(pendingChanges.entries()));
-      }
+      // 저장
+      function saveAll() {
+        console.log("저장 데이터:", currentValues);
 
-      // 다중 선택 활성화
-      function enableMultiSelectEditing() {
-        const editableCells = document.querySelectorAll(".editable-cell");
-        editableCells.forEach((cell) => {
-          cell.removeAttribute("onclick");
-          cell.addEventListener("click", function (e) {
-            if (e.ctrlKey || e.metaKey) {
-              toggleCellSelection(cell);
-            } else {
-              editSingleCell(cell);
-            }
-          });
-        });
-      }
+        const quantityData = [];
+        const targetData = [];
 
-      // 셀 선택/해제
-      function toggleCellSelection(cell) {
-        const cellKey = `${cell.dataset.productId}-${cell.dataset.type}`;
+        Object.entries(currentValues).forEach(([key, value]) => {
+          const [productId, type] = key.split("-");
 
-        if (selectedCells.has(cellKey)) {
-          selectedCells.delete(cellKey);
-          cell.classList.remove("selected");
-          removeCellInput(cell);
-        } else {
-          selectedCells.add(cellKey);
-          cell.classList.add("selected");
-          addCellInput(cell);
-        }
-      }
-
-      // 개별 셀 편집
-      function editSingleCell(cell) {
-        clearAllInputs();
-        addCellInput(cell);
-      }
-
-      // 셀에 입력 필드 추가
-      function addCellInput(cell) {
-        const currentValue = cell.textContent.trim();
-        const input = document.createElement("input");
-        input.type = "number";
-        input.value = currentValue;
-        input.style.width = "70px";
-        input.style.textAlign = "center";
-        input.style.border = "2px solid #2c5aa0";
-        input.style.borderRadius = "4px";
-        input.style.padding = "2px";
-
-        input.addEventListener("blur", () => updatePendingChange(cell, input));
-        input.addEventListener("keypress", (e) => {
-          if (e.key === "Enter") {
-            updatePendingChange(cell, input);
-            if (selectedCells.size <= 1) {
-              saveCell(cell, input.value);
-            }
-          }
-        });
-
-        cell.innerHTML = "";
-        cell.appendChild(input);
-        input.focus();
-        input.select();
-      }
-
-      // 셀 입력 제거
-      function removeCellInput(cell) {
-        const input = cell.querySelector("input");
-        if (input) {
-          cell.textContent = input.value;
-        }
-      }
-
-      // 변경사항을 대기 목록에 추가
-      function updatePendingChange(cell, input) {
-        const cellKey = `${cell.dataset.productId}-${cell.dataset.type}`;
-        const newValue = parseInt(input.value) || 0;
-
-        pendingChanges.set(cellKey, {
-          productId: cell.dataset.productId,
-          companyId: cell.dataset.companyId,
-          type: cell.dataset.type,
-          value: newValue,
-          cell: cell,
-        });
-
-        cell.textContent = newValue;
-      }
-
-      // 단일 셀 저장 개선
-      function saveCell(cell, value) {
-        const formData = new FormData();
-        formData.append("companyId", cell.dataset.companyId);
-        formData.append("productId", cell.dataset.productId);
-
-        const salesDate = currentDate.toISOString().split("T")[0];
-        let endpoint = "";
-
-        if (cell.dataset.type === "quantity") {
-          formData.append("salesDate", salesDate);
-          formData.append("quantity", value);
-          endpoint = "/mynet/update-quantity";
-        } else {
-          formData.append("targetDate", salesDate);
-          formData.append("targetQuantity", value);
-          endpoint = "/mynet/update-target";
-        }
-
-        const token = document
-          .querySelector("meta[name='_csrf']")
-          .getAttribute("content");
-        const header = document
-          .querySelector("meta[name='_csrf_header']")
-          .getAttribute("content");
-
-        fetch(endpoint, {
-          method: "POST",
-          body: formData,
-          headers: {
-            [header]: token,
-          },
-        })
-          .then((response) => {
-            console.log("Response status:", response.status); // 디버깅용
-            return response.json();
-          })
-          .then((data) => {
-            console.log("Response data:", data); // 디버깅용
-            if (data.success) {
-              showAlert("저장되었습니다.", "success");
-            } else {
-              cell.style.backgroundColor = "#f8d7da";
-              showAlert("저장 실패: " + data.message, "error");
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            cell.style.backgroundColor = "#f8d7da";
-            showAlert("네트워크 오류가 발생했습니다.", "error");
-          });
-      }
-
-      // 대기 중인 변경사항 저장
-      function savePendingChanges() {
-        if (pendingChanges.size === 0) {
-          return Promise.resolve(); // 빈 Promise 반환
-        }
-
-        const quantityChanges = [];
-        const targetChanges = [];
-
-        pendingChanges.forEach((change) => {
-          if (change.type === "quantity") {
-            quantityChanges.push(change);
-          } else {
-            targetChanges.push(change);
+          if (type === "quantity") {
+            quantityData.push({ productId, value });
+          } else if (type === "target") {
+            targetData.push({ productId, value });
           }
         });
 
         const promises = [];
-        if (quantityChanges.length > 0) {
-          promises.push(saveBulkChanges("quantity", quantityChanges));
+
+        // 수량 저장
+        if (quantityData.length > 0) {
+          const formData = new FormData();
+          formData.append("companyId", currentCompanyFilter);
+          formData.append("salesDate", formatDate(currentDate));
+
+          quantityData.forEach((item) => {
+            formData.append("productIds", item.productId);
+            formData.append("quantities", item.value);
+          });
+
+          promises.push(
+            fetch("/mynet/update-quantity", {
+              method: "POST",
+              headers: {
+                [document.querySelector('meta[name="_csrf_header"]').content]:
+                  document.querySelector('meta[name="_csrf"]').content,
+              },
+              body: formData,
+            })
+          );
         }
-        if (targetChanges.length > 0) {
-          promises.push(saveBulkChanges("target", targetChanges));
+
+        // 목표 저장
+        if (targetData.length > 0) {
+          const formData = new FormData();
+          formData.append("companyId", currentCompanyFilter);
+          formData.append("targetDate", formatDate(currentDate));
+
+          targetData.forEach((item) => {
+            formData.append("productIds", item.productId);
+            formData.append("targetQuantities", item.value);
+          });
+
+          promises.push(
+            fetch("/mynet/update-target", {
+              method: "POST",
+              headers: {
+                [document.querySelector('meta[name="_csrf_header"]').content]:
+                  document.querySelector('meta[name="_csrf"]').content,
+              },
+              body: formData,
+            })
+          );
         }
 
-        // Promise 반환
-        return Promise.all(promises).then(() => {
-          showAlert("모든 변경사항이 저장되었습니다.", "success");
-          pendingChanges.clear(); // 저장 완료 후 clear
-          setTimeout(() => location.reload(), 1000);
-        }).catch(error => {
-          showAlert("저장 중 오류가 발생했습니다.", "error");
-          console.error("Save error:", error);
-        });
+        Promise.all(promises)
+          .then(() => {
+            showAlert("저장되었습니다.", "success");
+            setTimeout(() => location.reload(), 1000);
+          })
+          .catch((err) => {
+            console.error(err);
+            showAlert("저장 중 오류 발생", "error");
+          });
       }
 
-      // 일괄 저장
-      function saveBulkChanges(type, changes) {
-        const salesDate = currentDate.toISOString().split("T")[0];
-        const formData = new FormData();
-
-        formData.append("companyId", changes[0].companyId);
-
-        // key 이름에 [index] 붙이지 말고 같은 key 반복해서 append하면 Spring이 자동으로 Long[] productIds, Integer[] quantities로 매핑
-        changes.forEach((change) => {
-          formData.append("productIds", change.productId);
-        });
-
-        const token = document
-          .querySelector("meta[name='_csrf']")
-          .getAttribute("content");
-        const header = document
-          .querySelector("meta[name='_csrf_header']")
-          .getAttribute("content");
-
-        if (type === "quantity") {
-          formData.append("salesDate", salesDate);
-          changes.forEach((change) => {
-            formData.append("quantities", change.value);
-          });
-          console.log("FormData(Quantity):", [...formData]); // 디버깅용
-          return fetch("/mynet/update-quantity", {
-            method: "POST",
-            body: formData,
-            headers: {
-              [header]: token,
-            },
-          });
-        } else {
-          formData.append("targetDate", salesDate);
-          changes.forEach((change) => {
-            formData.append("targetQuantities", change.value);
-          });
-          console.log("FormData(Target):", [...formData]); // 디버깅용
-          return fetch("/mynet/update-target", {
-            method: "POST",
-            body: formData,
-            headers: {
-              [header]: token,
-            },
-          });
-        }
-      }
-
-      // 모든 입력 필드 정리
-      function clearAllInputs() {
-        document.querySelectorAll(".editable-cell input").forEach((input) => {
-          const cell = input.parentElement;
-          cell.textContent = input.value;
-        });
-      }
-
-      // 선택 해제
-      function clearSelections() {
-        selectedCells.clear();
-        document.querySelectorAll(".selected").forEach((cell) => {
-          cell.classList.remove("selected");
-        });
-        clearAllInputs();
-      }
-
-      // 나머지 기존 함수들...
-      function selectTotalStats() {
-        const dateStr = currentDate.toISOString().split("T")[0];
-        location.href = `/mynet/view?companyFilter=&date=${dateStr}`;
+      // 유틸
+      function formatDate(date) {
+        return date.toISOString().split("T")[0];
       }
 
       function updateButtonStates() {
-        const totalBtn = document.getElementById("total-stats-btn");
         const editBtn = document.getElementById("edit-btn");
+        if (!editBtn) return;
 
-        if (currentCompanyFilter === "" || currentCompanyFilter === "all") {
-          if (totalBtn) totalBtn.classList.add("active");
-          if (editBtn) editBtn.style.display = "none";
+        if (!currentCompanyFilter) {
+          editBtn.style.display = "none";
         } else {
-          if (totalBtn) totalBtn.classList.remove("active");
-          if (editBtn) editBtn.style.display = "inline-block";
+          editBtn.style.display = "inline-block";
         }
       }
 
       function changeDate(days) {
-        const newDate = new Date(currentDate);
-        newDate.setDate(newDate.getDate() + days);
-        const dateStr = newDate.toISOString().split("T")[0];
-        location.href = `/mynet/view?companyFilter=${currentCompanyFilter}&date=${dateStr}`;
+        const d = new Date(currentDate);
+        d.setDate(d.getDate() + days);
+        location.href = `/mynet/view?companyFilter=${currentCompanyFilter}&date=${formatDate(
+          d
+        )}`;
+      }
+
+      function changeCompany(companyId) {
+        location.href = `/mynet/view?companyFilter=${companyId}&date=${formatDate(
+          currentDate
+        )}`;
+      }
+
+      function showAlert(message, type) {
+        const container = document.getElementById("alert-container");
+        const div = document.createElement("div");
+        div.className = `alert alert-${type}`;
+        div.textContent = message;
+        container.appendChild(div);
+        setTimeout(() => div.remove(), 3000);
+      }
+
+      function selectTotalStats() {
+        const dateStr = formatDate(currentDate);
+        location.href = `/mynet/view?companyFilter=&date=${dateStr}`;
       }
 
       function showDatePicker() {
-        console.log("showDatePicker 호출");
-
         if (typeof globalDatePicker !== "undefined") {
-          // init()이 이미 호출되었으므로 바로 show() 가능
           globalDatePicker.currentDate = new Date(currentDate);
           globalDatePicker.selectedDate = new Date(currentDate);
           globalDatePicker.show();
-        } else {
-          console.log("globalDatePicker 없음, fallback 사용");
-          const datePicker = document.getElementById("date-picker");
-          if (datePicker) {
-            datePicker.click();
-          }
         }
       }
 
       function selectDate() {
         const datePicker = document.getElementById("date-picker");
-        const dateValue = datePicker.value;
-        location.href = `/mynet/view?companyFilter=${currentCompanyFilter}&date=${dateValue}`;
-      }
-
-      function changeCompany(companyId) {
-        const dateStr = currentDate.toISOString().split("T")[0];
-        location.href = `/mynet/view?companyFilter=${companyId}&date=${dateStr}`;
+        location.href = `/mynet/view?companyFilter=${currentCompanyFilter}&date=${datePicker.value}`;
       }
 
       function updateDateDisplay() {
-        const dateElement = document.getElementById("current-date");
-        const datePicker = document.getElementById("date-picker");
-        const dateStr = currentDate.toISOString().split("T")[0];
-        if (dateElement) dateElement.textContent = dateStr;
-        if (datePicker) datePicker.value = dateStr;
-      }
-
-      function showAlert(message, type) {
-        const alertContainer = document.getElementById("alert-container");
-        const alertDiv = document.createElement("div");
-        alertDiv.className = `alert alert-${type}`;
-        alertDiv.textContent = message;
-        alertContainer.appendChild(alertDiv);
-        setTimeout(() => alertDiv.remove(), 3000);
-      }
-
-      /**
-       * 하위 회사 선택 시 노란색 셀 클릭으로 자동 수정 모드 진입
-       */
-      function enableDirectCellEdit() {
-        const companyFilter = document.getElementById('company-select');
-        if (!companyFilter || companyFilter.value === '' || companyFilter.value === 'all') {
-          document.querySelectorAll('.editable-cell').forEach(cell => {
-            cell.style.cursor = 'default';
-            cell.dataset.autoEditEnabled = 'false';
-            const clone = cell.cloneNode(true);
-            cell.parentNode.replaceChild(clone, cell);
-          });
-          return;
-        }
-        
-        const editableCells = document.querySelectorAll('.editable-cell');
-        editableCells.forEach(cell => {
-          if (cell.dataset.autoEditEnabled === 'true') return;
-
-          cell.dataset.autoEditEnabled = 'true';
-          cell.style.cursor = 'pointer';
-
-          cell.addEventListener('click', function(e) {
-            if (isEditMode) return;
-
-            // 편집 모드로 전환
-            toggleEdit();
-
-            setTimeout(() => {
-              const display = this.querySelector('.cell-display');
-              const input = this.querySelector('input');
-
-              if (display && input) {
-                display.style.display = 'none';
-                input.style.display = 'inline-block';
-                input.focus();
-                input.select();
-                
-                // 현재 편집 중인 셀 추적
-                currentEditingCell = {
-                  cell: this,
-                  input: input
-                };
-                
-                console.log("편집 시작:", {
-                  productId: this.dataset.productId,
-                  type: this.dataset.type
-                });
-              }
-            }, 100);
-          });
-        });
-      }
-
-      // 사용하지 않는 함수들 제거
-      function updateData() {
-        location.reload();
-      }
-      function updateTable() {
-        location.reload();
+        const dateEl = document.getElementById("current-date");
+        const pickerEl = document.getElementById("date-picker");
+        const dateStr = formatDate(currentDate);
+        if (dateEl) dateEl.textContent = dateStr;
+        if (pickerEl) pickerEl.value = dateStr;
       }
     </script>
   </body>

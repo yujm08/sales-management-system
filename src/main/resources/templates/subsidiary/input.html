@@ -209,6 +209,11 @@
             box-sizing: border-box;
             display: block;
             margin: 0;
+            
+            /* 브라우저 기본 스타일 제거 */
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+            appearance: none;
         }
 
         .quantity-input:read-only {
@@ -405,14 +410,16 @@
                                     <td th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' quantity-cell'"
                                         th:classappend="${isCurrentMonth ? 'editable' : ''}">
                                         <input type="number" 
-                                               class="quantity-input" 
-                                               th:value="${product.quantity}" 
-                                               th:data-product-id="${product.id}"
-                                               th:data-category="${categoryEntry.key}"
-                                               th:data-supply-price="${product.supplyPrice}"
-                                               th:data-editable="${isCurrentMonth}"
-                                               readonly
-                                               oninput="calculateTotals()">
+                                            class="quantity-input" 
+                                            th:value="${product.quantity}" 
+                                            th:data-product-id="${product.id}"
+                                            th:data-type="'quantity'"
+                                            th:data-category="${categoryEntry.key}"
+                                            th:data-supply-price="${product.supplyPrice}"
+                                            th:data-editable="${isCurrentMonth}"
+                                            readonly
+                                            min="-999999"
+                                            oninput="calculateTotals()">
                                     </td>
                                 </tr>
                             </th:block>
@@ -447,15 +454,14 @@
         let currentDate = new Date();
         let isEditMode = false;
         let originalData = {};
+        let currentValues = {};
 
         document.addEventListener("DOMContentLoaded", function() {
-            // 현재 날짜 초기화
             const dateElement = document.getElementById('current-date');
             if (dateElement) {
                 currentDate = new Date(dateElement.textContent);
             }
 
-            // 날짜 피커 초기화
             if (typeof globalDatePicker !== 'undefined') {
                 globalDatePicker.selectedDate = new Date(currentDate);
                 globalDatePicker.init(document.getElementById('current-date'), {
@@ -466,35 +472,41 @@
                 });
             }
 
+            initializeInputTracking();
             calculateTotals();
         });
 
-        // 날짜 변경
-        function changeDate(days) {
-            const newDate = new Date(currentDate);
-            newDate.setDate(currentDate.getDate() + days);
-            
-            if (!isCurrentYear(newDate)) {
-                showAlert('당년도 날짜만 선택할 수 있습니다.', 'error');
-                return;
-            }
-            
-            const dateString = formatDate(newDate);
-            location.href = '/subsidiary/input?date=' + dateString;
+        function initializeInputTracking() {
+            const inputs = document.querySelectorAll(".quantity-input");
+
+            inputs.forEach(input => {
+                const productId = input.dataset.productId;
+                const type = input.dataset.type; // 'quantity'
+                const key = `${productId}-${type}`;
+                
+                const value = parseInt(input.value, 10);
+                const initialValue = isNaN(value) ? 0 : value;
+                
+                currentValues[key] = initialValue;
+                originalData[key] = initialValue; // 초기값도 originalData에 저장
+
+                input.addEventListener("input", () => {
+                    const newValue = parseInt(input.value, 10);
+                    currentValues[key] = isNaN(newValue) ? 0 : newValue;
+                });
+
+                // blur 이벤트 추가
+                input.addEventListener("blur", () => {
+                    const savedValue = currentValues[key];
+                    if (input.value !== savedValue.toString()) {
+                        input.value = savedValue;
+                    }
+                });
+            });
+
+            console.log("초기 currentValues:", currentValues);
         }
 
-        // 날짜 피커 표시
-        function showDatePicker() {
-            if (window.globalDatePicker) {
-                globalDatePicker.currentDate = new Date(currentDate);
-                globalDatePicker.selectedDate = new Date(currentDate);
-                globalDatePicker.show();
-            } else {
-                console.error("globalDatePicker가 준비되지 않았습니다.");
-            }
-        }
-
-        // 수정 모드 토글
         function toggleEdit() {
             isEditMode = !isEditMode;
             const editBtn = document.getElementById('editBtn');
@@ -510,7 +522,11 @@
                 inputs.forEach(input => {
                     input.readOnly = false;
                     input.classList.add('editable');
-                    originalData[input.dataset.productId] = input.value;
+                    
+                    const productId = input.dataset.productId;
+                    const type = input.dataset.type;
+                    const key = `${productId}-${type}`;
+                    originalData[key] = currentValues[key];
                 });
             } else {
                 editBtn.style.display = 'inline-block';
@@ -524,28 +540,35 @@
             }
         }
 
-        // 취소
         function cancelEdit() {
             const inputs = document.querySelectorAll('.quantity-input[data-editable="true"]');
             
             inputs.forEach(input => {
-                input.value = originalData[input.dataset.productId] || 0;
+                const productId = input.dataset.productId;
+                const type = input.dataset.type;
+                const key = `${productId}-${type}`;
+                const originalValue = originalData[key] || 0;
+                
+                input.value = originalValue;
+                currentValues[key] = originalValue;
             });
             
             calculateTotals();
             toggleEdit();
         }
 
-        // 저장
         function saveSalesData() {
             const quantities = {};
             const inputs = document.querySelectorAll('.quantity-input[data-editable="true"]');
             
             inputs.forEach(input => {
-                const productId = parseInt(input.dataset.productId);
-                const quantity = parseInt(input.value) || 0;
-                quantities[productId] = quantity;
+                const productId = parseInt(input.dataset.productId, 10);
+                const type = input.dataset.type;
+                const key = `${productId}-${type}`;
+                quantities[productId] = currentValues[key] || 0;
             });
+            
+            console.log("=== 저장할 데이터 ===", quantities);
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/subsidiary/input/save', true);
@@ -576,7 +599,6 @@
             }));
         }
 
-        // 총합계 계산
         function calculateTotals() {
             const inputs = document.querySelectorAll('.quantity-input');
             let totalQuantity = 0;
@@ -584,7 +606,10 @@
             const categoryTotals = {};
 
             inputs.forEach(input => {
-                const quantity = parseInt(input.value) || 0;
+                const productId = input.dataset.productId;
+                const type = input.dataset.type;
+                const key = `${productId}-${type}`;
+                const quantity = currentValues[key] || 0;
                 const supplyPrice = parseFloat(input.dataset.supplyPrice) || 0;
                 const category = input.dataset.category;
                 
@@ -598,13 +623,11 @@
                 categoryTotals[category].price += quantity * supplyPrice;
             });
             
-            // 전체 합계 업데이트
             const totalQuantityEl = document.getElementById('totalQuantity');
             const totalPriceEl = document.getElementById('totalPrice');
             if (totalQuantityEl) totalQuantityEl.textContent = totalQuantity.toLocaleString();
-            if (totalPriceEl) totalPriceEl.textContent = '₩' + Math.round(totalPrice).toLocaleString();
+            if (totalPriceEl) totalPriceEl.textContent = '₩ ' + Math.round(totalPrice).toLocaleString();
             
-            // 카테고리별 소계 업데이트
             Object.keys(categoryTotals).forEach(category => {
                 const quantityCell = document.querySelector(`[data-category-total-quantity="${category}"]`);
                 const priceCell = document.querySelector(`[data-category-total-price="${category}"]`);
@@ -613,20 +636,41 @@
                     quantityCell.textContent = categoryTotals[category].quantity.toLocaleString();
                 }
                 if (priceCell) {
-                    priceCell.textContent = '₩' + Math.round(categoryTotals[category].price).toLocaleString();
+                    priceCell.textContent = '₩ ' + Math.round(categoryTotals[category].price).toLocaleString();
                 }
             });
         }
 
-        // 유틸리티 함수들
+        // 나머지 함수들은 그대로...
+        function changeDate(days) {
+            const newDate = new Date(currentDate);
+            newDate.setDate(currentDate.getDate() + days);
+            
+            if (!isCurrentYear(newDate)) {
+                showAlert('당년도 날짜만 선택할 수 있습니다.', 'error');
+                return;
+            }
+            
+            const dateString = formatDate(newDate);
+            location.href = '/subsidiary/input?date=' + dateString;
+        }
+
+        function showDatePicker() {
+            if (window.globalDatePicker) {
+                globalDatePicker.currentDate = new Date(currentDate);
+                globalDatePicker.selectedDate = new Date(currentDate);
+                globalDatePicker.show();
+            }
+        }
+
         function isCurrentYear(date) {
             return date.getFullYear() === new Date().getFullYear();
         }
 
         function formatDate(date) {
             return date.getFullYear() + '-' + 
-                   String(date.getMonth() + 1).padStart(2, '0') + '-' + 
-                   String(date.getDate()).padStart(2, '0');
+                String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(date.getDate()).padStart(2, '0');
         }
 
         function showAlert(message, type = 'info') {
@@ -638,7 +682,6 @@
             setTimeout(() => alert.remove(), 3000);
         }
 
-        // 날짜 선택 (fallback)
         function selectDate() {
             const datePicker = document.getElementById('date-picker');
             const dateValue = datePicker.value;
