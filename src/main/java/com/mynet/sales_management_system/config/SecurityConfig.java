@@ -9,6 +9,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 
 /**
  * Spring Security 보안 설정 클래스
@@ -30,6 +34,22 @@ public class SecurityConfig {
                 // return NoOpPasswordEncoder.getInstance(); // 임시로 평문 비밀번호 허용
         }
 
+        // 엄격한 HTTP Firewall
+        @Bean
+        public HttpFirewall httpFirewall() {
+                StrictHttpFirewall firewall = new StrictHttpFirewall();
+
+                // SQL 인젝션에 자주 사용되는 문자 차단
+                firewall.setAllowSemicolon(false); // ; 차단 (쿼리 구분자)
+                firewall.setAllowUrlEncodedSlash(false); // %2F 차단
+                firewall.setAllowBackSlash(false); // \ 차단
+                firewall.setAllowUrlEncodedPercent(false); // %25 차단
+                firewall.setAllowUrlEncodedPeriod(false); // %2E 차단
+                firewall.setAllowUrlEncodedDoubleSlash(false); // %2F%2F 차단
+
+                return firewall;
+        }
+
         /**
          * HTTP 보안 필터 체인 설정
          * - 페이지별 접근 권한 제어
@@ -38,6 +58,25 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
+
+                                // 보안 헤더 강화
+                                .headers(headers -> headers
+                                                // XSS 보호
+                                                .xssProtection(xss -> xss
+                                                                .headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
+                                                // Clickjacking 방어
+                                                .frameOptions(frame -> frame.deny())
+                                                // MIME 타입 스니핑 방지
+                                                .contentTypeOptions(contentType -> {
+                                                })
+                                                // Content Security Policy
+                                                .contentSecurityPolicy(csp -> csp
+                                                                .policyDirectives(
+                                                                                "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';")))
+
+                                // CSRF 토큰 강화
+                                .csrf(csrf -> csrf
+                                                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
                                 .authorizeHttpRequests(authz -> authz
                                                 // 정적 리소스는 모든 사용자 접근 허용
                                                 .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**")
