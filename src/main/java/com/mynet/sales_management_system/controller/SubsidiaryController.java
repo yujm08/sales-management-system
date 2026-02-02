@@ -58,9 +58,8 @@ public class SubsidiaryController {
         Map<String, List<ProductInputDTO>> productsByCategory = productService
                 .getProductsForInput(companyId, targetDate);
 
-        // 현재 월인지 확인
-        boolean isCurrentMonth = targetDate.getYear() == LocalDate.now().getYear()
-                && targetDate.getMonth() == LocalDate.now().getMonth();
+        // 모든 날짜 수정 가능하도록 변경
+        boolean isCurrentMonth = true;
 
         // 총 수량 계산
         int totalQuantity = productsByCategory.values().stream()
@@ -91,11 +90,6 @@ public class SubsidiaryController {
             Long companyId = userDetails.getCompanyId();
             LocalDate date = LocalDate.parse(salesDate);
 
-            // 당월 데이터만 수정 가능
-            if (!DateUtil.isCurrentMonth(date)) {
-                return "error:당월 데이터만 수정 가능합니다.";
-            }
-
             salesService.saveDailySales(companyId, productId, date, quantity, userDetails.getUsername());
 
             log.info("수량 데이터 저장: 회사={}, 제품ID={}, 날짜={}, 수량={}",
@@ -118,11 +112,6 @@ public class SubsidiaryController {
         try {
             Long companyId = userDetails.getCompanyId();
             LocalDate date = LocalDate.parse(request.getDate()); // String을 LocalDate로 변환
-
-            // 당월 데이터만 수정 가능
-            if (!DateUtil.isCurrentMonth(date)) {
-                return ResponseEntity.badRequest().body("당월 데이터만 수정 가능합니다.");
-            }
 
             // 각 제품별로 저장
             for (Map.Entry<Long, Integer> entry : request.getQuantities().entrySet()) {

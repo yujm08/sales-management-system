@@ -9,7 +9,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
@@ -59,7 +59,6 @@ public class SecurityConfig {
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
 
-                                // 보안 헤더 강화
                                 .headers(headers -> headers
                                                 // XSS 보호
                                                 .xssProtection(xss -> xss
@@ -74,15 +73,17 @@ public class SecurityConfig {
                                                                 .policyDirectives(
                                                                                 "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';")))
 
-                                // CSRF 토큰 강화
                                 .csrf(csrf -> csrf
-                                                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+                                                .csrfTokenRepository(new HttpSessionCsrfTokenRepository()))
                                 .authorizeHttpRequests(authz -> authz
                                                 // 정적 리소스는 모든 사용자 접근 허용
                                                 .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**")
                                                 .permitAll()
-                                                // 로그인, 회원가입, 에러 페이지는 모든 사용자 접근 허용
-                                                .requestMatchers("/login", "/signup", "/", "/error").permitAll()
+                                                // /login은 비로그인 사용자만 (이미 로그인된 경우 접근 차단)
+                                                .requestMatchers("/login").anonymous()
+
+                                                // 회원가입, 홈, 에러 페이지는 모든 사용자 접근 허용
+                                                .requestMatchers("/signup", "/", "/error").permitAll()
 
                                                 // 하위회사 전용 페이지 (입력, 통계, 월별매출집계)
                                                 .requestMatchers("/subsidiary/**").hasRole("SUBSIDIARY")
