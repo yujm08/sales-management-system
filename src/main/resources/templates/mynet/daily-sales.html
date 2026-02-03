@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -70,6 +70,34 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        position: relative; /* ← 추가: 절대 위치 기준점 */
+      }
+
+      /* 다운로드 버튼 - 절대 위치로 우측에 고정 */
+      .download-btn-wrapper {
+        position: absolute;
+        right: 20px;
+      }
+
+      .download-btn {
+        background: #7a7a7a;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+      }
+
+      .download-btn:hover {
+        background: #666666;
+      }
+
+      .download-btn:active {
+        background: #4f4f4f;
       }
 
       /* 기준 날짜 영역 */
@@ -483,6 +511,13 @@
               th:value="${targetDate}"
               onchange="selectDate()"
             />
+          </div>
+
+          <!-- 다운로드 버튼 (우측 고정) -->
+          <div class="download-btn-wrapper">
+            <button class="download-btn" onclick="downloadExcel()">
+              엑셀 다운로드
+            </button>
           </div>
         </div>
 
@@ -951,6 +986,15 @@
       });
 
       /**
+       * 엑셀 다운로드
+       */
+      function downloadExcel() {
+        const dateStr = currentDate.toISOString().split("T")[0];
+        const downloadUrl = `/mynet/daily-sales/download?date=${dateStr}`;
+        window.location.href = downloadUrl;
+      }
+
+      /**
        * 카테고리별 소계 계산
        */
       function calculateCategorySubtotals() {
@@ -981,7 +1025,7 @@
 
           dataRows.forEach((row) => {
             const tds = row.querySelectorAll(
-              "td.number-cell:not(.supply-price-cell)"
+              "td.number-cell:not(.supply-price-cell)",
             );
             for (let i = 0; i < totalCols; i++) {
               const td = tds[i];
@@ -993,7 +1037,7 @@
 
           // 소계행에 채우기 (공급가 셀 제외)
           const subtotalCells = subtotalRow.querySelectorAll(
-            "td.number-cell:not(.supply-price-cell)"
+            "td.number-cell:not(.supply-price-cell)",
           );
           let cellIndex = 0;
           subtotalValues.forEach((v, i) => {
@@ -1023,7 +1067,7 @@
 
         subtotalRows.forEach((subtotalRow) => {
           const tds = subtotalRow.querySelectorAll(
-            "td.number-cell:not(.supply-price-cell)"
+            "td.number-cell:not(.supply-price-cell)",
           );
           for (let i = 0; i < totalCols; i++) {
             const td = tds[i];
@@ -1035,7 +1079,7 @@
 
         // 합계행 채우기 (공급가 셀 제외)
         const totalCells = totalRow.querySelectorAll(
-          "td.number-cell:not(.supply-price-cell)"
+          "td.number-cell:not(.supply-price-cell)",
         );
         let cellIndex = 0;
         totalValues.forEach((v, i) => {

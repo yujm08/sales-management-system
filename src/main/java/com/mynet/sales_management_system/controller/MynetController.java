@@ -7,9 +7,9 @@ import com.mynet.sales_management_system.dto.MynetQuantityUpdateRequest;
 import com.mynet.sales_management_system.dto.MynetTargetUpdateRequest;
 import com.mynet.sales_management_system.dto.ViewStatisticsDTO;
 import com.mynet.sales_management_system.entity.Company;
-import com.mynet.sales_management_system.entity.DailySales;
 import com.mynet.sales_management_system.entity.Product;
 import com.mynet.sales_management_system.security.CustomUserDetails;
+import com.mynet.sales_management_system.service.DailySalesExcelService;
 import com.mynet.sales_management_system.service.DailySalesService;
 import com.mynet.sales_management_system.service.MonthlyComparisonService;
 import com.mynet.sales_management_system.service.ProductService;
@@ -21,13 +21,21 @@ import com.mynet.sales_management_system.util.DateUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import java.net.URLEncoder;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -54,6 +62,7 @@ public class MynetController {
     private final CompanyRepository companyRepository;
     private final MonthlyComparisonService monthlyComparisonService;
     private final DailySalesService dailySalesService;
+    private final DailySalesExcelService excelService;
 
     /**
      * 조회 페이지 (마이넷 메인 페이지)
@@ -476,5 +485,46 @@ public class MynetController {
                 userDetails.getUsername(), targetDate);
 
         return "mynet/daily-sales";
+    }
+
+    // 엑셀 다운로드 엔드포인트 (메서드 추가)
+    @GetMapping("/daily-sales/download")
+    public ResponseEntity<byte[]> downloadDailySalesExcel(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+        try {
+            LocalDate targetDate = (date != null) ? date : LocalDate.now();
+
+            // List로 받아서 Map으로 변환 (기존 daily-sales 엔드포인트와 동일)
+            List<DailySalesStatusDTO> statusList = dailySalesService.getDailySalesStatus(targetDate);
+
+            // 카테고리별로 그룹화
+            Map<String, List<DailySalesStatusDTO>> dailySalesData = statusList.stream()
+                    .collect(Collectors.groupingBy(
+                            DailySalesStatusDTO::getCategory,
+                            LinkedHashMap::new,
+                            Collectors.toList()));
+
+            // 엑셀 생성
+            byte[] excelData = excelService.generateDailySalesExcel(dailySalesData, targetDate);
+
+            // 파일명 생성
+            String fileName = "일일매출현황_" + targetDate.toString() + ".xlsx";
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
+            // 응답 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", encodedFileName);
+            headers.setCacheControl("no-cache, no-store, must-revalidate");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelData);
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
