@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -1139,14 +1139,6 @@
         alertDiv.textContent = message;
         alertContainer.appendChild(alertDiv);
         setTimeout(() => alertDiv.remove(), 3000);
-      }
-
-      // 사용하지 않는 함수들 제거
-      function updateData() {
-        location.reload();
-      }
-      function updateTable() {
-        location.reload();
       }
     </script>
   </body>

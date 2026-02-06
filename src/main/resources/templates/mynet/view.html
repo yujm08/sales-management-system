@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -66,9 +66,51 @@
         background: #e9ecef;
         padding: 15px 20px;
         border-bottom: 1px solid #dee2e6;
-        display: flex;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
         align-items: center;
+        position: relative;
+      }
+
+      .download-btn {
+        background: #7a7a7a;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+      }
+
+      .download-btn:hover {
+        background: #666666;
+      }
+
+      .download-btn:active {
+        background: #4f4f4f;
+      }
+
+      /* 좌측 */
+      .control-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      /* 가운데 – 정확히 중앙 */
+      .control-center {
+        justify-self: center;
+      }
+
+      /* 우측 */
+      .control-right {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
       }
 
       .left-controls {
@@ -539,63 +581,75 @@
       <div class="card">
         <!-- 상단 버튼 영역 -->
         <div class="control-panel">
-          <div class="left-controls" th:if="${!isCanon}">
-            <button
-              class="btn"
-              id="total-stats-btn"
-              onclick="selectTotalStats()"
-            >
-              전체 통계
-            </button>
-            <button
-              class="btn"
-              id="edit-btn"
-              onclick="toggleEdit()"
-              style="display: none"
-            >
-              수정
-            </button>
-          </div>
-          <div class="left-controls" th:if="${isCanon}">
-            <button class="btn active" disabled>전체 통계</button>
+          <div class="control-left">
+            <div class="left-controls" th:if="${!isCanon}">
+              <button
+                class="btn"
+                id="total-stats-btn"
+                onclick="selectTotalStats()"
+              >
+                전체 통계
+              </button>
+              <button
+                class="btn"
+                id="edit-btn"
+                onclick="toggleEdit()"
+                style="display: none"
+              >
+                수정
+              </button>
+            </div>
+            <div class="left-controls" th:if="${isCanon}">
+              <button class="btn active" disabled>전체 통계</button>
+            </div>
           </div>
 
           <!-- 기준 날짜 영역 -->
-          <div class="date-control-inline">
-            <span>기준 날짜 : </span>
-            <button class="date-nav-btn" onclick="changeDate(-1)">◀</button>
-            <span
-              class="current-date"
-              id="current-date"
-              onclick="showDatePicker()"
-              th:text="${#temporals.format(targetDate, 'yyyy-MM-dd')}"
-              >2025-09-07</span
-            >
-            <button class="date-nav-btn" onclick="changeDate(1)">▶</button>
-            <input
-              type="date"
-              class="date-picker"
-              id="date-picker"
-              th:value="${targetDate}"
-              onchange="selectDate()"
-            />
+          <div class="control-center">
+            <div class="date-control-inline">
+              <span>기준 날짜 : </span>
+              <button class="date-nav-btn" onclick="changeDate(-1)">◀</button>
+              <span
+                class="current-date"
+                id="current-date"
+                onclick="showDatePicker()"
+                th:text="${#temporals.format(targetDate, 'yyyy-MM-dd')}"
+                >2025-09-07</span
+              >
+              <button class="date-nav-btn" onclick="changeDate(1)">▶</button>
+              <input
+                type="date"
+                class="date-picker"
+                id="date-picker"
+                th:value="${targetDate}"
+                onchange="selectDate()"
+              />
+            </div>
           </div>
 
-          <select
-            id="company-select"
-            class="company-select"
-            onchange="changeCompany(this.value)"
-          >
-            <option value="">전체 (하위 회사명 선택)</option>
-            <option
-              th:each="company : ${subsidiaryCompanies}"
-              th:value="${company.id}"
-              th:text="${company.name}"
-              th:selected="${companyFilter == company.id.toString()}"
+          <div class="control-right">
+            <select
+              id="company-select"
+              class="company-select"
+              onchange="changeCompany(this.value)"
             >
-              회사명
-            </option>
-          </select>
+              <option value="">전체 (하위 회사명 선택)</option>
+              <option
+                th:each="company : ${subsidiaryCompanies}"
+                th:value="${company.id}"
+                th:text="${company.name}"
+                th:selected="${companyFilter == company.id.toString()}"
+              >
+                회사명
+              </option>
+            </select>
+
+            <div class="download-btn-wrapper">
+              <button class="download-btn" onclick="downloadExcel()">
+                엑셀 다운로드
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- 로딩 표시 -->
@@ -1170,7 +1224,7 @@
                   return response.text().then((text) => {
                     console.error("수량 저장 실패 응답:", text);
                     throw new Error(
-                      `수량 저장 실패 (${response.status}): ${text}`
+                      `수량 저장 실패 (${response.status}): ${text}`,
                     );
                   });
                 }
@@ -1179,7 +1233,7 @@
               })
               .then((data) => {
                 console.log("수량 저장 성공:", data);
-              })
+              }),
           );
         }
 
@@ -1210,7 +1264,7 @@
                   return response.text().then((text) => {
                     console.error("목표 저장 실패 응답:", text);
                     throw new Error(
-                      `목표 저장 실패 (${response.status}): ${text}`
+                      `목표 저장 실패 (${response.status}): ${text}`,
                     );
                   });
                 }
@@ -1219,7 +1273,7 @@
               })
               .then((data) => {
                 console.log("목표 저장 성공:", data);
-              })
+              }),
           );
         }
 
@@ -1273,13 +1327,13 @@
         const d = new Date(currentDate);
         d.setDate(d.getDate() + days);
         location.href = `/mynet/view?companyFilter=${currentCompanyFilter}&date=${formatDate(
-          d
+          d,
         )}`;
       }
 
       function changeCompany(companyId) {
         location.href = `/mynet/view?companyFilter=${companyId}&date=${formatDate(
-          currentDate
+          currentDate,
         )}`;
       }
 
@@ -1316,6 +1370,14 @@
         const dateStr = formatDate(currentDate);
         if (dateEl) dateEl.textContent = dateStr;
         if (pickerEl) pickerEl.value = dateStr;
+      }
+
+      // 엑셀 다운로드
+      function downloadExcel() {
+        const dateStr = formatDate(currentDate);
+        const downloadUrl = `/mynet/view/download?companyFilter=${currentCompanyFilter}&date=${dateStr}`;
+
+        window.location.href = downloadUrl;
       }
     </script>
   </body>

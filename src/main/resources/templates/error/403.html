@@ -1,12 +1,138 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
-    <title>403 Forbidden</title>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>접근 권한 만료</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <style>
+      body {
+        background: #f1f3f5;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Malgun Gothic", sans-serif;
+      }
+
+      .error-container {
+        background: white;
+        padding: 3rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        max-width: 500px;
+        text-align: center;
+      }
+
+      .error-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+      }
+
+      .error-title {
+        color: #e74c3c;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+
+      .error-message {
+        color: #555;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+      }
+
+      .error-details {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        text-align: left;
+      }
+
+      .error-details p {
+        margin: 0.5rem 0;
+        color: #856404;
+        font-size: 0.95rem;
+      }
+
+      .relogin-btn {
+        display: inline-block;
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 1.1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .relogin-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+      }
+
+      .help-text {
+        margin-top: 1.5rem;
+        color: #888;
+        font-size: 0.9rem;
+      }
+    </style>
   </head>
   <body>
-    <h1>403 - 접근이 거부되었습니다.</h1>
-    <p>이 페이지에 접근할 권한이 없습니다.</p>
-    <a th:href="@{/}">홈으로 돌아가기</a>
+    <div class="error-container">
+      <div class="error-icon">🔒</div>
+      <h1 class="error-title">접근 권한 만료</h1>
+      <p class="error-message">
+        세션이 만료되었거나 접근 권한이 없습니다.<br />
+        다시 로그인해주세요.
+      </p>
+
+      <div class="error-details">
+        <p><strong>발생 원인:</strong></p>
+        <p>• 장시간 사용하지 않아 세션이 만료됨</p>
+        <p>• 권한이 변경되었을 가능성</p>
+        <p>• 브라우저 캐시 문제</p>
+      </div>
+
+      <a
+        href="/login?error=forbidden"
+        class="relogin-btn"
+        onclick="clearCache()"
+      >
+        🔄 다시 로그인하기
+      </a>
+
+      <p class="help-text">문제가 계속되면 시스템 관리자에게 문의하세요.</p>
+    </div>
+
+    <script>
+      // 캐시 강제 삭제 함수
+      function clearCache() {
+        // 브라우저 히스토리에서 뒤로가기 방지
+        window.history.pushState(null, "", window.location.href);
+        window.onpopstate = function () {
+          window.history.pushState(null, "", window.location.href);
+        };
+
+        // 페이지 이동 시 캐시 무효화
+        if ("caches" in window) {
+          caches.keys().then(function (names) {
+            for (let name of names) caches.delete(name);
+          });
+        }
+      }
+
+      // 페이지 로드 시 캐시 삭제
+      clearCache();
+    </script>
   </body>
 </html>

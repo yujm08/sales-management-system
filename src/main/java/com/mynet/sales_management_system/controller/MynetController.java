@@ -15,6 +15,7 @@ import com.mynet.sales_management_system.service.MonthlyComparisonService;
 import com.mynet.sales_management_system.service.ProductService;
 import com.mynet.sales_management_system.service.SalesService;
 import com.mynet.sales_management_system.service.TargetService;
+import com.mynet.sales_management_system.service.ViewExcelService;
 import com.mynet.sales_management_system.service.ViewStatisticsService;
 import com.mynet.sales_management_system.repository.CompanyRepository;
 import com.mynet.sales_management_system.util.DateUtil;
@@ -63,6 +64,7 @@ public class MynetController {
     private final MonthlyComparisonService monthlyComparisonService;
     private final DailySalesService dailySalesService;
     private final DailySalesExcelService excelService;
+    private final ViewExcelService viewExcelService;
 
     /**
      * 조회 페이지 (마이넷 메인 페이지)
@@ -524,6 +526,85 @@ public class MynetController {
                     .body(excelData);
 
         } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 조회 페이지 엑셀 다운로드
+     */
+    @GetMapping("/view/download")
+    public ResponseEntity<byte[]> downloadViewExcel(
+            @RequestParam(defaultValue = "all") String companyFilter,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+        try {
+            LocalDate targetDate = (date != null) ? date : DateUtil.getCurrentDate();
+
+            // 데이터 조회 (기존 view 페이지와 동일)
+            List<ViewStatisticsDTO> statisticsData = viewStatisticsService.getViewStatistics(companyFilter, targetDate);
+
+            // 카테고리별 그룹화
+            Map<String, List<ViewStatisticsDTO>> statisticsGroupedByCategory = statisticsData.stream()
+                    .filter(item -> item.getProductCode() != null)
+                    .collect(Collectors.groupingBy(
+                            ViewStatisticsDTO::getCategory,
+                            LinkedHashMap::new,
+                            Collectors.toList()));
+
+            // 소계/합계 데이터 추출
+            Map<String, ViewStatisticsDTO> subtotalData = new HashMap<>();
+            ViewStatisticsDTO grandTotalData = null;
+
+            for (ViewStatisticsDTO item : statisticsData) {
+                if ("소계".equals(item.getCategory())) {
+                    String categoryName = item.getProductName().replace(" 소계", "");
+                    subtotalData.put(categoryName, item);
+                } else if ("합계".equals(item.getCategory())) {
+                    grandTotalData = item;
+                }
+            }
+
+            // 회사명 조회
+            String companyName = "전체";
+            if (companyFilter != null && !companyFilter.isEmpty() && !"all".equalsIgnoreCase(companyFilter)) {
+                try {
+                    Long companyId = Long.parseLong(companyFilter);
+                    companyName = companyRepository.findById(companyId)
+                            .map(com.mynet.sales_management_system.entity.Company::getName)
+                            .orElse("전체");
+                } catch (NumberFormatException e) {
+                    companyName = "전체";
+                }
+            }
+
+            // 엑셀 생성
+            byte[] excelData = viewExcelService.generateViewExcel(
+                    statisticsGroupedByCategory,
+                    subtotalData,
+                    grandTotalData,
+                    targetDate,
+                    companyName);
+
+            // 파일명 생성
+            String fileName = String.format("조회_%s_%s.xlsx",
+                    targetDate.toString(),
+                    companyName);
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
+            // 응답 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", encodedFileName);
+            headers.setCacheControl("no-cache, no-store, must-revalidate");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelData);
+
+        } catch (IOException e) {
+            log.error("조회 엑셀 다운로드 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

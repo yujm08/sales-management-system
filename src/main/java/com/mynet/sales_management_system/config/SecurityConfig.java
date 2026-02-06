@@ -13,6 +13,7 @@ import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Spring Security 보안 설정 클래스
@@ -23,6 +24,7 @@ import org.springframework.security.web.header.writers.XXssProtectionHeaderWrite
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
+@Slf4j
 public class SecurityConfig {
 
         /**
@@ -75,12 +77,38 @@ public class SecurityConfig {
 
                                 .csrf(csrf -> csrf
                                                 .csrfTokenRepository(new HttpSessionCsrfTokenRepository()))
+                                // 403 에러 처리 핸들러 추가
+                                .exceptionHandling(exception -> exception
+                                                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                                                        log.warn("403 Access Denied: {} - User: {}",
+                                                                        request.getRequestURI(),
+                                                                        request.getUserPrincipal() != null
+                                                                                        ? request.getUserPrincipal()
+                                                                                                        .getName()
+                                                                                        : "anonymous");
+
+                                                        // 세션 무효화
+                                                        jakarta.servlet.http.HttpSession session = request
+                                                                        .getSession(false);
+                                                        if (session != null) {
+                                                                session.invalidate();
+                                                        }
+
+                                                        // 캐시 방지 헤더 설정
+                                                        response.setHeader("Cache-Control",
+                                                                        "no-cache, no-store, must-revalidate");
+                                                        response.setHeader("Pragma", "no-cache");
+                                                        response.setHeader("Expires", "0");
+
+                                                        // 403 에러 페이지로 리다이렉트
+                                                        response.sendRedirect("/error-403");
+                                                }))
                                 .authorizeHttpRequests(authz -> authz
                                                 // 정적 리소스는 모든 사용자 접근 허용
                                                 .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**")
                                                 .permitAll()
                                                 // /login은 비로그인 사용자만 (이미 로그인된 경우 접근 차단)
-                                                .requestMatchers("/login").anonymous()
+                                                .requestMatchers("/login", "/error").anonymous()
 
                                                 // 회원가입, 홈, 에러 페이지는 모든 사용자 접근 허용
                                                 .requestMatchers("/signup", "/", "/error").permitAll()
