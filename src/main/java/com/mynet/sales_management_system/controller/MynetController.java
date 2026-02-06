@@ -37,6 +37,7 @@ import java.util.LinkedHashMap;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -468,7 +469,7 @@ public class MynetController {
 
         LocalDate targetDate = (date != null && !date.isEmpty())
                 ? LocalDate.parse(date)
-                : DateUtil.getCurrentDate();
+                : getLastBusinessDay();
 
         // 일일매출현황 데이터 조회
         List<DailySalesStatusDTO> statusList = dailySalesService.getDailySalesStatus(targetDate);
@@ -487,6 +488,25 @@ public class MynetController {
                 userDetails.getUsername(), targetDate);
 
         return "mynet/daily-sales";
+    }
+
+    // 마지막 영업일(어제 또는 금요일) 계산
+    private LocalDate getLastBusinessDay() {
+        LocalDate today = LocalDate.now();
+        DayOfWeek dayOfWeek = today.getDayOfWeek();
+
+        // 월요일이면 금요일로 (3일 전)
+        if (dayOfWeek == DayOfWeek.MONDAY) {
+            return today.minusDays(3);
+        }
+        // 일요일이면 금요일로 (2일 전)
+        else if (dayOfWeek == DayOfWeek.SUNDAY) {
+            return today.minusDays(2);
+        }
+        // 그 외에는 어제
+        else {
+            return today.minusDays(1);
+        }
     }
 
     // 엑셀 다운로드 엔드포인트 (메서드 추가)

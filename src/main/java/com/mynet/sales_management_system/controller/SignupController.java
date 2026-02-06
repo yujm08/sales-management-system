@@ -31,7 +31,7 @@ public class SignupController {
      */
     @GetMapping("/signup")
     public String signupPage(Model model, HttpServletRequest request) {
-        // ✅ 한국 IP 체크
+        // 한국 IP 체크
         String clientIP = getClientIP(request);
         if (!geoLocationService.isKoreanIP(clientIP)) {
             log.warn("외국 IP 회원가입 페이지 접근 차단: {} ({})",
