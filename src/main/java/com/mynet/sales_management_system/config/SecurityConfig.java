@@ -81,46 +81,41 @@ public class SecurityConfig {
                                                 .csrfTokenRepository(new HttpSessionCsrfTokenRepository()))
                                 // 403 에러 처리 핸들러 추가
                                 .exceptionHandling(exception -> exception
+                                                // 401 (인증 필요) → 여기서만 세션 정리
+                                                .authenticationEntryPoint((request, response, authException) -> {
+                                                        log.info("401 Authentication required: {} - {}",
+                                                                        request.getRequestURI(),
+                                                                        authException.getMessage());
+
+                                                        // 캐시 방지 헤더
+                                                        response.setHeader("Cache-Control",
+                                                                        "no-cache, no-store, must-revalidate");
+                                                        response.setHeader("Pragma", "no-cache");
+                                                        response.setHeader("Expires", "0");
+
+                                                        // 로그인 페이지로 (401은 formLogin이 처리하므로 실제로는 여기 안 올 수도 있음)
+                                                        response.sendRedirect("/login?error=expired");
+                                                })
+
+                                                // 403 (권한 없음) → 세션 무효화 x
                                                 .accessDeniedHandler((request, response, accessDeniedException) -> {
-                                                        String requestURI = request.getRequestURI();
+                                                        String uri = request.getRequestURI();
                                                         String username = request.getUserPrincipal() != null
                                                                         ? request.getUserPrincipal().getName()
                                                                         : "anonymous";
 
-                                                        log.warn("403 Access Denied: {} - User: {} - Exception: {}",
-                                                                        requestURI, username,
+                                                        log.warn("403 Access Denied: uri={}, user={}, reason={}",
+                                                                        uri, username,
                                                                         accessDeniedException.getMessage());
 
-                                                        // 정적 리소스나 AJAX 요청은 세션 무효화하지 않음!
-                                                        boolean isStaticResource = requestURI.startsWith("/css/") ||
-                                                                        requestURI.startsWith("/js/") ||
-                                                                        requestURI.startsWith("/images/");
-                                                        boolean isAjaxRequest = "XMLHttpRequest"
-                                                                        .equals(request.getHeader("X-Requested-With"));
+                                                        // 세션 무효화 하지 않음. 안내만
+                                                        response.setHeader("Cache-Control",
+                                                                        "no-cache, no-store, must-revalidate");
+                                                        response.setHeader("Pragma", "no-cache");
+                                                        response.setHeader("Expires", "0");
 
-                                                        // 실제 페이지 접근 권한 오류일 때만 세션 무효화
-                                                        if (!isStaticResource && !isAjaxRequest) {
-                                                                jakarta.servlet.http.HttpSession session = request
-                                                                                .getSession(false);
-                                                                if (session != null) {
-                                                                        log.info("세션 무효화: {}", username);
-                                                                        session.invalidate();
-                                                                }
-
-                                                                // 캐시 방지 헤더
-                                                                response.setHeader("Cache-Control",
-                                                                                "no-cache, no-store, must-revalidate");
-                                                                response.setHeader("Pragma", "no-cache");
-                                                                response.setHeader("Expires", "0");
-
-                                                                // 403 페이지로 리다이렉트
-                                                                response.sendRedirect("/error-403");
-                                                        } else {
-                                                                // 정적 리소스나 AJAX는 그냥 403 에러만 반환
-                                                                log.info("정적 리소스/AJAX 403 에러 (세션 유지): {}", requestURI);
-                                                                response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                                                                                "Access Denied");
-                                                        }
+                                                        // 403 안내 페이지로만 이동
+                                                        response.sendRedirect("/error-403");
                                                 }))
                                 .authorizeHttpRequests(authz -> authz
                                                 // 정적 리소스는 모든 사용자 접근 허용

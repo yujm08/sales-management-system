@@ -1,4 +1,3 @@
-<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -9,7 +8,7 @@
     />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <title>접근 권한 만료</title>
+    <title>접근 권한 없음</title>
     <link rel="stylesheet" th:href="@{/css/style.css}" />
     <style>
       body {
@@ -26,7 +25,7 @@
         padding: 3rem;
         border-radius: 12px;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-        max-width: 500px;
+        max-width: 600px;
         text-align: center;
       }
 
@@ -63,21 +62,42 @@
         font-size: 0.95rem;
       }
 
-      .relogin-btn {
-        display: inline-block;
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        color: white;
+      .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+      }
+
+      .btn {
         padding: 1rem 2rem;
         border-radius: 8px;
         text-decoration: none;
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: 600;
         transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
       }
 
-      .relogin-btn:hover {
+      .btn-primary {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+      }
+
+      .btn-primary:hover {
         transform: translateY(-2px);
         box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
       }
 
       .help-text {
@@ -89,50 +109,36 @@
   </head>
   <body>
     <div class="error-container">
-      <div class="error-icon">🔒</div>
-      <h1 class="error-title">접근 권한 만료</h1>
-      <p class="error-message">
-        세션이 만료되었거나 접근 권한이 없습니다.<br />
-        다시 로그인해주세요.
-      </p>
+      <h1 class="error-title">접근 권한 없음</h1>
+      <p class="error-message">요청하신 페이지에 접근할 권한이 없습니다.</p>
 
       <div class="error-details">
         <p><strong>발생 원인:</strong></p>
-        <p>• 장시간 사용하지 않아 세션이 만료됨</p>
-        <p>• 권한이 변경되었을 가능성</p>
-        <p>• 브라우저 캐시 문제</p>
+        <p>• 페이지가 오래 열려있어 세션이 만료됨</p>
+        <p>• 다른 권한이 필요한 페이지에 접근</p>
+        <p>• 권한이 최근에 변경되었을 가능성</p>
       </div>
 
-      <a
-        href="/login?error=forbidden"
-        class="relogin-btn"
-        onclick="clearCache()"
-      >
-        🔄 다시 로그인하기
-      </a>
+      <div class="action-buttons">
+        <!-- 세션은 유지되므로 뒤로가기도 가능 -->
+        <button onclick="history.back()" class="btn btn-secondary">
+          ← 이전 페이지
+        </button>
+
+        <!-- 재로그인은 선택사항 (강제 아님) -->
+        <a href="/login" class="btn btn-primary"> 재로그인 </a>
+      </div>
 
       <p class="help-text">문제가 계속되면 시스템 관리자에게 문의하세요.</p>
     </div>
 
     <script>
-      // 캐시 강제 삭제 함수
-      function clearCache() {
-        // 브라우저 히스토리에서 뒤로가기 방지
-        window.history.pushState(null, "", window.location.href);
-        window.onpopstate = function () {
-          window.history.pushState(null, "", window.location.href);
-        };
-
-        // 페이지 이동 시 캐시 무효화
-        if ("caches" in window) {
-          caches.keys().then(function (names) {
-            for (let name of names) caches.delete(name);
-          });
-        }
+      // 캐시 방지만 (세션은 그대로)
+      if ("caches" in window) {
+        caches.keys().then(function (names) {
+          for (let name of names) caches.delete(name);
+        });
       }
-
-      // 페이지 로드 시 캐시 삭제
-      clearCache();
     </script>
   </body>
 </html>
