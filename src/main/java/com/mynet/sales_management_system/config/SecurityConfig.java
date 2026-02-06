@@ -13,6 +13,8 @@ import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -80,28 +82,45 @@ public class SecurityConfig {
                                 // 403 에러 처리 핸들러 추가
                                 .exceptionHandling(exception -> exception
                                                 .accessDeniedHandler((request, response, accessDeniedException) -> {
-                                                        log.warn("403 Access Denied: {} - User: {}",
-                                                                        request.getRequestURI(),
-                                                                        request.getUserPrincipal() != null
-                                                                                        ? request.getUserPrincipal()
-                                                                                                        .getName()
-                                                                                        : "anonymous");
+                                                        String requestURI = request.getRequestURI();
+                                                        String username = request.getUserPrincipal() != null
+                                                                        ? request.getUserPrincipal().getName()
+                                                                        : "anonymous";
 
-                                                        // 세션 무효화
-                                                        jakarta.servlet.http.HttpSession session = request
-                                                                        .getSession(false);
-                                                        if (session != null) {
-                                                                session.invalidate();
+                                                        log.warn("403 Access Denied: {} - User: {} - Exception: {}",
+                                                                        requestURI, username,
+                                                                        accessDeniedException.getMessage());
+
+                                                        // 정적 리소스나 AJAX 요청은 세션 무효화하지 않음!
+                                                        boolean isStaticResource = requestURI.startsWith("/css/") ||
+                                                                        requestURI.startsWith("/js/") ||
+                                                                        requestURI.startsWith("/images/");
+                                                        boolean isAjaxRequest = "XMLHttpRequest"
+                                                                        .equals(request.getHeader("X-Requested-With"));
+
+                                                        // 실제 페이지 접근 권한 오류일 때만 세션 무효화
+                                                        if (!isStaticResource && !isAjaxRequest) {
+                                                                jakarta.servlet.http.HttpSession session = request
+                                                                                .getSession(false);
+                                                                if (session != null) {
+                                                                        log.info("세션 무효화: {}", username);
+                                                                        session.invalidate();
+                                                                }
+
+                                                                // 캐시 방지 헤더
+                                                                response.setHeader("Cache-Control",
+                                                                                "no-cache, no-store, must-revalidate");
+                                                                response.setHeader("Pragma", "no-cache");
+                                                                response.setHeader("Expires", "0");
+
+                                                                // 403 페이지로 리다이렉트
+                                                                response.sendRedirect("/error-403");
+                                                        } else {
+                                                                // 정적 리소스나 AJAX는 그냥 403 에러만 반환
+                                                                log.info("정적 리소스/AJAX 403 에러 (세션 유지): {}", requestURI);
+                                                                response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                                                                                "Access Denied");
                                                         }
-
-                                                        // 캐시 방지 헤더 설정
-                                                        response.setHeader("Cache-Control",
-                                                                        "no-cache, no-store, must-revalidate");
-                                                        response.setHeader("Pragma", "no-cache");
-                                                        response.setHeader("Expires", "0");
-
-                                                        // 403 에러 페이지로 리다이렉트
-                                                        response.sendRedirect("/error-403");
                                                 }))
                                 .authorizeHttpRequests(authz -> authz
                                                 // 정적 리소스는 모든 사용자 접근 허용
