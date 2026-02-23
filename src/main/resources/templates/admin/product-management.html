@@ -93,6 +93,12 @@
 
       <!-- 제품 등록 버튼 -->
       <div class="action-header">
+        <button sec:authorize="!hasRole('CANON')" 
+          class="btn btn-success"
+          id="addCategoryBtn" 
+          onclick="toggleCategoryForm()">
+          분류 관리
+        </button>
         <button
           sec:authorize="!hasRole('CANON')"
           class="btn btn-primary"
@@ -101,6 +107,39 @@
         >
           제품 등록
         </button>
+      </div>
+
+      <!-- 분류 관리 패널 -->
+      <div class="card" id="categoryForm" style="display: none">
+        <div class="card-header">
+          <h3 class="card-title">분류 관리</h3>
+        </div>
+
+        <!-- 새 분류 추가 -->
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
+          <input type="text" class="form-input" id="newCategoryInput"
+            placeholder="새 분류명 입력 (제품에 배정될 때 저장됩니다)" style="max-width: 320px;" />
+          <button class="btn btn-success" onclick="submitNewCategory()">추가</button>
+        </div>
+
+        <!-- 현재 분류 목록 -->
+        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+          <thead>
+            <tr>
+              <th style="background:#2c5aa0; color:white; padding: 10px; width:25%;">분류명</th>
+              <th style="background:#2c5aa0; color:white; width:15%; width:80px;">제품 수</th>
+              <th style="background:#2c5aa0; color:white; width:40%; width:200px;">이름 변경</th>
+              <th style="background:#2c5aa0; color:white; width:20%; width:80px;">삭제</th>
+            </tr>
+          </thead>
+          <tbody id="categoryManageList">
+            <!-- JS로 채워짐 -->
+          </tbody>
+        </table>
+
+        <div style="margin-top: 15px; text-align: right;">
+          <button class="btn btn-outline" onclick="toggleCategoryForm()">닫기</button>
+        </div>
       </div>
 
       <!-- 제품 등록 폼 (숨김 상태) -->
@@ -124,20 +163,14 @@
               <tbody>
                 <tr>
                   <td class="form-cell">
-                    <input
-                      list="categories"
-                      class="form-input"
-                      id="categoryInput"
-                      placeholder="분류 선택 또는 입력"
-                      required
-                    />
-                    <datalist id="categories">
+                    <select class="form-input" id="categoryInput" required>
+                      <option value="">분류 선택</option>
                       <option
                         th:each="category : ${existingCategories}"
                         th:value="${category}"
                         th:text="${category}"
                       ></option>
-                    </datalist>
+                    </select>
                   </td>
                   <td class="form-cell">
                     <input
@@ -229,8 +262,14 @@
                     <td
                       class="category-cell"
                       th:rowspan="${categoryGroup.value.size()}"
-                      th:text="${categoryGroup.key}"
-                    ></td>
+                      th:data-category="${categoryGroup.key}">
+                      <span class="category-display" th:text="${categoryGroup.key}"></span>
+                      <select class="category-select" style="display:none;">
+                        <option th:each="cat : ${existingCategories}"
+                                th:value="${cat}" th:text="${cat}"
+                                th:selected="${cat == categoryGroup.key}"></option>
+                      </select>
+                    </td>
                     <td
                       class="data-cell"
                       th:text="${product.productCode}"
@@ -546,121 +585,6 @@
         setTimeout(() => alert.remove(), 3000);
       }
 
-      /**
-     * 가격 수정 모드로 전환
-     */
-    function editProductPrice(button) {
-        const productId = button.dataset.productId;
-        const row = button.closest('tr');
-        
-        // 해당 행의 원가/판매가 셀 찾기
-        const priceCells = row.querySelectorAll(`.editable-price-cell[data-product-id="${productId}"]`);
-        
-        priceCells.forEach(cell => {
-            const display = cell.querySelector('.price-display');
-            const input = cell.querySelector('.price-input');
-            
-            // display 숨기고 input 표시
-            display.style.display = 'none';
-            input.style.display = 'inline-block';
-            input.focus();
-        });
-        
-        // 버튼 전환
-        const editBtn = row.querySelector(`.edit-price-btn[data-product-id="${productId}"]`);
-        const saveBtn = row.querySelector(`.save-price-btn[data-product-id="${productId}"]`);
-        const cancelBtn = row.querySelector(`.cancel-price-btn[data-product-id="${productId}"]`);
-        
-        editBtn.style.display = 'none';
-        saveBtn.style.display = 'inline-block';
-        cancelBtn.style.display = 'inline-block';
-    }
-
-    /**
-     * 가격 저장
-     */
-    function saveProductPrice(button) {
-      const productId = button.dataset.productId;
-      const row = button.closest('tr');
-      const priceCells = row.querySelectorAll(`.editable-price-cell[data-product-id="${productId}"]`);
-      const payload = {};
-
-      priceCells.forEach(cell => {
-        const input = cell.querySelector('.price-input');
-        const priceType = cell.dataset.priceType;
-        const newValue = parseFloat(input.value);
-        const originalValue = parseFloat(cell.dataset.originalValue);
-
-        if (!isNaN(newValue) && newValue !== originalValue) {
-          if (priceType === 'cost') payload.costPrice = newValue;
-          if (priceType === 'supply') payload.supplyPrice = newValue;
-        }
-      });
-
-      if (Object.keys(payload).length === 0) {
-        showAlert('변경된 값이 없습니다. ', 'info');
-        return;
-      }
-
-      const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
-      const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
-
-      fetch(`/admin/products/${productId}/update-price`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          [csrfHeader]: csrfToken
-        },
-        body: JSON.stringify(payload)
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          showAlert('가격이 성공적으로 수정되었습니다. ', 'success');
-          setTimeout(() => location.reload(), 800);
-        } else {
-          showAlert('가격 수정 실패: ' + data.message, 'error');
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        showAlert('네트워크 오류가 발생했습니다. ', 'error');
-      });
-    }
-
-    /**
-     * 가격 수정 취소
-     */
-    function cancelEditPrice(button) {
-        const productId = button.dataset.productId;
-        const row = button.closest('tr');
-        
-        // 원가/판매가 원래 값으로 복구
-        const priceCells = row.querySelectorAll(`.editable-price-cell[data-product-id="${productId}"]`);
-        
-        priceCells.forEach(cell => {
-            const display = cell.querySelector('.price-display');
-            const input = cell.querySelector('.price-input');
-            const originalValue = parseFloat(cell.dataset.originalValue);
-            
-            // 원래 값으로 복구
-            input.value = originalValue;
-
-            // 정수 포맷 (소수점 없이)
-            display.textContent = Number(originalValue).toLocaleString('ko-KR', {
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 0
-            });
-            
-            // input 숨기고 display 표시
-            input.style.display = 'none';
-            display.style.display = 'inline-block';
-        });
-        
-        // 버튼 원래대로
-        resetPriceButtons(row, productId);
-    }
-
     /**
      * 버튼 상태 초기화
      */
@@ -674,6 +598,344 @@
         cancelBtn.style.display = 'none';
     }
 
+    function editProductPrice(button) {
+        // 동시 편집 방지
+        if (document.querySelector('.injected-category-cell') || 
+            document.querySelector('.category-cell[data-original-span]')) {
+            showAlert('이미 다른 행을 수정 중입니다. 저장하거나 취소 후 진행하세요.', 'info');
+            return;
+        }
+        const productId = button.dataset.productId;
+        const row = button.closest('tr');
+
+        // 원가/판매가 편집 활성화
+        const priceCells = row.querySelectorAll(`.editable-price-cell[data-product-id="${productId}"]`);
+        priceCells.forEach(cell => {
+            cell.querySelector('.price-display').style.display = 'none';
+            cell.querySelector('.price-input').style.display = 'inline-block';
+        });
+
+        // rowspan 해제 → 이 행에 독립적인 분류 셀 생성
+        expandCategoryRowspan(row);
+
+        const editBtn = row.querySelector(`.edit-price-btn[data-product-id="${productId}"]`);
+        const saveBtn = row.querySelector(`.save-price-btn[data-product-id="${productId}"]`);
+        const cancelBtn = row.querySelector(`.cancel-price-btn[data-product-id="${productId}"]`);
+
+        editBtn.style.display = 'none';
+        saveBtn.style.display = 'inline-block';
+        cancelBtn.style.display = 'inline-block';
+    }
+
+    function expandCategoryRowspan(targetRow) {
+        // 이 행 또는 이전 행에서 category-cell 찾기
+        let categoryCell = targetRow.querySelector('.category-cell');
+        let groupFirstRow = targetRow;
+
+        if (!categoryCell) {
+            let prev = targetRow.previousElementSibling;
+            while (prev) {
+                const cell = prev.querySelector('.category-cell');
+                if (cell) { categoryCell = cell; groupFirstRow = prev; break; }
+                prev = prev.previousElementSibling;
+            }
+        }
+        if (!categoryCell) return;
+
+        const originalSpan = parseInt(categoryCell.rowSpan) || 1;
+        const categoryName = categoryCell.querySelector('.category-display')?.textContent.trim() || categoryCell.dataset.category;
+
+        // 원복용 데이터 저장
+        categoryCell.dataset.originalSpan = originalSpan;
+        categoryCell.dataset.originalCategory = categoryName;
+
+        // 원본 셀 → rowspan 1로 축소 + select로 교체
+        categoryCell.rowSpan = 1;
+        categoryCell.innerHTML = buildCategorySelect(categoryName);
+
+        if (originalSpan > 1) {
+            const table = categoryCell.closest('table');
+            const allRows = Array.from(table.querySelectorAll('tbody tr'));
+            const startIdx = allRows.indexOf(groupFirstRow);
+
+            for (let i = 1; i < originalSpan; i++) {
+                const siblingRow = allRows[startIdx + i];
+                if (!siblingRow) continue;
+
+                const newTd = document.createElement('td');
+                newTd.className = 'category-cell injected-category-cell';
+
+                newTd.innerHTML = `<span class="category-display">${categoryName}</span>`;
+
+                siblingRow.insertBefore(newTd, siblingRow.firstElementChild);
+            }
+        }
+    }
+
+    function buildCategorySelect(selectedCategory) {
+        const options = Array.from(document.querySelectorAll('#categoryInput option'))
+            .filter(o => o.value !== '')
+            .map(o => `<option value="${o.value}" ${o.value === selectedCategory ? 'selected' : ''}>${o.textContent}</option>`)
+            .join('');
+        return `<select class="category-select" style="font-size:12px; padding:3px 4px; border:1px solid #007bff; border-radius:3px; width:90%;">${options}</select>`;
+    }
+
+    function collapseCategoryRowspan(targetRow) {
+        const table = targetRow.closest('table');
+
+        // data-original-span이 있는 원본 셀을 테이블 전체에서 탐색
+        const originalCell = table.querySelector('.category-cell[data-original-span]');
+        if (!originalCell) return;
+
+        const originalSpan = parseInt(originalCell.dataset.originalSpan);
+        const originalCategory = originalCell.dataset.originalCategory;
+
+        // 주입된 셀 먼저 제거 (DOM 변경 전에)
+        table.querySelectorAll('.injected-category-cell').forEach(el => el.remove());
+
+        // 원본 셀 복구 — span + select 구조 재건
+        originalCell.rowSpan = originalSpan;
+        const selectOptions = Array.from(document.querySelectorAll('#categoryInput option'))
+            .filter(o => o.value !== '')
+            .map(o => `<option value="${o.value}" ${o.value === originalCategory ? 'selected' : ''}>${o.textContent}</option>`)
+            .join('');
+        originalCell.innerHTML = `
+            <span class="category-display">${originalCategory}</span>
+            <select class="category-select" style="display:none;">${selectOptions}</select>`;
+        delete originalCell.dataset.originalSpan;
+        delete originalCell.dataset.originalCategory;
+    }
+
+    function saveProductPrice(button) {
+        const productId = button.dataset.productId;
+        const row = button.closest('tr');
+        const priceCells = row.querySelectorAll(`.editable-price-cell[data-product-id="${productId}"]`);
+        const pricePayload = {};
+
+        priceCells.forEach(cell => {
+            const input = cell.querySelector('.price-input');
+            const priceType = cell.dataset.priceType;
+            const newValue = parseFloat(input.value);
+            const originalValue = parseFloat(cell.dataset.originalValue);
+            if (!isNaN(newValue) && newValue !== originalValue) {
+                if (priceType === 'cost') pricePayload.costPrice = newValue;
+                if (priceType === 'supply') pricePayload.supplyPrice = newValue;
+            }
+        });
+
+        // 이 행의 분류 select에서 값 읽기
+        const categorySelect = row.querySelector('.category-select');
+        let categoryChanged = false;
+        let newCategory = null;
+        if (categorySelect) {
+            const categoryCell = row.querySelector('.category-cell');
+            const originalCategory = categoryCell?.dataset.originalCategory
+                || categoryCell?.textContent.trim();
+            newCategory = categorySelect.value;
+            if (newCategory !== originalCategory) categoryChanged = true;
+        }
+
+        if (Object.keys(pricePayload).length === 0 && !categoryChanged) {
+            showAlert('변경된 값이 없습니다.', 'info');
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        const requests = [];
+
+        if (Object.keys(pricePayload).length > 0) {
+            requests.push(
+                fetch(`/admin/products/${productId}/update-price`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', [csrfHeader]: csrfToken },
+                    body: JSON.stringify(pricePayload)
+                }).then(r => r.json())
+            );
+        }
+
+        if (categoryChanged) {
+            requests.push(
+                fetch(`/admin/products/${productId}/update-category`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', [csrfHeader]: csrfToken },
+                    body: JSON.stringify({ category: newCategory })
+                }).then(r => r.json())
+            );
+        }
+
+        Promise.all(requests)
+            .then(results => {
+                if (results.every(r => r.success)) {
+                    showAlert('수정되었습니다.', 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showAlert('일부 수정에 실패했습니다.', 'error');
+                }
+            })
+            .catch(() => showAlert('네트워크 오류가 발생했습니다.', 'error'));
+    }
+
+    function cancelEditPrice(button) {
+        const productId = button.dataset.productId;
+        const row = button.closest('tr');
+
+        // 원가/판매가 원복
+        const priceCells = row.querySelectorAll(`.editable-price-cell[data-product-id="${productId}"]`);
+        priceCells.forEach(cell => {
+            const display = cell.querySelector('.price-display');
+            const input = cell.querySelector('.price-input');
+            const originalValue = parseFloat(cell.dataset.originalValue);
+            input.value = originalValue;
+            display.textContent = Number(originalValue).toLocaleString('ko-KR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            input.style.display = 'none';
+            display.style.display = 'inline-block';
+        });
+
+        // rowspan 원복
+        collapseCategoryRowspan(row);
+
+        resetPriceButtons(row, productId);
+    }
+
+    function resetPriceButtons(row, productId) {
+        row.querySelector(`.edit-price-btn[data-product-id="${productId}"]`).style.display = 'inline-block';
+        row.querySelector(`.save-price-btn[data-product-id="${productId}"]`).style.display = 'none';
+        row.querySelector(`.cancel-price-btn[data-product-id="${productId}"]`).style.display = 'none';
+    }
+
+    // ===== 분류 관리 =====
+
+    // 현재 분류 목록 (productsByCategory에서 수집)
+    function getExistingCategories() {
+      return Array.from(document.querySelectorAll("#categoryInput option"))
+        .map(o => o.value).filter(v => v !== "");
+    }
+
+    // 각 분류의 제품 수 (category-cell rowspan 기준)
+    function getProductCountByCategory(categoryName) {
+      const cells = document.querySelectorAll('.category-cell');
+      for (const cell of cells) {
+        if (cell.querySelector('.category-display')?.textContent.trim() === categoryName) {
+          return parseInt(cell.rowSpan) || 1;
+        }
+      }
+      return 0;
+    }
+
+    function toggleCategoryForm() {
+      const form = document.getElementById("categoryForm");
+      const isHidden = form.style.display === "none";
+      form.style.display = isHidden ? "block" : "none";
+      if (isHidden) renderCategoryManageList();
+      else document.getElementById("newCategoryInput").value = "";
+    }
+
+    function renderCategoryManageList() {
+      const tbody = document.getElementById("categoryManageList");
+      tbody.innerHTML = "";
+      const categories = getExistingCategories();
+
+      if (categories.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center; color:#6c757d;">등록된 분류가 없습니다.</td></tr>';
+        return;
+      }
+
+      categories.forEach(cat => {
+        const count = getProductCountByCategory(cat);
+        const tr = document.createElement("tr");
+        tr.style.borderBottom = "1px solid #dee2e6";
+        tr.innerHTML = `
+          <td style="padding:10px; font-weight:600;">${cat}</td>
+          <td style="padding:10px; text-align:center;">${count}</td>
+          <td style="padding:10px;">
+            <div style="display:flex; gap:6px; align-items:center;">
+              <input type="text" class="form-input" value="${cat}"
+                style="max-width:150px; padding:4px 8px; font-size:13px;"
+                data-original="${cat}" />
+              <button class="btn btn-sm btn-primary" onclick="renameCategoryFromPanel(this)">변경</button>
+            </div>
+          </td>
+          <td style="padding:10px; text-align:center;">
+            <button class="btn btn-sm btn-outline" 
+              style="${count > 0 ? 'opacity:0.4; cursor:not-allowed;' : 'color:#dc3545; border-color:#dc3545;'}"
+              ${count > 0 ? 'disabled title="사용 중인 분류는 삭제할 수 없습니다"' : `onclick="deleteCategory('${cat}')"`}>
+              삭제
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function submitNewCategory() {
+      const name = document.getElementById("newCategoryInput").value.trim();
+      if (!name) { showAlert("분류명을 입력하세요.", "error"); return; }
+
+      const existing = getExistingCategories();
+      if (existing.includes(name)) {
+        showAlert("이미 존재하는 분류입니다.", "error"); return;
+      }
+
+      // 제품 등록 select와 분류 수정 select에 옵션 추가
+      [document.getElementById("categoryInput"), ...document.querySelectorAll(".category-select")]
+        .forEach(sel => {
+          const opt = document.createElement("option");
+          opt.value = name;
+          opt.textContent = name;
+          sel.appendChild(opt);
+        });
+
+      document.getElementById("newCategoryInput").value = "";
+      showAlert(`'${name}' 분류가 추가되었습니다. 제품에 배정하면 저장됩니다.`, "success");
+      renderCategoryManageList();
+    }
+
+    function renameCategoryFromPanel(button) {
+      const input = button.previousElementSibling;
+      const oldName = input.dataset.original;
+      const newName = input.value.trim();
+
+      if (!newName) { showAlert("분류명을 입력하세요.", "error"); return; }
+      if (newName === oldName) { showAlert("변경된 내용이 없습니다.", "info"); return; }
+
+      const existing = getExistingCategories();
+      if (existing.includes(newName)) {
+        showAlert("이미 존재하는 분류명입니다.", "error"); return;
+      }
+
+      const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+      const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+      fetch('/admin/products/categories/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', [csrfHeader]: csrfToken },
+        body: JSON.stringify({ oldName, newName })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showAlert(`'${oldName}' → '${newName}' 변경 완료 (${data.count}개 제품)`, "success");
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showAlert("변경 실패: " + data.message, "error");
+        }
+      })
+      .catch(() => showAlert("네트워크 오류가 발생했습니다.", "error"));
+    }
+
+    function deleteCategory(categoryName) {
+      // 제품 수가 0인 경우만 여기 도달 (버튼이 disabled)
+      // select에서 옵션 제거 (DB엔 저장된 것 없으므로 UI만)
+      [document.getElementById("categoryInput"), ...document.querySelectorAll(".category-select")]
+        .forEach(sel => {
+          const opt = Array.from(sel.options).find(o => o.value === categoryName);
+          if (opt) sel.removeChild(opt);
+        });
+
+      showAlert(`'${categoryName}' 분류가 삭제되었습니다.`, "success");
+      renderCategoryManageList();
+    }
     </script>
 
     <style>
@@ -752,17 +1014,26 @@
         text-align: center;
       }
 
-      /* 카테고리별 배경색 (연한 초록색 계열) */
-      .data-cell.green-1 {
-        background: #e8f5e8;
+      #categoryForm table th,
+      #categoryForm table td {
+        text-align: center;
       }
 
-      .data-cell.green-2 {
+      #categoryForm table tbody td:nth-child(3) > div {
+        justify-content: center;
+      }
+
+      /* 카테고리별 배경색 (연한 초록색 계열) */
+      .data-cell.green-1 {
         background: #d4f4d4;
       }
 
-      .data-cell.green-3 {
+      .data-cell.green-2 {
         background: #c0f0c0;
+      }
+
+      .data-cell.green-3 {
+        background: #e8f5e8;
       }
 
       .data-cell.green-4 {
@@ -871,6 +1142,12 @@
         background: #f8d7da;
         color: #721c24;
         border: 1px solid #f5c6cb;
+      }
+
+      .alert-info {
+        background: #cff4fc;
+        color: #055160;
+        border: 1px solid #b6effb;
       }
 
       /* 반응형 레이아웃 */

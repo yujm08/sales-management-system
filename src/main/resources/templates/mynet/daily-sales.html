@@ -1053,7 +1053,7 @@
             // thead 높이 계산해서 스크롤바 위치 설정
             const thead = tableContainer.querySelector("thead");
             if (thead) {
-              topScrollbar.style.top = thead.offsetHeight + "px";
+              topScrollbar.style.top = thead.offsetHeight + 1 + "px";
             }
           };
           syncAll();

@@ -163,6 +163,62 @@ public class ProductController {
     }
 
     /**
+     * 제품 분류 변경
+     */
+    @PostMapping("/{productId}/update-category")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateProductCategory(
+            @PathVariable Long productId,
+            @RequestBody Map<String, Object> request) {
+
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String newCategory = (String) request.get("category");
+            if (newCategory == null || newCategory.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "분류명이 비어있습니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+            productService.updateProductCategory(productId, newCategory.trim());
+            response.put("success", true);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("분류 변경 실패", e);
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    /**
+     * 분류명 변경 (해당 분류의 모든 제품에 적용)
+     */
+    @PostMapping("/categories/rename")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> renameCategory(
+            @RequestBody Map<String, Object> request) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String oldName = (String) request.get("oldName");
+            String newName = (String) request.get("newName");
+            if (newName == null || newName.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "새 분류명이 비어있습니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+            int count = productService.renameCategory(oldName, newName.trim());
+            response.put("success", true);
+            response.put("count", count);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("분류명 변경 실패", e);
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    /**
      * Product 엔티티를 ProductDTO로 변환
      */
     private ProductDTO convertToDTO(Product product) {

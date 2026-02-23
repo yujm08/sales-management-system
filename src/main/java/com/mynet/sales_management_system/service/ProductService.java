@@ -249,4 +249,35 @@ public class ProductService {
         String[] colorClasses = { "light-green", "medium-green", "dark-green", "lighter-green" };
         return colorClasses[index % colorClasses.length];
     }
+
+    /**
+     * 제품 분류 수정
+     */
+    @Transactional
+    public void updateProductCategory(Long productId, String newCategory) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("제품을 찾을 수 없습니다: " + productId));
+        product.setCategory(newCategory);
+        productRepository.save(product);
+        log.info("제품 분류 수정: 제품ID={}, 새분류={}", productId, newCategory);
+    }
+
+    /**
+     * 분류명 일괄 변경 (해당 분류의 모든 제품)
+     */
+    @Transactional
+    public int renameCategory(String oldName, String newName) {
+        List<Product> products = productRepository.findByCategoryOrderByProductCodeAsc(oldName);
+        products.forEach(p -> p.setCategory(newName));
+        productRepository.saveAll(products);
+        log.info("분류명 변경: {} → {}, 영향받은 제품 수: {}", oldName, newName, products.size());
+        return products.size();
+    }
+
+    /**
+     * 특정 분류를 사용하는 제품 수 조회
+     */
+    public long countProductsByCategory(String category) {
+        return productRepository.findByCategoryOrderByProductCodeAsc(category).size();
+    }
 }

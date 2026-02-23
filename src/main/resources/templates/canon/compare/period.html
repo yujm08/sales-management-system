@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -648,7 +648,7 @@
       // CSRF 토큰 가져오기
       const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
       const csrfHeader = document.querySelector(
-        'meta[name="_csrf_header"]'
+        'meta[name="_csrf_header"]',
       )?.content;
 
       // 페이지 로드 시 제품 목록 불러오기
@@ -696,7 +696,7 @@
         }, {});
         Object.keys(grouped).forEach((cat) => {
           grouped[cat].sort((a, b) =>
-            a.productCode.localeCompare(b.productCode)
+            a.productCode.localeCompare(b.productCode),
           );
         });
 
@@ -766,7 +766,7 @@
           "제품 선택됨 - ID:",
           product.id,
           "제품:",
-          product.productName
+          product.productName,
         );
 
         hideAutocomplete();
@@ -792,12 +792,12 @@
         const filtered = allProducts.filter(
           (p) =>
             p.productName.toLowerCase().includes(searchValue.toLowerCase()) ||
-            p.productCode.toLowerCase().includes(searchValue.toLowerCase())
+            p.productCode.toLowerCase().includes(searchValue.toLowerCase()),
         );
 
         // 정확히 일치하는 제품이 없으면 선택 해제
         const exactMatch = filtered.find(
-          (p) => `${p.productCode} - ${p.productName}` === searchValue
+          (p) => `${p.productCode} - ${p.productName}` === searchValue,
         );
 
         if (!exactMatch) {
@@ -1017,7 +1017,7 @@
             <div class="summary-item">
                 <div class="summary-label">총 수량</div>
                 <div class="summary-value">${formatDisplay(
-                  periodData.totalQuantity
+                  periodData.totalQuantity,
                 )}</div>
             </div>
         </div>
@@ -1047,10 +1047,10 @@
           .map(
             (day) => `
         <tr>
-            <td>${formatDate(day.date)}</td>
+            <td>${formatDateWithYear(day.date)}</td>
             <td>${formatDisplay(day.quantity)}</td>
         </tr>
-    `
+    `,
           )
           .join("");
       }
