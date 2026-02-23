@@ -135,11 +135,19 @@ public class YearlyComparisonExcelService {
         styles.put("number", numberStyle);
 
         // 카테고리별 배경색
-        String[] colorNames = { "green1", "green2", "green3", "green4" };
+        IndexedColors[] categoryColors = {
+                IndexedColors.LIGHT_GREEN,
+                IndexedColors.LEMON_CHIFFON,
+                IndexedColors.LIGHT_TURQUOISE,
+                IndexedColors.LIGHT_CORNFLOWER_BLUE
+        };
+
+        // 카테고리별 배경색
+        String[] colorNames = { "catColor1", "catColor2", "catColor3", "catColor4" };
         for (int i = 0; i < 4; i++) {
             CellStyle colorStyle = workbook.createCellStyle();
             colorStyle.cloneStyleFrom(numberStyle);
-            colorStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+            colorStyle.setFillForegroundColor(categoryColors[i].getIndex());
             colorStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
             styles.put(colorNames[i], colorStyle);
         }
@@ -229,7 +237,7 @@ public class YearlyComparisonExcelService {
         int categoryColorIndex = 0;
 
         for (YearlyComparisonDTO.CategoryData categoryData : categories) {
-            String colorStyleName = "green" + ((categoryColorIndex % 4) + 1);
+            String colorStyleName = "catColor" + ((categoryColorIndex % 4) + 1);
             categoryColorIndex++;
 
             List<YearlyComparisonDTO.ProductYearlyData> products = categoryData.getProducts();

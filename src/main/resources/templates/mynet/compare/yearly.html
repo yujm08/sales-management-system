@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -32,6 +32,35 @@
         font-size: 13px;
         background: white;
         border: 1px solid white;
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        padding: 2px 20px 10px 20px;
+      }
+
+      .download-btn {
+        background: #7a7a7a;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+        margin-left: auto;
+      }
+
+      .download-btn:hover {
+        background: #666666;
+      }
+
+      .download-btn:active {
+        background: #4f4f4f;
       }
 
       /* 헤더 스타일 */
@@ -256,6 +285,11 @@
       <h2 style="margin-bottom: 20px">년도별 비교</h2>
 
       <div class="card">
+        <div class="card-header">
+          <button class="download-btn" onclick="downloadExcel()">
+            엑셀 다운로드
+          </button>
+        </div>
         <!-- 년도별 비교 표 -->
         <div class="yearly-table-container">
           <div id="loading" class="loading">데이터를 불러오는 중...</div>
@@ -369,7 +403,7 @@
             // 증감률
             const growthCell = document.createElement("td");
             growthCell.className = `${colorClass} growth-rate ${getGrowthClass(
-              product.growthRate
+              product.growthRate,
             )}`;
             growthCell.textContent = formatGrowthRate(product.growthRate);
             row.appendChild(growthCell);
@@ -384,19 +418,19 @@
         grandTotalRow.innerHTML = `
                 <td colspan="3" style="text-align: center;"><strong>합계</strong></td>
                 <td class="amount-cell"><strong>${formatCurrency(
-                  data.grandTotal.year1Amount
+                  data.grandTotal.year1Amount,
                 )}</strong></td>
                 <td class="amount-cell"><strong>${formatCurrency(
-                  data.grandTotal.year2Amount
+                  data.grandTotal.year2Amount,
                 )}</strong></td>
                 <td class="amount-cell"><strong>${formatCurrency(
-                  data.grandTotal.year3Amount
+                  data.grandTotal.year3Amount,
                 )}</strong></td>
                 <td class="growth-rate ${getGrowthClass(
-                  data.grandTotal.growthRate
+                  data.grandTotal.growthRate,
                 )}">
                     <strong>${formatGrowthRate(
-                      data.grandTotal.growthRate
+                      data.grandTotal.growthRate,
                     )}</strong>
                 </td>
             `;
@@ -425,6 +459,10 @@
         if (rate > 0) return "growth-positive";
         if (rate < 0) return "growth-negative";
         return "growth-zero";
+      }
+
+      function downloadExcel() {
+        window.location.href = "/mynet/compare/yearly/download";
       }
 
       loadData();

@@ -75,7 +75,13 @@ public class SecurityConfig {
                                                 // Content Security Policy
                                                 .contentSecurityPolicy(csp -> csp
                                                                 .policyDirectives(
-                                                                                "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';")))
+                                                                                "default-src 'self'; " +
+                                                                                                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                                                                                                +
+                                                                                                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                                                                                                +
+                                                                                                "font-src 'self'; " +
+                                                                                                "img-src 'self' data:;")))
 
                                 .csrf(csrf -> csrf
                                                 .csrfTokenRepository(new HttpSessionCsrfTokenRepository()))

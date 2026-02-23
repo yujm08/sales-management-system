@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -75,6 +75,28 @@
         font-size: 12px;
         background: white;
         border: 1px solid white;
+      }
+
+      .download-btn {
+        background: #7a7a7a;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+        margin-left: auto;
+      }
+
+      .download-btn:hover {
+        background: #666666;
+      }
+
+      .download-btn:active {
+        background: #4f4f4f;
       }
 
       /* 헤더 스타일 */
@@ -334,6 +356,10 @@
           </div>
 
           <button class="btn-primary" onclick="loadMonthlyData()">조회</button>
+
+          <button class="download-btn" onclick="downloadExcel()">
+            엑셀 다운로드
+          </button>
         </div>
 
         <!-- 월별 비교 표 -->
@@ -497,6 +523,14 @@
 
         const url = `/mynet/compare/monthly?year=${year}&companyId=${companyId}`;
         window.location.href = url;
+      }
+
+      function downloadExcel() {
+        const year = document.getElementById("year-select").value;
+        const companyId = document.getElementById("company-select").value;
+
+        const downloadUrl = `/mynet/compare/monthly/download?year=${year}&companyId=${companyId}`;
+        window.location.href = downloadUrl;
       }
     </script>
   </body>

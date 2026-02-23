@@ -11,12 +11,17 @@ import com.mynet.sales_management_system.entity.Product;
 import com.mynet.sales_management_system.security.CustomUserDetails;
 import com.mynet.sales_management_system.service.DailySalesExcelService;
 import com.mynet.sales_management_system.service.DailySalesService;
+import com.mynet.sales_management_system.service.MonthlyComparisonExcelService;
 import com.mynet.sales_management_system.service.MonthlyComparisonService;
+import com.mynet.sales_management_system.service.PeriodComparisonExcelService;
+import com.mynet.sales_management_system.service.ProductComparisonExcelService;
 import com.mynet.sales_management_system.service.ProductService;
 import com.mynet.sales_management_system.service.SalesService;
+import com.mynet.sales_management_system.service.StatisticsService;
 import com.mynet.sales_management_system.service.TargetService;
 import com.mynet.sales_management_system.service.ViewExcelService;
 import com.mynet.sales_management_system.service.ViewStatisticsService;
+import com.mynet.sales_management_system.service.YearlyComparisonExcelService;
 import com.mynet.sales_management_system.repository.CompanyRepository;
 import com.mynet.sales_management_system.util.DateUtil;
 import lombok.RequiredArgsConstructor;
@@ -66,6 +71,11 @@ public class MynetController {
     private final DailySalesService dailySalesService;
     private final DailySalesExcelService excelService;
     private final ViewExcelService viewExcelService;
+    private final MonthlyComparisonExcelService monthlyComparisonExcelService;
+    private final YearlyComparisonExcelService yearlyComparisonExcelService;
+    private final PeriodComparisonExcelService periodComparisonExcelService;
+    private final ProductComparisonExcelService productComparisonExcelService;
+    private final StatisticsService statisticsService;
 
     /**
      * 조회 페이지 (마이넷 메인 페이지)
@@ -625,6 +635,105 @@ public class MynetController {
 
         } catch (IOException e) {
             log.error("조회 엑셀 다운로드 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * 월별 비교 엑셀 다운로드
+     */
+    @GetMapping("/compare/monthly/download")
+    public ResponseEntity<byte[]> downloadMonthlyComparisonExcel(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String companyId) {
+
+        try {
+            int selectedYear = year != null ? year : LocalDate.now().getYear();
+
+            Long companyIdValue = null;
+            String companyName = "전체";
+
+            if (companyId != null && !"all".equalsIgnoreCase(companyId.trim())) {
+                try {
+                    companyIdValue = Long.parseLong(companyId);
+                    companyName = companyRepository.findById(companyIdValue)
+                            .map(com.mynet.sales_management_system.entity.Company::getName)
+                            .orElse("전체");
+                } catch (NumberFormatException e) {
+                    companyIdValue = null;
+                }
+            }
+
+            // 데이터 조회
+            List<MonthlyComparisonDTO.CategoryData> monthlyData = monthlyComparisonService
+                    .getMonthlyComparison(selectedYear, companyIdValue);
+
+            MonthlyComparisonDTO.GrandTotal grandTotal = monthlyComparisonService.calculateGrandTotal(monthlyData);
+
+            // 엑셀 생성
+            byte[] excelData = monthlyComparisonExcelService.generateMonthlyComparisonExcel(
+                    monthlyData, grandTotal, selectedYear, companyName);
+
+            // 파일명 생성
+            String fileName = String.format("월별비교_%d년_%s.xlsx", selectedYear, companyName);
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
+            // 응답 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", encodedFileName);
+            headers.setCacheControl("no-cache, no-store, must-revalidate");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelData);
+
+        } catch (IOException e) {
+            log.error("월별 비교 엑셀 다운로드 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 년도별 비교 엑셀 다운로드
+     */
+    @GetMapping("/compare/yearly/download")
+    public ResponseEntity<byte[]> downloadYearlyComparisonExcel() {
+
+        try {
+            int currentYear = LocalDate.now().getYear();
+            int year1 = currentYear - 2;
+            int year2 = currentYear - 1;
+            int year3 = currentYear;
+
+            // 데이터 조회 (StatisticsService 사용)
+            StatisticsService.YearlyComparisonResponse response = ((StatisticsService) statisticsService)
+                    .getYearlyComparisonData(year1, year3);
+
+            // 엑셀 생성
+            byte[] excelData = yearlyComparisonExcelService.generateYearlyComparisonExcel(
+                    response.getCategories(),
+                    response.getGrandTotal(),
+                    year1, year2, year3);
+
+            // 파일명 생성
+            String fileName = String.format("년도별비교_%d-%d-%d.xlsx", year1, year2, year3);
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
+            // 응답 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", encodedFileName);
+            headers.setCacheControl("no-cache, no-store, must-revalidate");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelData);
+
+        } catch (IOException e) {
+            log.error("년도별 비교 엑셀 다운로드 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

@@ -140,9 +140,9 @@ public class MonthlyComparisonExcelService {
         String[] colorNames = { "green1", "green2", "green3", "green4" };
         IndexedColors[] colors = {
                 IndexedColors.LIGHT_GREEN,
-                IndexedColors.LIGHT_GREEN,
-                IndexedColors.LIGHT_GREEN,
-                IndexedColors.LIGHT_GREEN
+                IndexedColors.LEMON_CHIFFON,
+                IndexedColors.LIGHT_TURQUOISE,
+                IndexedColors.LIGHT_CORNFLOWER_BLUE
         };
 
         for (int i = 0; i < 4; i++) {

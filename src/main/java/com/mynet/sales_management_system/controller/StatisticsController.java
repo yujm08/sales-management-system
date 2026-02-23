@@ -5,8 +5,11 @@ import com.mynet.sales_management_system.dto.ProductComparisonDTO;
 import com.mynet.sales_management_system.dto.ProductDTO;
 import com.mynet.sales_management_system.entity.Product;
 import com.mynet.sales_management_system.entity.ProductPriceHistory;
+import com.mynet.sales_management_system.repository.ProductRepository;
 import com.mynet.sales_management_system.security.CustomUserDetails;
+import com.mynet.sales_management_system.service.PeriodComparisonExcelService;
 import com.mynet.sales_management_system.service.PeriodComparisonService;
+import com.mynet.sales_management_system.service.ProductComparisonExcelService;
 import com.mynet.sales_management_system.service.ProductComparisonService;
 import com.mynet.sales_management_system.service.ProductService;
 import com.mynet.sales_management_system.service.StatisticsService;
@@ -14,16 +17,23 @@ import com.mynet.sales_management_system.service.StatisticsService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.io.IOException;
+import java.net.URLEncoder;
 
 @RestController
 @RequestMapping("/api/statistics")
@@ -35,6 +45,9 @@ public class StatisticsController {
     private final PeriodComparisonService periodComparisonService;
     private final ProductService productService;
     private final ProductComparisonService productComparisonService;
+    private final PeriodComparisonExcelService periodComparisonExcelService;
+    private final ProductComparisonExcelService productComparisonExcelService;
+    private final ProductRepository productRepository;
 
     /**
      * 마이넷 측 비교탭 - 년도별 데이터 조회
@@ -151,6 +164,104 @@ public class StatisticsController {
         log.info("제품별 비교 데이터 조회: 제품ID={}", productId);
 
         return ResponseEntity.ok(comparisonData);
+    }
+
+    /**
+     * 기간별 비교 엑셀 다운로드
+     */
+    @PostMapping("/period-comparison/download")
+    public ResponseEntity<byte[]> downloadPeriodComparisonExcel(
+            @RequestBody PeriodComparisonRequest request) {
+
+        try {
+            List<PeriodComparisonDTO.PeriodData> periodsData = new ArrayList<>();
+
+            for (PeriodComparisonRequest.Period period : request.getPeriods()) {
+                PeriodComparisonDTO.PeriodData periodData;
+
+                if (request.getProductId() != null) {
+                    periodData = periodComparisonService.getPeriodDataForProduct(
+                            request.getProductId(),
+                            period.getStartDate(),
+                            period.getEndDate());
+                } else {
+                    periodData = periodComparisonService.getPeriodDataForAllProducts(
+                            period.getStartDate(),
+                            period.getEndDate());
+                }
+
+                periodsData.add(periodData);
+            }
+
+            // 제품명 조회
+            String productName = "전체 제품";
+            if (request.getProductId() != null) {
+                productName = productRepository.findById(request.getProductId())
+                        .map(Product::getProductName)
+                        .orElse("전체 제품");
+            }
+
+            // 엑셀 생성
+            byte[] excelData = periodComparisonExcelService.generatePeriodComparisonExcel(
+                    periodsData, productName);
+
+            // 파일명 생성
+            String fileName = String.format("기간별비교_%s.xlsx", productName);
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
+            // 응답 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", encodedFileName);
+            headers.setCacheControl("no-cache, no-store, must-revalidate");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelData);
+
+        } catch (IOException e) {
+            log.error("기간별 비교 엑셀 다운로드 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 제품별 비교 엑셀 다운로드
+     */
+    @GetMapping("/product-comparison/download")
+    public ResponseEntity<byte[]> downloadProductComparisonExcel(
+            @RequestParam(required = false) Long productId) {
+
+        try {
+            // 데이터 조회
+            ProductComparisonDTO comparisonData = productComparisonService.getProductComparison(productId);
+
+            // 엑셀 생성
+            byte[] excelData = productComparisonExcelService.generateProductComparisonExcel(comparisonData);
+
+            // 파일명 생성
+            String productName = comparisonData.getProductInfo().isAllProducts()
+                    ? "전체제품"
+                    : comparisonData.getProductInfo().getProductName();
+            String fileName = String.format("제품별비교_%s.xlsx", productName);
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
+            // 응답 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", encodedFileName);
+            headers.setCacheControl("no-cache, no-store, must-revalidate");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelData);
+
+        } catch (IOException e) {
+            log.error("제품별 비교 엑셀 다운로드 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
 }
