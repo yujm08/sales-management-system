@@ -3,6 +3,7 @@ package com.mynet.sales_management_system.service;
 import com.mynet.sales_management_system.dto.ProductComparisonDTO;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.RegionUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
@@ -162,14 +163,14 @@ public class ProductComparisonExcelService {
         CellStyle totalQtyStyle = workbook.createCellStyle();
         totalQtyStyle.cloneStyleFrom(numberStyle);
         totalQtyStyle.setFont(boldFont);
-        totalQtyStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+        totalQtyStyle.setFillForegroundColor(IndexedColors.LIME.getIndex());
         totalQtyStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         styles.put("totalQty", totalQtyStyle);
 
         CellStyle totalAmtStyle = workbook.createCellStyle();
         totalAmtStyle.cloneStyleFrom(numberStyle);
         totalAmtStyle.setFont(boldFont);
-        totalAmtStyle.setFillForegroundColor(IndexedColors.TAN.getIndex());
+        totalAmtStyle.setFillForegroundColor(IndexedColors.LIGHT_ORANGE.getIndex());
         totalAmtStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         styles.put("totalAmt", totalAmtStyle);
 
@@ -177,20 +178,20 @@ public class ProductComparisonExcelService {
         CellStyle growthPositiveStyle = workbook.createCellStyle();
         growthPositiveStyle.cloneStyleFrom(numberStyle);
         growthPositiveStyle.setFont(greenFont);
-        growthPositiveStyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
+        growthPositiveStyle.setFillForegroundColor(IndexedColors.WHITE.getIndex());
         growthPositiveStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         styles.put("growthPositive", growthPositiveStyle);
 
         CellStyle growthNegativeStyle = workbook.createCellStyle();
         growthNegativeStyle.cloneStyleFrom(numberStyle);
         growthNegativeStyle.setFont(redFont);
-        growthNegativeStyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
+        growthNegativeStyle.setFillForegroundColor(IndexedColors.WHITE.getIndex());
         growthNegativeStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         styles.put("growthNegative", growthNegativeStyle);
 
         CellStyle growthZeroStyle = workbook.createCellStyle();
         growthZeroStyle.cloneStyleFrom(numberStyle);
-        growthZeroStyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
+        growthZeroStyle.setFillForegroundColor(IndexedColors.WHITE.getIndex());
         growthZeroStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         styles.put("growthZero", growthZeroStyle);
 
@@ -301,12 +302,33 @@ public class ProductComparisonExcelService {
         for (BigDecimal rate : comparisonData.getGrowthRates().getMonthlyGrowthRates()) {
             createGrowthRateCell(growthRow, colIndex++, rate, styles);
             colIndex++; // 금액 열 건너뛰기 (증감률은 2개 병합)
-            sheet.addMergedRegion(new CellRangeAddress(startRow - 1, startRow - 1, colIndex - 2, colIndex - 1));
+            CellRangeAddress region = new CellRangeAddress(startRow - 1, startRow - 1, colIndex - 2, colIndex - 1);
+
+            sheet.addMergedRegion(region);
+
+            RegionUtil.setBorderTop(BorderStyle.THIN, region, sheet);
+            RegionUtil.setBorderBottom(BorderStyle.THIN, region, sheet);
+            RegionUtil.setBorderLeft(BorderStyle.THIN, region, sheet);
+            RegionUtil.setBorderRight(BorderStyle.THIN, region, sheet);
+
         }
 
         // 전체 증감률
+        int totalStartCol = colIndex;
         createGrowthRateCell(growthRow, colIndex++, comparisonData.getGrowthRates().getTotalGrowthRate(), styles);
-        sheet.addMergedRegion(new CellRangeAddress(startRow - 1, startRow - 1, colIndex - 1, colIndex));
+
+        // 병합 (2칸)
+        CellRangeAddress totalRegion = new CellRangeAddress(startRow - 1, startRow - 1, totalStartCol,
+                totalStartCol + 1);
+
+        sheet.addMergedRegion(totalRegion);
+
+        RegionUtil.setBorderTop(BorderStyle.THIN, totalRegion, sheet);
+        RegionUtil.setBorderBottom(BorderStyle.THIN, totalRegion, sheet);
+        RegionUtil.setBorderLeft(BorderStyle.THIN, totalRegion, sheet);
+        RegionUtil.setBorderRight(BorderStyle.THIN, totalRegion, sheet);
+
+        colIndex++;
 
         return startRow;
     }

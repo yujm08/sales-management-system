@@ -29,6 +29,34 @@
         margin-bottom: 20px;
       }
 
+      /* 다운로드 버튼 - 절대 위치로 우측에 고정 */
+      .download-btn-wrapper {
+        position: absolute;
+        right: 20px;
+      }
+
+      .download-btn {
+        background: #7a7a7a;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+        margin-left: 8px;
+      }
+
+      .download-btn:hover {
+        background: #666666;
+      }
+
+      .download-btn:active {
+        background: #4f4f4f;
+      }
+
       /* 추천 검색어 하이라이트 스타일 */
       .highlight {
         background-color: #fff3cd;
@@ -285,7 +313,7 @@
         background: #007bff;
         color: white;
         border: none;
-        padding: 10px 30px;
+        padding: 8px 16px;
         border-radius: 4px;
         cursor: pointer;
         font-size: 14px;
@@ -607,6 +635,7 @@
                 data-product-id=""
                 placeholder="제품을 검색하세요 (선택 시 해당 제품만 조회)"
                 oninput="handleProductSearch()"
+                onclick="clearProductSearch()"
                 autocomplete="off"
               />
               <div
@@ -633,6 +662,14 @@
           </div>
 
           <button class="btn-search" onclick="searchPeriodData()">조회</button>
+          <button
+            class="download-btn"
+            id="btnExcelDownload"
+            onclick="downloadExcel()"
+            style="display: none"
+          >
+            엑셀 다운로드
+          </button>
         </div>
       </div>
 
@@ -914,6 +951,19 @@
 
       async function searchPeriodData() {
         const input = document.getElementById("productSearch");
+        const searchValue = input.value.trim();
+
+        // 검색어가 입력되어 있는데 ID가 없으면 차단
+        if (
+          searchValue !== "" &&
+          (!input.dataset.productId || input.dataset.productId.trim() === "")
+        ) {
+          alert(
+            "제품을 자동완성 목록에서 선택해주세요.\n검색어를 입력 후 드롭다운에서 제품을 클릭해야 합니다.",
+          );
+          input.focus();
+          return;
+        }
 
         // data attribute에서 productId 읽기
         const selectedProductId =
@@ -1000,6 +1050,7 @@
         document.getElementById("errorMessage").style.display = "none";
         document.getElementById("noResults").style.display = "none";
         document.getElementById("resultsGrid").innerHTML = "";
+        document.getElementById("btnExcelDownload").style.display = "none";
       }
 
       function showError() {
@@ -1007,6 +1058,7 @@
         document.getElementById("errorMessage").style.display = "block";
         document.getElementById("noResults").style.display = "none";
         document.getElementById("resultsGrid").innerHTML = "";
+        document.getElementById("btnExcelDownload").style.display = "none";
       }
 
       function renderResults(periodsData) {
@@ -1021,6 +1073,10 @@
           const card = createPeriodCard(periodData, index);
           grid.appendChild(card);
         });
+
+        // 결과가 있을 때만 엑셀 버튼 표시
+        document.getElementById("btnExcelDownload").style.display =
+          periodsData.length > 0 ? "inline-block" : "none";
       }
 
       function createPeriodCard(periodData, index) {
@@ -1082,6 +1138,83 @@
     `,
           )
           .join("");
+      }
+
+      function clearProductSearch() {
+        const input = document.getElementById("productSearch");
+        // 값이 있을 때만 초기화 (빈 창 클릭 시는 그냥 포커스)
+        if (input.value.trim() !== "") {
+          input.value = "";
+          input.dataset.productId = "";
+          hideAutocomplete();
+          console.log("검색창 초기화");
+        }
+      }
+
+      async function downloadExcel() {
+        const input = document.getElementById("productSearch");
+        const selectedProductId =
+          input.dataset.productId && input.dataset.productId.trim() !== ""
+            ? parseInt(input.dataset.productId)
+            : null;
+
+        const periodBoxes = document.querySelectorAll(".period-box");
+        const periods = [];
+
+        for (let box of periodBoxes) {
+          const range = box.dataset.range;
+          if (!range) {
+            alert("모든 기간의 날짜를 선택해주세요.");
+            return;
+          }
+          const [startDate, endDate] = range.split(" ~ ");
+          if (!startDate || !endDate) return;
+          periods.push({ startDate, endDate });
+        }
+
+        try {
+          const requestBody = {
+            productId: selectedProductId,
+            periods: periods,
+          };
+
+          const response = await fetch(
+            "/api/statistics/period-comparison/download",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                [csrfHeader]: csrfToken,
+              },
+              body: JSON.stringify(requestBody),
+            },
+          );
+
+          if (!response.ok) throw new Error("엑셀 다운로드 실패");
+
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+
+          // 파일명 추출 (Content-Disposition 헤더에서)
+          const disposition = response.headers.get("Content-Disposition");
+          let fileName = "기간별비교.xlsx";
+          if (disposition) {
+            const match = disposition.match(/filename\*?=(?:UTF-8'')?([^;]+)/i);
+            if (match)
+              fileName = decodeURIComponent(match[1].replace(/"/g, ""));
+          }
+
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error("엑셀 다운로드 오류:", error);
+          alert("엑셀 다운로드에 실패했습니다.");
+        }
       }
 
       function toggleDetails(index) {

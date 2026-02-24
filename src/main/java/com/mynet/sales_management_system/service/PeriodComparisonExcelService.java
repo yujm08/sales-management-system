@@ -33,25 +33,24 @@ public class PeriodComparisonExcelService {
             Map<String, CellStyle> styles = createStyles(workbook);
 
             // 제목 행
-            int currentRow = 0;
-            currentRow = createTitle(sheet, styles, productName, currentRow);
+            int titleEndRow = createTitle(sheet, styles, productName, 0);
 
-            // 각 기간별로 시트에 추가
+            // 테이블은 3행(인덱스 2)부터 시작
+            int tableStartRow = 2;
+
+            int startColumn = 0; // 가로 시작 컬럼
+
             for (int i = 0; i < periodsData.size(); i++) {
+
                 PeriodComparisonDTO.PeriodData periodData = periodsData.get(i);
 
-                // 기간 제목
-                currentRow = createPeriodHeader(sheet, styles, periodData, currentRow, i + 1);
+                writePeriodBlock(sheet, styles, periodData, tableStartRow, startColumn, i + 1);
 
-                // 일별 상세 데이터
-                currentRow = writePeriodData(sheet, styles, periodData, currentRow);
-
-                // 기간 사이 여백
-                currentRow += 2;
+                startColumn += 5; // 4컬럼 + 1칸 공백
             }
 
             // 컬럼 너비 조정
-            adjustColumnWidths(sheet);
+            adjustColumnWidths(sheet, periodsData.size());
 
             workbook.write(outputStream);
             return outputStream.toByteArray();
@@ -162,14 +161,20 @@ public class PeriodComparisonExcelService {
         return startRow;
     }
 
-    /**
-     * 기간 헤더 작성
-     */
-    private int createPeriodHeader(Sheet sheet, Map<String, CellStyle> styles,
+    private void writePeriodBlock(
+            Sheet sheet,
+            Map<String, CellStyle> styles,
             PeriodComparisonDTO.PeriodData periodData,
-            int startRow, int periodNumber) {
-        // 기간 제목 행
-        Row headerRow = sheet.createRow(startRow++);
+            int startRow,
+            int startCol,
+            int periodNumber) {
+
+        int rowIdx = startRow;
+
+        // 기간 제목
+        Row headerRow = sheet.getRow(rowIdx);
+        if (headerRow == null)
+            headerRow = sheet.createRow(rowIdx);
         headerRow.setHeightInPoints(25);
 
         String periodTitle = String.format("기간 %d: %s ~ %s",
@@ -177,58 +182,65 @@ public class PeriodComparisonExcelService {
                 periodData.getStartDate().format(DATE_FORMATTER),
                 periodData.getEndDate().format(DATE_FORMATTER));
 
-        Cell headerCell = headerRow.createCell(0);
+        Cell headerCell = headerRow.createCell(startCol);
         headerCell.setCellValue(periodTitle);
         headerCell.setCellStyle(styles.get("periodHeader"));
 
-        sheet.addMergedRegion(new CellRangeAddress(startRow - 1, startRow - 1, 0, 3));
+        sheet.addMergedRegion(new CellRangeAddress(
+                rowIdx, rowIdx,
+                startCol, startCol + 3));
 
-        // 합계 행
-        Row summaryRow = sheet.createRow(startRow++);
-        summaryRow.setHeightInPoints(22);
+        rowIdx++;
 
-        createCell(summaryRow, 0, "합계", styles.get("summary"));
-        createCell(summaryRow, 1, "", styles.get("summary"));
-        createNumericCell(summaryRow, 2, periodData.getTotalQuantity(), styles.get("summary"));
-        createNumericCell(summaryRow, 3, periodData.getTotalAmount(), styles.get("summary"));
-
-        return startRow;
-    }
-
-    /**
-     * 기간별 데이터 작성
-     */
-    private int writePeriodData(Sheet sheet, Map<String, CellStyle> styles,
-            PeriodComparisonDTO.PeriodData periodData,
-            int startRow) {
         // 테이블 헤더
-        Row tableHeaderRow = sheet.createRow(startRow++);
-        tableHeaderRow.setHeightInPoints(20);
+        Row tableHeaderRow = sheet.getRow(rowIdx);
+        if (tableHeaderRow == null)
+            tableHeaderRow = sheet.createRow(rowIdx);
 
-        createCell(tableHeaderRow, 0, "날짜", styles.get("tableHeader"));
-        createCell(tableHeaderRow, 1, "요일", styles.get("tableHeader"));
-        createCell(tableHeaderRow, 2, "수량", styles.get("tableHeader"));
-        createCell(tableHeaderRow, 3, "금액", styles.get("tableHeader"));
+        createCell(tableHeaderRow, startCol, "날짜", styles.get("tableHeader"));
+        createCell(tableHeaderRow, startCol + 1, "요일", styles.get("tableHeader"));
+        createCell(tableHeaderRow, startCol + 2, "수량", styles.get("tableHeader"));
+        createCell(tableHeaderRow, startCol + 3, "금액", styles.get("tableHeader"));
+
+        rowIdx++;
 
         // 일별 데이터
         for (PeriodComparisonDTO.DailyData dailyData : periodData.getDailyDetails()) {
-            Row dataRow = sheet.createRow(startRow++);
 
-            // 날짜
-            createCell(dataRow, 0, dailyData.getDate().format(DATE_FORMATTER), styles.get("data"));
+            Row dataRow = sheet.getRow(rowIdx);
+            if (dataRow == null)
+                dataRow = sheet.createRow(rowIdx);
 
-            // 요일
-            String dayOfWeek = getDayOfWeekKorean(dailyData.getDate().getDayOfWeek().getValue());
-            createCell(dataRow, 1, dayOfWeek, styles.get("data"));
+            createCell(dataRow, startCol,
+                    dailyData.getDate().format(DATE_FORMATTER),
+                    styles.get("data"));
 
-            // 수량
-            createNumericCell(dataRow, 2, dailyData.getQuantity(), styles.get("number"));
+            createCell(dataRow, startCol + 1,
+                    getDayOfWeekKorean(dailyData.getDate().getDayOfWeek().getValue()),
+                    styles.get("data"));
 
-            // 금액
-            createNumericCell(dataRow, 3, dailyData.getAmount(), styles.get("number"));
+            createNumericCell(dataRow, startCol + 2,
+                    dailyData.getQuantity(),
+                    styles.get("number"));
+
+            createNumericCell(dataRow, startCol + 3,
+                    dailyData.getAmount(),
+                    styles.get("number"));
+
+            rowIdx++;
         }
 
-        return startRow;
+        // 합계 행
+        Row summaryRow = sheet.getRow(rowIdx);
+        if (summaryRow == null)
+            summaryRow = sheet.createRow(rowIdx);
+
+        createCell(summaryRow, startCol, "합계", styles.get("summary"));
+        createCell(summaryRow, startCol + 1, "", styles.get("summary"));
+        createNumericCell(summaryRow, startCol + 2, periodData.getTotalQuantity(), styles.get("summary"));
+        createNumericCell(summaryRow, startCol + 3, periodData.getTotalAmount(), styles.get("summary"));
+
+        rowIdx++;
     }
 
     /**
@@ -242,11 +254,19 @@ public class PeriodComparisonExcelService {
     /**
      * 컬럼 너비 조정
      */
-    private void adjustColumnWidths(Sheet sheet) {
-        sheet.setColumnWidth(0, 4000); // 날짜
-        sheet.setColumnWidth(1, 2500); // 요일
-        sheet.setColumnWidth(2, 3500); // 수량
-        sheet.setColumnWidth(3, 4500); // 금액
+    private void adjustColumnWidths(Sheet sheet, int periodCount) {
+
+        int blockWidth = 5;
+
+        for (int i = 0; i < periodCount; i++) {
+
+            int baseCol = i * blockWidth;
+
+            sheet.setColumnWidth(baseCol, 4000);
+            sheet.setColumnWidth(baseCol + 1, 2500);
+            sheet.setColumnWidth(baseCol + 2, 3500);
+            sheet.setColumnWidth(baseCol + 3, 4500);
+        }
     }
 
     private Cell createCell(Row row, int column, String value, CellStyle style) {

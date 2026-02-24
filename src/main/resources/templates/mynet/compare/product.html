@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -17,6 +17,34 @@
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         margin-bottom: 20px;
+      }
+
+      /* 다운로드 버튼 - 절대 위치로 우측에 고정 */
+      .download-btn-wrapper {
+        position: absolute;
+        right: 20px;
+      }
+
+      .download-btn {
+        background: #7a7a7a;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+        margin-left: 8px;
+      }
+
+      .download-btn:hover {
+        background: #666666;
+      }
+
+      .download-btn:active {
+        background: #4f4f4f;
       }
 
       /* 제품 목록 토글 */
@@ -166,7 +194,7 @@
         background: #007bff;
         color: white;
         border: none;
-        padding: 10px 30px;
+        padding: 8px 16px;
         border-radius: 4px;
         cursor: pointer;
         font-size: 14px;
@@ -457,6 +485,14 @@
             <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
           </div>
           <button class="btn-search" onclick="searchProductData()">조회</button>
+          <button
+            class="download-btn"
+            id="btnExcelDownload"
+            onclick="downloadExcel()"
+            style="display: none"
+          >
+            엑셀 다운로드
+          </button>
         </div>
       </div>
 
@@ -559,7 +595,7 @@
 
         Object.keys(grouped).forEach((cat) => {
           grouped[cat].sort((a, b) =>
-            a.productCode.localeCompare(b.productCode)
+            a.productCode.localeCompare(b.productCode),
           );
         });
 
@@ -624,9 +660,8 @@
 
       function selectProduct(product) {
         selectedProductId = product.id;
-        document.getElementById(
-          "productSearch"
-        ).value = `${product.productCode} - ${product.productName}`;
+        document.getElementById("productSearch").value =
+          `${product.productCode} - ${product.productName}`;
         hideAutocomplete();
 
         const list = document.getElementById("productList");
@@ -650,7 +685,7 @@
         const filtered = allProducts.filter(
           (p) =>
             p.productName.toLowerCase().includes(searchValue) ||
-            p.productCode.toLowerCase().includes(searchValue)
+            p.productCode.toLowerCase().includes(searchValue),
         );
 
         showAutocomplete(filtered);
@@ -680,7 +715,7 @@
           };
 
           item.innerHTML = `${highlightText(
-            product.productCode
+            product.productCode,
           )} - ${highlightText(product.productName)}`;
           item.onclick = () => selectProduct(product);
           dropdown.appendChild(item);
@@ -703,6 +738,7 @@
         document.getElementById("loading").style.display = "block";
         document.getElementById("noData").style.display = "none";
         document.getElementById("comparisonTable").style.display = "none";
+        document.getElementById("btnExcelDownload").style.display = "none";
 
         try {
           const url = selectedProductId
@@ -717,12 +753,15 @@
 
           document.getElementById("loading").style.display = "none";
           document.getElementById("comparisonTable").style.display = "table";
+          document.getElementById("btnExcelDownload").style.display =
+            "inline-block";
         } catch (error) {
           console.error("데이터 조회 오류:", error);
           document.getElementById("loading").style.display = "none";
           document.getElementById("noData").textContent =
             "데이터를 불러오는데 실패했습니다.";
           document.getElementById("noData").style.display = "block";
+          document.getElementById("btnExcelDownload").style.display = "none";
         }
       }
 
@@ -765,7 +804,7 @@
           totalAmtCell.className = "total-amt-color amount-cell";
           totalAmtCell.style.fontWeight = "700";
           totalAmtCell.textContent = formatDisplayCurrency(
-            yearData.yearTotal.amount
+            yearData.yearTotal.amount,
           );
           row.appendChild(totalAmtCell);
 
@@ -791,10 +830,10 @@
         const totalGrowthCell = document.createElement("td");
         totalGrowthCell.colSpan = 2;
         totalGrowthCell.className = getGrowthClass(
-          data.growthRates.totalGrowthRate
+          data.growthRates.totalGrowthRate,
         );
         totalGrowthCell.textContent = formatGrowthRate(
-          data.growthRates.totalGrowthRate
+          data.growthRates.totalGrowthRate,
         );
         growthRow.appendChild(totalGrowthCell);
 
@@ -827,6 +866,39 @@
         if (rate > 0) return "growth-positive";
         if (rate < 0) return "growth-negative";
         return "growth-zero";
+      }
+
+      async function downloadExcel() {
+        try {
+          const url = selectedProductId
+            ? `/api/statistics/product-comparison/download?productId=${selectedProductId}`
+            : "/api/statistics/product-comparison/download";
+
+          const response = await fetch(url);
+          if (!response.ok) throw new Error("엑셀 다운로드 실패");
+
+          const blob = await response.blob();
+          const urlObj = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = urlObj;
+
+          const disposition = response.headers.get("Content-Disposition");
+          let fileName = "제품별비교.xlsx";
+          if (disposition) {
+            const match = disposition.match(/filename\*?=(?:UTF-8'')?([^;]+)/i);
+            if (match)
+              fileName = decodeURIComponent(match[1].replace(/"/g, ""));
+          }
+
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(urlObj);
+        } catch (error) {
+          console.error("엑셀 다운로드 오류:", error);
+          alert("엑셀 다운로드에 실패했습니다.");
+        }
       }
     </script>
   </body>
