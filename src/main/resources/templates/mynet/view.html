@@ -516,6 +516,10 @@
       .quantity-input:not([readonly]) {
         cursor: text;
       }
+
+      .editable-cell.no-click {
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
@@ -747,7 +751,7 @@
                     <!-- 일별 수량 (수정 가능) -->
                     <td
                       class="data-cell green-1 tooltip"
-                      th:classappend="${companyFilter != '' and !isCanon} ? ' editable-cell' : ''"
+                      th:classappend="${!isCanon} ? (' editable-cell' + (${companyFilter == null or companyFilter == '' or companyFilter == 'all'} ? ' no-click' : '')) : ''"
                       th:data-tooltip="${item.dailySummary?.lastModifiedAt != null ?
                         ('수정: ' + #temporals.format(item.dailySummary.lastModifiedAt, 'yyyy-MM-dd HH:mm') +
                         ' by ' + item.dailySummary.modifiedBy) : '수정 기록 없음'}"
@@ -844,10 +848,10 @@
                       </div>
                     </td>
 
-                    <!-- 목표 수량 (수정 가능) -->
+                    <!-- 전체 선택(companyFilter가 비어있거나 all)일 때만 편집 가능 -->
                     <td
                       class="data-cell green-1 tooltip"
-                      th:classappend="${!isCanon} ? ' editable-cell' : ''"
+                      th:classappend="${!isCanon} ? (' editable-cell' + (${companyFilter != null and companyFilter != '' and companyFilter != 'all'} ? ' no-click' : '')) : ''"
                       th:data-tooltip="'목표 수량'"
                     >
                       <input
@@ -1097,28 +1101,32 @@
 
       // 노란색 셀 직접 클릭 편집
       function enableDirectCellEdit() {
+        const isGlobalMode =
+          !currentCompanyFilter ||
+          currentCompanyFilter === "" ||
+          currentCompanyFilter === "all";
         const editableCells = document.querySelectorAll(".editable-cell");
 
         editableCells.forEach((cell) => {
           const input = cell.querySelector(".quantity-input");
           if (!input) return;
-
-          // 이미 이벤트 리스너 있으면 스킵
           if (cell.dataset.clickEnabled === "true") return;
           cell.dataset.clickEnabled = "true";
 
+          const type = input.dataset.type;
+          // 전체 선택: 목표만 / 회사 선택: 수량만 클릭 가능
+          const canEdit =
+            (isGlobalMode && type === "target") ||
+            (!isGlobalMode && type === "quantity");
+          if (!canEdit) return; // no-click 셀은 이벤트 리스너 등록 안 함
+
           cell.addEventListener("click", function () {
-            // 이미 수정 모드면 그냥 포커스만
             if (isEditMode) {
               input.focus();
               input.select();
               return;
             }
-
-            // 수정 모드 진입
             toggleEdit();
-
-            // 클릭한 input에 포커스
             setTimeout(() => {
               input.focus();
               input.select();
@@ -1137,7 +1145,18 @@
           editBtn.textContent = "저장";
           editBtn.classList.add("active");
 
+          const isGlobalMode =
+            !currentCompanyFilter ||
+            currentCompanyFilter === "" ||
+            currentCompanyFilter === "all";
+
           inputs.forEach((input) => {
+            const type = input.dataset.type;
+            const canEdit =
+              (isGlobalMode && type === "target") ||
+              (!isGlobalMode && type === "quantity");
+            if (!canEdit) return;
+
             input.readOnly = false;
             input.classList.add("editable");
           });
@@ -1185,7 +1204,6 @@
 
         const promises = [];
 
-        // 수량 저장 - JSON 구조
         if (Object.keys(quantities).length > 0) {
           if (
             !currentCompanyFilter ||

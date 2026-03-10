@@ -271,19 +271,17 @@ public class MynetController {
                 itemResult.put("productId", productId);
 
                 try {
-                    if (isDistributeMode) {
-                        // 전체 선택 → 6개 회사에 균등 분배
-                        targetService.distributeTarget(productId, date.getYear(),
-                                date.getMonthValue(), targetQuantity,
-                                userDetails.getUsername());
-                        log.info("제품 {} 목표 분배 성공: 총수량={}", productId, targetQuantity);
-                    } else {
-                        // 특정 회사 선택 → 해당 회사에만 저장 (기존 동작 유지)
-                        targetService.saveTarget(companyId, productId, date.getYear(),
-                                date.getMonthValue(), targetQuantity,
-                                userDetails.getUsername());
-                        log.info("제품 {} 목표 수정 성공: {}", productId, targetQuantity);
+                    if (!isDistributeMode) {
+                        response.put("success", false);
+                        response.put("message", "목표수량은 전체 선택에서만 입력 가능합니다");
+                        return response;
                     }
+
+                    targetService.distributeTarget(productId, date.getYear(),
+                            date.getMonthValue(), targetQuantity,
+                            userDetails.getUsername());
+                    log.info("제품 {} 목표 분배 성공: 총수량={}", productId, targetQuantity);
+
                     itemResult.put("success", true);
                     successCount++;
                 } catch (Exception e) {
