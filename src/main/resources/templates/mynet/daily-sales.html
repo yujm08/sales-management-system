@@ -154,6 +154,7 @@
         overflow-x: auto;
         width: 100%;
         padding: 0;
+        max-height: 70vh;
       }
 
       /* 테이블 스타일 */
@@ -343,12 +344,13 @@
       .stats-table th.category-cell {
         position: sticky;
         left: 0;
-        z-index: 10;
         background: #24595e !important;
         color: white !important;
         width: 70px;
         min-width: 70px;
         max-width: 70px;
+        top: 0;
+        z-index: 30;
       }
 
       .stats-table td.category-cell {
@@ -365,12 +367,13 @@
       .stats-table th.product-info-cell {
         position: sticky;
         left: 70px;
-        z-index: 9;
         background: #24595e !important;
         color: white !important;
         width: 90px;
         min-width: 90px;
         max-width: 90px;
+        top: 0;
+        z-index: 29;
       }
 
       .stats-table td.product-info-cell {
@@ -387,12 +390,13 @@
       .stats-table th.supply-price-cell {
         position: sticky;
         left: 160px; /* 70 + 90 */
-        z-index: 8;
         background: #24595e !important;
         color: white !important;
         width: 70px;
         min-width: 70px;
         max-width: 70px;
+        top: 0;
+        z-index: 28;
       }
 
       .stats-table td.supply-price-cell {
@@ -438,19 +442,29 @@
         position: relative;
       }
 
-      .top-scrollbar-wrapper {
-        position: absolute;
-        left: 0;
-        right: 0;
-        overflow-x: auto;
-        overflow-y: hidden;
-        height: 14px;
+      /* 일반 헤더 th (1행) - 상단만 고정, 코너보다 낮은 z-index */
+      .stats-table
+        thead
+        tr:first-child
+        th:not(.category-cell):not(.product-info-cell):not(.supply-price-cell) {
+        position: sticky;
+        top: 0;
         z-index: 20;
-        /* top은 JS에서 thead 높이 계산 후 설정 */
       }
 
-      .top-scrollbar-inner {
-        height: 1px;
+      /* sub-header th (2행) - top 값은 JS에서 동적 설정 */
+      .stats-table thead tr.sub-header th {
+        position: sticky;
+        z-index: 20;
+      }
+
+      .stats-table thead {
+        background: #ffffff;
+        border-bottom: 2px solid #ffffff;
+      }
+
+      .stats-table thead tr.sub-header {
+        background: #dee2e6;
       }
     </style>
   </head>
@@ -543,11 +557,6 @@
 
         <!-- 통계 테이블 -->
         <div class="table-wrapper">
-          <!-- 상단 미러 스크롤바 (thead 아래에 absolute 오버레이) -->
-          <div class="top-scrollbar-wrapper" id="top-scrollbar">
-            <div class="top-scrollbar-inner" id="top-scrollbar-inner"></div>
-          </div>
-
           <div class="table-container" id="table-container">
             <table class="stats-table">
               <thead>
@@ -1038,34 +1047,24 @@
         calculateCategorySubtotals();
         calculateTotalRow();
 
-        // 상단 스크롤바 동기화
-        const topScrollbar = document.getElementById("top-scrollbar");
+        // sub-header top 설정
         const tableContainer = document.getElementById("table-container");
-        const topScrollbarInner = document.getElementById(
-          "top-scrollbar-inner",
-        );
-
-        if (topScrollbar && tableContainer && topScrollbarInner) {
-          const syncAll = () => {
-            // inner 너비 = 테이블 실제 너비
-            topScrollbarInner.style.width = tableContainer.scrollWidth + "px";
-
-            // thead 높이 계산해서 스크롤바 위치 설정
-            const thead = tableContainer.querySelector("thead");
-            if (thead) {
-              topScrollbar.style.top = thead.offsetHeight + 1 + "px";
-            }
-          };
-          syncAll();
-          window.addEventListener("resize", syncAll);
-
-          topScrollbar.addEventListener("scroll", () => {
-            tableContainer.scrollLeft = topScrollbar.scrollLeft;
-          });
-          tableContainer.addEventListener("scroll", () => {
-            topScrollbar.scrollLeft = tableContainer.scrollLeft;
-          });
-        }
+        const setSubHeaderTop = () => {
+          const firstHeaderRow = tableContainer.querySelector(
+            "thead tr:first-child",
+          );
+          const subHeaderRow = tableContainer.querySelector(
+            "thead tr.sub-header",
+          );
+          if (firstHeaderRow && subHeaderRow) {
+            const firstRowHeight = firstHeaderRow.offsetHeight;
+            subHeaderRow.querySelectorAll("th").forEach((th) => {
+              th.style.top = firstRowHeight + "px";
+            });
+          }
+        };
+        setSubHeaderTop();
+        window.addEventListener("resize", setSubHeaderTop);
       });
 
       /**

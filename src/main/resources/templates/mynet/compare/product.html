@@ -480,6 +480,7 @@
               id="productSearch"
               placeholder="제품을 검색하세요 (미선택 시 전체 제품 합계)"
               oninput="handleProductSearch()"
+              onclick="clearProductSearch()"
               autocomplete="off"
             />
             <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
@@ -735,6 +736,19 @@
       });
 
       async function searchProductData() {
+        const searchValue = document
+          .getElementById("productSearch")
+          .value.trim();
+
+        // 검색어가 입력되어 있는데 제품이 선택되지 않은 경우 차단
+        if (searchValue !== "" && selectedProductId === null) {
+          alert(
+            "제품을 목록에서 선택해주세요.\n검색어를 입력 후 드롭다운에서 제품을 클릭해야 합니다.",
+          );
+          document.getElementById("productSearch").focus();
+          return;
+        }
+
         document.getElementById("loading").style.display = "block";
         document.getElementById("noData").style.display = "none";
         document.getElementById("comparisonTable").style.display = "none";
@@ -866,6 +880,15 @@
         if (rate > 0) return "growth-positive";
         if (rate < 0) return "growth-negative";
         return "growth-zero";
+      }
+
+      function clearProductSearch() {
+        const input = document.getElementById("productSearch");
+        if (input.value.trim() !== "") {
+          input.value = "";
+          selectedProductId = null;
+          hideAutocomplete();
+        }
       }
 
       async function downloadExcel() {
