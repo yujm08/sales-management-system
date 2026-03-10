@@ -240,7 +240,7 @@ public class MynetController {
     @ResponseBody
     public Map<String, Object> updateTarget(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestBody MynetTargetUpdateRequest request) { // ✅ 새 DTO 사용
+            @RequestBody MynetTargetUpdateRequest request) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -248,11 +248,8 @@ public class MynetController {
             log.info("===== 목표 수정 요청 =====");
             log.info("요청 데이터: {}", request);
 
-            if (request.getCompanyId() == null || request.getCompanyId().isEmpty()) {
-                response.put("success", false);
-                response.put("message", "회사 ID가 필요합니다");
-                return response;
-            }
+            // companyId가 비어있으면 "전체 선택 → 분배 모드"
+            boolean isDistributeMode = (request.getCompanyId() == null || request.getCompanyId().isEmpty());
 
             if (request.getTargetDate() == null || request.getTargetDate().isEmpty()) {
                 response.put("success", false);
@@ -260,7 +257,7 @@ public class MynetController {
                 return response;
             }
 
-            Long companyId = Long.parseLong(request.getCompanyId());
+            Long companyId = isDistributeMode ? null : Long.parseLong(request.getCompanyId());
             LocalDate date = LocalDate.parse(request.getTargetDate());
 
             int successCount = 0;
@@ -274,13 +271,21 @@ public class MynetController {
                 itemResult.put("productId", productId);
 
                 try {
-                    targetService.saveTarget(companyId, productId, date.getYear(),
-                            date.getMonthValue(), targetQuantity,
-                            userDetails.getUsername());
+                    if (isDistributeMode) {
+                        // 전체 선택 → 6개 회사에 균등 분배
+                        targetService.distributeTarget(productId, date.getYear(),
+                                date.getMonthValue(), targetQuantity,
+                                userDetails.getUsername());
+                        log.info("제품 {} 목표 분배 성공: 총수량={}", productId, targetQuantity);
+                    } else {
+                        // 특정 회사 선택 → 해당 회사에만 저장 (기존 동작 유지)
+                        targetService.saveTarget(companyId, productId, date.getYear(),
+                                date.getMonthValue(), targetQuantity,
+                                userDetails.getUsername());
+                        log.info("제품 {} 목표 수정 성공: {}", productId, targetQuantity);
+                    }
                     itemResult.put("success", true);
                     successCount++;
-
-                    log.info("제품 {} 목표 수정 성공: {}", productId, targetQuantity);
                 } catch (Exception e) {
                     itemResult.put("success", false);
                     itemResult.put("message", e.getMessage());
@@ -638,7 +643,7 @@ public class MynetController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
+
     /**
      * 월별 비교 엑셀 다운로드
      */

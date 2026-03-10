@@ -847,7 +847,7 @@
                     <!-- 목표 수량 (수정 가능) -->
                     <td
                       class="data-cell green-1 tooltip"
-                      th:classappend="${companyFilter != '' and !isCanon} ? ' editable-cell' : ''"
+                      th:classappend="${!isCanon} ? ' editable-cell' : ''"
                       th:data-tooltip="'목표 수량'"
                     >
                       <input
@@ -1049,10 +1049,8 @@
         initializeInputTracking();
         updateButtonStates();
 
-        // 노란색 셀 직접 편집 활성화
-        if (currentCompanyFilter && currentCompanyFilter !== "") {
-          enableDirectCellEdit();
-        }
+        // 전체 선택시에도 목표 셀은 클릭 편집 가능해야 함
+        enableDirectCellEdit();
       });
 
       function initDatePicker() {
@@ -1163,16 +1161,6 @@
         console.log("currentDate:", currentDate);
         console.log("currentValues:", currentValues);
 
-        // 필수 체크
-        if (
-          !currentCompanyFilter ||
-          currentCompanyFilter === "" ||
-          currentCompanyFilter === "all"
-        ) {
-          showAlert("회사를 선택해주세요", "error");
-          return;
-        }
-
         // quantity와 target 데이터를 Map 형태로 변환
         const quantities = {};
         const targetQuantities = {};
@@ -1199,6 +1187,15 @@
 
         // 수량 저장 - JSON 구조
         if (Object.keys(quantities).length > 0) {
+          if (
+            !currentCompanyFilter ||
+            currentCompanyFilter === "" ||
+            currentCompanyFilter === "all"
+          ) {
+            showAlert("수량 저장은 회사를 선택해주세요", "error");
+            return;
+          }
+
           const requestData = {
             companyId: currentCompanyFilter,
             salesDate: formatDate(currentDate),
@@ -1315,12 +1312,8 @@
       function updateButtonStates() {
         const editBtn = document.getElementById("edit-btn");
         if (!editBtn) return;
-
-        if (!currentCompanyFilter) {
-          editBtn.style.display = "none";
-        } else {
-          editBtn.style.display = "inline-block";
-        }
+        // 전체 선택 시에도 목표 수정 버튼 표시
+        editBtn.style.display = "inline-block";
       }
 
       function changeDate(days) {

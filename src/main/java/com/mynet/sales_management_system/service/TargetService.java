@@ -12,8 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 목표 관리 서비스
@@ -141,5 +143,43 @@ public class TargetService {
             String targetType = (companyId == null) ? "전체" : "개별회사";
             log.info("목표 삭제: 대상={}, 제품ID={}, 기간={}-{}", targetType, productId, year, month);
         }
+    }
+
+    /**
+     * 전체 목표를 6개 하위 회사에 균등 분배
+     * 나머지는 원이스토리(쿠팡)에 추가
+     */
+    @Transactional
+    public void distributeTarget(Long productId, int year, int month, int totalQuantity, String createdBy) {
+
+        // 마이넷(is_mynet=true), 마이넷(GX판매), 캐논 제외 → 6개 회사
+        List<Company> subsidiaries = companyRepository.findByIsMynetFalse()
+                .stream()
+                .filter(c -> !"캐논".equals(c.getName()) && !c.getName().contains("마이넷"))
+                .sorted(Comparator.comparing(Company::getId))
+                .collect(Collectors.toList());
+
+        int count = subsidiaries.size();
+        if (count == 0) {
+            log.warn("분배할 하위 회사가 없습니다.");
+            return;
+        }
+
+        int base = totalQuantity / count;
+        int remainder = totalQuantity % count;
+
+        // 나머지 수량을 받을 회사: 원이스토리(쿠팡)
+        Company remainderCompany = subsidiaries.stream()
+                .filter(c -> c.getName().contains("원이스토리") || c.getName().contains("쿠팡"))
+                .findFirst()
+                .orElse(subsidiaries.get(subsidiaries.size() - 1)); // 없으면 마지막 회사에
+
+        for (Company company : subsidiaries) {
+            int qty = base + (company.getId().equals(remainderCompany.getId()) ? remainder : 0);
+            saveTarget(company.getId(), productId, year, month, qty, createdBy);
+        }
+
+        log.info("목표 분배 완료: 제품ID={}, 기간={}-{}, 총수량={}, 회사수={}, 기본배분={}, 나머지={}",
+                productId, year, month, totalQuantity, count, base, remainder);
     }
 }

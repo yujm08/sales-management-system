@@ -33,7 +33,7 @@ public class ViewStatisticsService {
         public List<ViewStatisticsDTO> getViewStatistics(String companyFilter, LocalDate targetDate) {
                 List<Product> activeProducts = productRepository.findByIsActiveTrueOrderByCategoryDescProductNameAsc();
 
-                if ("all".equals(companyFilter)) {
+                if ("all".equals(companyFilter) || companyFilter == null || companyFilter.isEmpty()) {
                         return generateAllCompanyStatistics(activeProducts, targetDate);
                 } else {
                         Long companyId = Long.parseLong(companyFilter);
