@@ -198,10 +198,20 @@ public class YearlyComparisonExcelService {
         sheet.addMergedRegion(new CellRangeAddress(startRow - 1, startRow - 1, colIndex, colIndex + 2));
         colIndex += 3;
 
-        // 매출 (3개 병합)
-        createCell(headerRow1, colIndex, "매출", styles.get("header"));
-        sheet.addMergedRegion(new CellRangeAddress(startRow - 1, startRow - 1, colIndex, colIndex + 2));
-        colIndex += 3;
+        // 전전년 (2개 병합: 수량+금액)
+        createCell(headerRow1, colIndex, String.valueOf(year1), styles.get("header"));
+        sheet.addMergedRegion(new CellRangeAddress(startRow - 1, startRow - 1, colIndex, colIndex + 1));
+        colIndex += 2;
+
+        // 전년 (2개 병합)
+        createCell(headerRow1, colIndex, String.valueOf(year2), styles.get("header"));
+        sheet.addMergedRegion(new CellRangeAddress(startRow - 1, startRow - 1, colIndex, colIndex + 1));
+        colIndex += 2;
+
+        // 당년 (2개 병합)
+        createCell(headerRow1, colIndex, String.valueOf(year3), styles.get("header"));
+        sheet.addMergedRegion(new CellRangeAddress(startRow - 1, startRow - 1, colIndex, colIndex + 1));
+        colIndex += 2;
 
         // 증감률
         createCell(headerRow1, colIndex, "증감률", styles.get("header"));
@@ -218,10 +228,13 @@ public class YearlyComparisonExcelService {
         createCell(headerRow2, colIndex++, "제품코드", styles.get("subHeader"));
         createCell(headerRow2, colIndex++, "제품명", styles.get("subHeader"));
 
-        // 년도
-        createCell(headerRow2, colIndex++, String.valueOf(year1), styles.get("subHeader"));
-        createCell(headerRow2, colIndex++, String.valueOf(year2), styles.get("subHeader"));
-        createCell(headerRow2, colIndex++, String.valueOf(year3), styles.get("subHeader"));
+        // 년도별 수량+금액
+        createCell(headerRow2, colIndex++, "수량", styles.get("subHeader"));
+        createCell(headerRow2, colIndex++, "금액", styles.get("subHeader"));
+        createCell(headerRow2, colIndex++, "수량", styles.get("subHeader"));
+        createCell(headerRow2, colIndex++, "금액", styles.get("subHeader"));
+        createCell(headerRow2, colIndex++, "수량", styles.get("subHeader"));
+        createCell(headerRow2, colIndex++, "금액", styles.get("subHeader"));
 
         return startRow;
     }
@@ -259,9 +272,14 @@ public class YearlyComparisonExcelService {
                 // 제품명
                 createCell(dataRow, colIndex++, product.getProductName(), styles.get("product"));
 
-                // 년도별 금액
+                // 전전년 수량 + 금액
+                createNumericCell(dataRow, colIndex++, product.getYear1Quantity(), styles.get(colorStyleName));
                 createNumericCell(dataRow, colIndex++, product.getYear1Amount(), styles.get(colorStyleName));
+                // 전년 수량 + 금액
+                createNumericCell(dataRow, colIndex++, product.getYear2Quantity(), styles.get(colorStyleName));
                 createNumericCell(dataRow, colIndex++, product.getYear2Amount(), styles.get(colorStyleName));
+                // 당년 수량 + 금액
+                createNumericCell(dataRow, colIndex++, product.getYear3Quantity(), styles.get(colorStyleName));
                 createNumericCell(dataRow, colIndex++, product.getYear3Amount(), styles.get(colorStyleName));
 
                 // 증감률
@@ -291,9 +309,14 @@ public class YearlyComparisonExcelService {
         sheet.addMergedRegion(new CellRangeAddress(currentRow - 1, currentRow - 1, colIndex, colIndex + 2));
         colIndex += 3;
 
-        // 년도별 합계
+        // 전전년 수량 + 금액
+        createNumericCell(totalRow, colIndex++, grandTotal.getYear1Quantity(), styles.get("grandTotal"));
         createNumericCell(totalRow, colIndex++, grandTotal.getYear1Amount(), styles.get("grandTotal"));
+        // 전년 수량 + 금액
+        createNumericCell(totalRow, colIndex++, grandTotal.getYear2Quantity(), styles.get("grandTotal"));
         createNumericCell(totalRow, colIndex++, grandTotal.getYear2Amount(), styles.get("grandTotal"));
+        // 당년 수량 + 금액
+        createNumericCell(totalRow, colIndex++, grandTotal.getYear3Quantity(), styles.get("grandTotal"));
         createNumericCell(totalRow, colIndex++, grandTotal.getYear3Amount(), styles.get("grandTotal"));
 
         // 증감률
@@ -333,10 +356,22 @@ public class YearlyComparisonExcelService {
         sheet.setColumnWidth(0, 3000); // 분류
         sheet.setColumnWidth(1, 3000); // 제품코드
         sheet.setColumnWidth(2, 6000); // 제품명
-        sheet.setColumnWidth(3, 4000); // year1
-        sheet.setColumnWidth(4, 4000); // year2
-        sheet.setColumnWidth(5, 4000); // year3
-        sheet.setColumnWidth(6, 3000); // 증감률
+        sheet.setColumnWidth(3, 3000); // year1 수량
+        sheet.setColumnWidth(4, 5000); // year1 금액
+        sheet.setColumnWidth(5, 3000); // year2 수량
+        sheet.setColumnWidth(6, 5000); // year2 금액
+        sheet.setColumnWidth(7, 3000); // year3 수량
+        sheet.setColumnWidth(8, 5000); // year3 금액
+        sheet.setColumnWidth(9, 3000); // 증감률sheet.setColumnWidth(0, 3000); // 분류
+        sheet.setColumnWidth(1, 3000); // 제품코드
+        sheet.setColumnWidth(2, 6000); // 제품명
+        sheet.setColumnWidth(3, 3000); // year1 수량
+        sheet.setColumnWidth(4, 5000); // year1 금액
+        sheet.setColumnWidth(5, 3000); // year2 수량
+        sheet.setColumnWidth(6, 5000); // year2 금액
+        sheet.setColumnWidth(7, 3000); // year3 수량
+        sheet.setColumnWidth(8, 5000); // year3 금액
+        sheet.setColumnWidth(9, 3000); // 증감률
     }
 
     private Cell createCell(Row row, int column, String value, CellStyle style) {

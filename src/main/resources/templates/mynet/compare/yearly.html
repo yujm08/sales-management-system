@@ -301,16 +301,21 @@
             <thead>
               <tr>
                 <th colspan="3">제품</th>
-                <th colspan="3">매출</th>
+                <th colspan="2" id="year1Header"></th>
+                <th colspan="2" id="year2Header"></th>
+                <th colspan="2" id="year3Header"></th>
                 <th rowspan="2">증감률</th>
               </tr>
               <tr>
                 <th>제품분류</th>
                 <th>제품코드</th>
                 <th>제품명</th>
-                <th id="year1Header"></th>
-                <th id="year2Header"></th>
-                <th id="year3Header"></th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
+                <th>수량</th>
+                <th>금액</th>
               </tr>
             </thead>
             <tbody id="dataBody"></tbody>
@@ -384,16 +389,33 @@
             nameCell.textContent = product.productName;
             row.appendChild(nameCell);
 
-            // 년도별 금액
+            // 전전년 수량 + 금액
+            const year1QtyCell = document.createElement("td");
+            year1QtyCell.className = `${colorClass} amount-cell`;
+            year1QtyCell.textContent = formatQuantity(product.year1Quantity);
+            row.appendChild(year1QtyCell);
+
             const year1Cell = document.createElement("td");
             year1Cell.className = `${colorClass} amount-cell`;
             year1Cell.textContent = formatCurrency(product.year1Amount);
             row.appendChild(year1Cell);
 
+            // 전년 수량 + 금액
+            const year2QtyCell = document.createElement("td");
+            year2QtyCell.className = `${colorClass} amount-cell`;
+            year2QtyCell.textContent = formatQuantity(product.year2Quantity);
+            row.appendChild(year2QtyCell);
+
             const year2Cell = document.createElement("td");
             year2Cell.className = `${colorClass} amount-cell`;
             year2Cell.textContent = formatCurrency(product.year2Amount);
             row.appendChild(year2Cell);
+
+            // 당년 수량 + 금액
+            const year3QtyCell = document.createElement("td");
+            year3QtyCell.className = `${colorClass} amount-cell`;
+            year3QtyCell.textContent = formatQuantity(product.year3Quantity);
+            row.appendChild(year3QtyCell);
 
             const year3Cell = document.createElement("td");
             year3Cell.className = `${colorClass} amount-cell`;
@@ -416,24 +438,17 @@
         const grandTotalRow = document.createElement("tr");
         grandTotalRow.className = "grand-total-row";
         grandTotalRow.innerHTML = `
-                <td colspan="3" style="text-align: center;"><strong>합계</strong></td>
-                <td class="amount-cell"><strong>${formatCurrency(
-                  data.grandTotal.year1Amount,
-                )}</strong></td>
-                <td class="amount-cell"><strong>${formatCurrency(
-                  data.grandTotal.year2Amount,
-                )}</strong></td>
-                <td class="amount-cell"><strong>${formatCurrency(
-                  data.grandTotal.year3Amount,
-                )}</strong></td>
-                <td class="growth-rate ${getGrowthClass(
-                  data.grandTotal.growthRate,
-                )}">
-                    <strong>${formatGrowthRate(
-                      data.grandTotal.growthRate,
-                    )}</strong>
-                </td>
-            `;
+    <td colspan="3" style="text-align: center;"><strong>합계</strong></td>
+    <td class="amount-cell"><strong>${formatQuantity(data.grandTotal.year1Quantity)}</strong></td>
+    <td class="amount-cell"><strong>${formatCurrency(data.grandTotal.year1Amount)}</strong></td>
+    <td class="amount-cell"><strong>${formatQuantity(data.grandTotal.year2Quantity)}</strong></td>
+    <td class="amount-cell"><strong>${formatCurrency(data.grandTotal.year2Amount)}</strong></td>
+    <td class="amount-cell"><strong>${formatQuantity(data.grandTotal.year3Quantity)}</strong></td>
+    <td class="amount-cell"><strong>${formatCurrency(data.grandTotal.year3Amount)}</strong></td>
+    <td class="growth-rate ${getGrowthClass(data.grandTotal.growthRate)}">
+        <strong>${formatGrowthRate(data.grandTotal.growthRate)}</strong>
+    </td>
+`;
         tbody.appendChild(grandTotalRow);
       }
 
@@ -463,6 +478,13 @@
 
       function downloadExcel() {
         window.location.href = "/mynet/compare/yearly/download";
+      }
+
+      function formatQuantity(value) {
+        if (value === null || value === undefined || value === 0) {
+          return "-";
+        }
+        return value.toLocaleString("ko-KR");
       }
 
       loadData();

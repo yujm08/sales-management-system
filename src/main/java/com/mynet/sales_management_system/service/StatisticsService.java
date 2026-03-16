@@ -165,6 +165,7 @@ public class StatisticsService {
                 BigDecimal grandYear1 = BigDecimal.ZERO;
                 BigDecimal grandYear2 = BigDecimal.ZERO;
                 BigDecimal grandYear3 = BigDecimal.ZERO;
+                int grandQty1 = 0, grandQty2 = 0, grandQty3 = 0;
 
                 // 각 카테고리별로 처리
                 for (Map.Entry<String, List<Product>> entry : productsByCategory.entrySet()) {
@@ -176,6 +177,7 @@ public class StatisticsService {
                         BigDecimal catYear1 = BigDecimal.ZERO;
                         BigDecimal catYear2 = BigDecimal.ZERO;
                         BigDecimal catYear3 = BigDecimal.ZERO;
+                        int catQty1 = 0, catQty2 = 0, catQty3 = 0;
 
                         for (Product product : categoryProducts) {
                                 // 각 년도별 연간 합계 계산
@@ -183,8 +185,9 @@ public class StatisticsService {
                                 YearlyProductTotal year2 = calculateProductYearlyTotal(product.getId(), startYear + 1);
                                 YearlyProductTotal year3 = calculateProductYearlyTotal(product.getId(), endYear);
 
-                                BigDecimal growthRate = calculateGrowthRate(year2.getTotalAmount(),
-                                                year3.getTotalAmount());
+                                BigDecimal growthRate = calculateGrowthRate(
+                                                BigDecimal.valueOf(year2.getTotalQuantity()),
+                                                BigDecimal.valueOf(year3.getTotalQuantity()));
 
                                 productDataList.add(YearlyComparisonDTO.ProductYearlyData.builder()
                                                 .productId(product.getId())
@@ -203,6 +206,10 @@ public class StatisticsService {
                                 catYear1 = catYear1.add(year1.getTotalAmount());
                                 catYear2 = catYear2.add(year2.getTotalAmount());
                                 catYear3 = catYear3.add(year3.getTotalAmount());
+
+                                catQty1 += year1.getTotalQuantity();
+                                catQty2 += year2.getTotalQuantity();
+                                catQty3 += year3.getTotalQuantity();
                         }
 
                         // 카테고리별 합계
@@ -210,7 +217,11 @@ public class StatisticsService {
                                         .year1Amount(catYear1)
                                         .year2Amount(catYear2)
                                         .year3Amount(catYear3)
-                                        .growthRate(calculateGrowthRate(catYear2, catYear3))
+                                        .year1Quantity(catQty1)
+                                        .year2Quantity(catQty2)
+                                        .year3Quantity(catQty3)
+                                        .growthRate(calculateGrowthRate(
+                                                        BigDecimal.valueOf(catQty2), BigDecimal.valueOf(catQty3)))
                                         .build();
 
                         categoryDataList.add(YearlyComparisonDTO.CategoryData.builder()
@@ -222,6 +233,9 @@ public class StatisticsService {
                         grandYear1 = grandYear1.add(catYear1);
                         grandYear2 = grandYear2.add(catYear2);
                         grandYear3 = grandYear3.add(catYear3);
+                        grandQty1 += catQty1;
+                        grandQty2 += catQty2;
+                        grandQty3 += catQty3;
                 }
 
                 // 전체 합계
@@ -229,7 +243,11 @@ public class StatisticsService {
                                 .year1Amount(grandYear1)
                                 .year2Amount(grandYear2)
                                 .year3Amount(grandYear3)
-                                .growthRate(calculateGrowthRate(grandYear2, grandYear3))
+                                .year1Quantity(grandQty1)
+                                .year2Quantity(grandQty2)
+                                .year3Quantity(grandQty3)
+                                .growthRate(calculateGrowthRate(
+                                                BigDecimal.valueOf(grandQty2), BigDecimal.valueOf(grandQty3)))
                                 .build();
 
                 return YearlyComparisonResponse.builder()
