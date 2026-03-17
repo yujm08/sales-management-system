@@ -52,7 +52,7 @@ public class StatisticsController {
     /**
      * 마이넷 측 비교탭 - 년도별 데이터 조회
      */
-    @PreAuthorize("hasAnyRole('MYNET')")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @GetMapping("/yearly-comparison")
     public ResponseEntity<StatisticsService.YearlyComparisonResponse> getYearlyComparison(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -70,32 +70,19 @@ public class StatisticsController {
     /**
      * 기간별 비교 데이터 조회 API
      */
-    @PreAuthorize("hasAnyRole('MYNET','CANON')")
+    @PreAuthorize("hasAnyRole('ADMIN','CANON')")
     @PostMapping("/period-comparison")
-    public ResponseEntity<List<PeriodComparisonDTO.PeriodData>> getPeriodComparison(
+    public ResponseEntity<PeriodComparisonDTO.ComparisonResult> getPeriodComparison(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody PeriodComparisonRequest request) {
 
-        List<PeriodComparisonDTO.PeriodData> result = new ArrayList<>();
+        List<LocalDate[]> periods = request.getPeriods().stream()
+                .map(p -> new LocalDate[] { p.getStartDate(), p.getEndDate() })
+                .collect(java.util.stream.Collectors.toList());
 
-        for (PeriodComparisonRequest.Period period : request.getPeriods()) {
-            PeriodComparisonDTO.PeriodData periodData;
+        PeriodComparisonDTO.ComparisonResult result = periodComparisonService.getMultiPeriodComparison(periods);
 
-            if (request.getProductId() == null) {
-                // 전체 제품 합계
-                periodData = periodComparisonService.getPeriodDataForAllProducts(
-                        period.getStartDate(), period.getEndDate());
-            } else {
-                // 특정 제품
-                periodData = periodComparisonService.getPeriodDataForProduct(
-                        request.getProductId(), period.getStartDate(), period.getEndDate());
-            }
-
-            result.add(periodData);
-        }
-
-        log.info("기간별 비교 데이터 조회: 제품ID={}, 기간 수={}",
-                request.getProductId(), request.getPeriods().size());
+        log.info("기간별 비교 데이터 조회: 기간 수={}", request.getPeriods().size());
 
         return ResponseEntity.ok(result);
     }
@@ -103,7 +90,6 @@ public class StatisticsController {
     // 요청 DTO
     @Data
     public static class PeriodComparisonRequest {
-        private Long productId; // null이면 전체 제품
         private List<Period> periods;
 
         @Data
@@ -169,56 +155,30 @@ public class StatisticsController {
     /**
      * 기간별 비교 엑셀 다운로드
      */
+    @PreAuthorize("hasAnyRole('MYNET','CANON','ADMIN')")
     @PostMapping("/period-comparison/download")
     public ResponseEntity<byte[]> downloadPeriodComparisonExcel(
             @RequestBody PeriodComparisonRequest request) {
 
         try {
-            List<PeriodComparisonDTO.PeriodData> periodsData = new ArrayList<>();
+            List<LocalDate[]> periods = request.getPeriods().stream()
+                    .map(p -> new LocalDate[] { p.getStartDate(), p.getEndDate() })
+                    .collect(Collectors.toList());
 
-            for (PeriodComparisonRequest.Period period : request.getPeriods()) {
-                PeriodComparisonDTO.PeriodData periodData;
+            PeriodComparisonDTO.ComparisonResult result = periodComparisonService.getMultiPeriodComparison(periods);
 
-                if (request.getProductId() != null) {
-                    periodData = periodComparisonService.getPeriodDataForProduct(
-                            request.getProductId(),
-                            period.getStartDate(),
-                            period.getEndDate());
-                } else {
-                    periodData = periodComparisonService.getPeriodDataForAllProducts(
-                            period.getStartDate(),
-                            period.getEndDate());
-                }
+            byte[] excelData = periodComparisonExcelService
+                    .generatePeriodComparisonExcel(result);
 
-                periodsData.add(periodData);
-            }
-
-            // 제품명 조회
-            String productName = "전체 제품";
-            if (request.getProductId() != null) {
-                productName = productRepository.findById(request.getProductId())
-                        .map(Product::getProductName)
-                        .orElse("전체 제품");
-            }
-
-            // 엑셀 생성
-            byte[] excelData = periodComparisonExcelService.generatePeriodComparisonExcel(
-                    periodsData, productName);
-
-            // 파일명 생성
-            String fileName = String.format("기간별비교_%s.xlsx", productName);
-            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+            String fileName = URLEncoder.encode("기간별비교.xlsx", StandardCharsets.UTF_8)
                     .replaceAll("\\+", "%20");
 
-            // 응답 헤더 설정
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.setContentDispositionFormData("attachment", encodedFileName);
+            headers.setContentDispositionFormData("attachment", fileName);
             headers.setCacheControl("no-cache, no-store, must-revalidate");
 
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(excelData);
+            return ResponseEntity.ok().headers(headers).body(excelData);
 
         } catch (IOException e) {
             log.error("기간별 비교 엑셀 다운로드 실패", e);

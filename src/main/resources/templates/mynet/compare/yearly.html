@@ -389,6 +389,9 @@
             nameCell.textContent = product.productName;
             row.appendChild(nameCell);
 
+            const AMT_COLORS = ["#FFF2EB", "#FFE8E0", "#FFE0D6", "#FFD6CC"];
+            const amtColor = AMT_COLORS[categoryIndex % 4];
+
             // 전전년 수량 + 금액
             const year1QtyCell = document.createElement("td");
             year1QtyCell.className = `${colorClass} amount-cell`;
@@ -396,7 +399,8 @@
             row.appendChild(year1QtyCell);
 
             const year1Cell = document.createElement("td");
-            year1Cell.className = `${colorClass} amount-cell`;
+            year1Cell.className = "amount-cell";
+            year1Cell.style.background = amtColor;
             year1Cell.textContent = formatCurrency(product.year1Amount);
             row.appendChild(year1Cell);
 
@@ -407,7 +411,8 @@
             row.appendChild(year2QtyCell);
 
             const year2Cell = document.createElement("td");
-            year2Cell.className = `${colorClass} amount-cell`;
+            year2Cell.className = "amount-cell";
+            year2Cell.style.background = amtColor;
             year2Cell.textContent = formatCurrency(product.year2Amount);
             row.appendChild(year2Cell);
 
@@ -418,7 +423,8 @@
             row.appendChild(year3QtyCell);
 
             const year3Cell = document.createElement("td");
-            year3Cell.className = `${colorClass} amount-cell`;
+            year3Cell.className = "amount-cell";
+            year3Cell.style.background = amtColor;
             year3Cell.textContent = formatCurrency(product.year3Amount);
             row.appendChild(year3Cell);
 
