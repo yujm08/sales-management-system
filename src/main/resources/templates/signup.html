@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -197,7 +197,6 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        AlertManager.init();
         setupSignupForm();
       });
 
@@ -226,13 +225,14 @@
 
             // 비밀번호 확인
             if (data.password !== data.confirmPassword) {
-              AlertManager.error("비밀번호가 일치하지 않습니다.");
+              showAlert("비밀번호가 일치하지 않습니다.", "error");
               return;
             }
 
             saveData("/signup", data, function (response) {
-              AlertManager.success(
-                "회원가입이 완료되었습니다. 로그인 페이지로 이동합니다."
+              showAlert(
+                "회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.",
+                "success",
               );
               setTimeout(() => {
                 window.location.href = "/login";

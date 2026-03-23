@@ -817,11 +817,9 @@
           },
         })
           .then((response) => {
-            console.log("Response status:", response.status); // 디버깅용
             return response.json();
           })
           .then((data) => {
-            console.log("Response data:", data); // 디버깅용
             if (data.success) {
               showAlert("저장되었습니다.", "success");
               setTimeout(() => location.reload(), 1000);
@@ -891,7 +889,6 @@
           changes.forEach((change) => {
             formData.append("quantities", change.value);
           });
-          console.log("FormData(Quantity):", [...formData]); // 디버깅용
           return fetch("/mynet/update-quantity", {
             method: "POST",
             body: formData,
@@ -904,7 +901,6 @@
           changes.forEach((change) => {
             formData.append("targetQuantities", change.value);
           });
-          console.log("FormData(Target):", [...formData]); // 디버깅용
           return fetch("/mynet/update-target", {
             method: "POST",
             body: formData,
@@ -960,15 +956,12 @@
       }
 
       function showDatePicker() {
-        console.log("showDatePicker 호출");
-
         if (typeof globalDatePicker !== "undefined") {
           // init()이 이미 호출되었으므로 바로 show() 가능
           globalDatePicker.currentDate = new Date(currentDate);
           globalDatePicker.selectedDate = new Date(currentDate);
           globalDatePicker.show();
         } else {
-          console.log("globalDatePicker 없음, fallback 사용");
           const datePicker = document.getElementById("date-picker");
           if (datePicker) {
             datePicker.click();
@@ -993,15 +986,6 @@
         const dateStr = currentDate.toISOString().split("T")[0];
         if (dateElement) dateElement.textContent = dateStr;
         if (datePicker) datePicker.value = dateStr;
-      }
-
-      function showAlert(message, type) {
-        const alertContainer = document.getElementById("alert-container");
-        const alertDiv = document.createElement("div");
-        alertDiv.className = `alert alert-${type}`;
-        alertDiv.textContent = message;
-        alertContainer.appendChild(alertDiv);
-        setTimeout(() => alertDiv.remove(), 3000);
       }
     </script>
   </body>

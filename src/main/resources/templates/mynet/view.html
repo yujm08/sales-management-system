@@ -958,8 +958,6 @@
             }
           });
         });
-
-        console.log("초기 currentValues:", currentValues);
       }
 
       // 노란색 셀 직접 클릭 편집
@@ -1038,11 +1036,6 @@
 
       // 저장
       function saveAll() {
-        console.log("===== 저장 시작 =====");
-        console.log("currentCompanyFilter:", currentCompanyFilter);
-        console.log("currentDate:", currentDate);
-        console.log("currentValues:", currentValues);
-
         // quantity와 target 데이터를 Map 형태로 변환
         const quantities = {};
         const targetQuantities = {};
@@ -1062,9 +1055,6 @@
           }
         });
 
-        console.log("quantities:", quantities);
-        console.log("targetQuantities:", targetQuantities);
-
         const promises = [];
 
         if (Object.keys(quantities).length > 0) {
@@ -1083,8 +1073,6 @@
             quantities: quantities,
           };
 
-          console.log("=== 수량 저장 요청 데이터 ===", requestData);
-
           promises.push(
             fetch("/mynet/update-quantity", {
               method: "POST",
@@ -1096,8 +1084,6 @@
               body: JSON.stringify(requestData),
             })
               .then((response) => {
-                console.log("수량 저장 응답:", response.status, response.ok);
-
                 if (!response.ok) {
                   return response.text().then((text) => {
                     console.error("수량 저장 실패 응답:", text);
@@ -1109,9 +1095,7 @@
 
                 return response.json();
               })
-              .then((data) => {
-                console.log("수량 저장 성공:", data);
-              }),
+              .then((data) => {}),
           );
         }
 
@@ -1122,8 +1106,6 @@
             targetDate: formatDate(currentDate),
             targetQuantities: targetQuantities,
           };
-
-          console.log("=== 목표 저장 요청 데이터 ===", requestData);
 
           promises.push(
             fetch("/mynet/update-target", {
@@ -1136,8 +1118,6 @@
               body: JSON.stringify(requestData),
             })
               .then((response) => {
-                console.log("목표 저장 응답:", response.status, response.ok);
-
                 if (!response.ok) {
                   return response.text().then((text) => {
                     console.error("목표 저장 실패 응답:", text);
@@ -1149,9 +1129,7 @@
 
                 return response.json();
               })
-              .then((data) => {
-                console.log("목표 저장 성공:", data);
-              }),
+              .then((data) => {}),
           );
         }
 
@@ -1165,8 +1143,6 @@
 
         Promise.all(promises)
           .then(() => {
-            console.log("=== 모든 저장 성공 ===");
-
             // originalValues 갱신
             Object.keys(quantities).forEach((id) => {
               originalValues[`${id}-quantity`] = quantities[id];
@@ -1209,15 +1185,6 @@
         location.href = `/mynet/view?companyFilter=${companyId}&date=${formatDate(
           currentDate,
         )}`;
-      }
-
-      function showAlert(message, type) {
-        const container = document.getElementById("alert-container");
-        const div = document.createElement("div");
-        div.className = `alert alert-${type}`;
-        div.textContent = message;
-        container.appendChild(div);
-        setTimeout(() => div.remove(), 3000);
       }
 
       function selectTotalStats() {

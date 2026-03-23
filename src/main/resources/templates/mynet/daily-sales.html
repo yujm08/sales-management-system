@@ -1116,14 +1116,11 @@
 
       // 날짜 피커 표시
       function showDatePicker() {
-        console.log("showDatePicker 호출");
-
         if (typeof globalDatePicker !== "undefined") {
           globalDatePicker.currentDate = new Date(currentDate);
           globalDatePicker.selectedDate = new Date(currentDate);
           globalDatePicker.show();
         } else {
-          console.log("globalDatePicker 없음, fallback 사용");
           const datePicker = document.getElementById("date-picker");
           if (datePicker) {
             datePicker.click();

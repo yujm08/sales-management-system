@@ -415,8 +415,6 @@
                     }
                 });
             });
-
-            console.log("초기 currentValues:", currentValues);
         }
 
         function toggleEdit() {
@@ -470,10 +468,6 @@
         }
 
         function saveSalesData() {
-            console.log("===== 저장 시작 =====");
-            console.log("currentValues:", currentValues);
-            console.log("originalData:", originalData);
-
             const quantities = {};
             const inputs = document.querySelectorAll('.quantity-input[data-editable="true"]');
             
@@ -490,8 +484,6 @@
                     quantities[productId] = currentValue;
                 }
             });
-            
-            console.log("=== 변경된 데이터 ===", quantities);
 
             // 변경 사항 없으면 조기 리턴
             if (Object.keys(quantities).length === 0) {
@@ -600,21 +592,6 @@
 
         function isCurrentYear(date) {
             return date.getFullYear() === new Date().getFullYear();
-        }
-
-        function formatDate(date) {
-            return date.getFullYear() + '-' + 
-                String(date.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(date.getDate()).padStart(2, '0');
-        }
-
-        function showAlert(message, type = 'info') {
-            const container = document.getElementById('alert-container');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.textContent = message;
-            container.appendChild(alert);
-            setTimeout(() => alert.remove(), 3000);
         }
 
         function selectDate() {

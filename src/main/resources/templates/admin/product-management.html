@@ -569,35 +569,6 @@
         }
       }
 
-      // 알림 표시
-      function showAlert(message, type = "info") {
-        const container = document.getElementById("alert-container");
-        const alert = document.createElement("div");
-        alert.className = `alert alert-${type}`;
-        alert.textContent = message;
-
-        const closeBtn = document.createElement("button");
-        closeBtn.innerHTML = "×";
-        closeBtn.onclick = () => alert.remove();
-        alert.appendChild(closeBtn);
-
-        container.appendChild(alert);
-        setTimeout(() => alert.remove(), 3000);
-      }
-
-    /**
-     * 버튼 상태 초기화
-     */
-    function resetPriceButtons(row, productId) {
-        const editBtn = row.querySelector(`.edit-price-btn[data-product-id="${productId}"]`);
-        const saveBtn = row.querySelector(`.save-price-btn[data-product-id="${productId}"]`);
-        const cancelBtn = row.querySelector(`.cancel-price-btn[data-product-id="${productId}"]`);
-        
-        editBtn.style.display = 'inline-block';
-        saveBtn.style.display = 'none';
-        cancelBtn.style.display = 'none';
-    }
-
     function editProductPrice(button) {
         // 동시 편집 방지
         if (document.querySelector('.injected-category-cell') || 

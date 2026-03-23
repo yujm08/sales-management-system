@@ -1,12 +1,103 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
-    <title>에러 발생</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>오류 발생</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <style>
+      body {
+        background: #f1f3f5;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .error-container {
+        background: white;
+        padding: 3rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        max-width: 600px;
+        text-align: center;
+      }
+
+      .error-title {
+        color: #e74c3c;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+
+      .error-message {
+        color: #555;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+      }
+
+      .btn {
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+      }
+
+      .help-text {
+        margin-top: 1.5rem;
+        color: #888;
+        font-size: 0.9rem;
+      }
+    </style>
   </head>
   <body>
-    <h1>문제가 발생했습니다</h1>
-    <p th:text="${message}">예상치 못한 오류가 발생했습니다.</p>
-    <a href="/">홈으로 가기</a>
+    <div class="error-container">
+      <h1 class="error-title">오류 발생</h1>
+      <p
+        class="error-message"
+        th:text="${message} ?: '예상치 못한 오류가 발생했습니다.'"
+      >
+        예상치 못한 오류가 발생했습니다.
+      </p>
+      <div class="action-buttons">
+        <button onclick="history.back()" class="btn btn-secondary">
+          ← 이전 페이지
+        </button>
+        <a href="/" class="btn btn-primary">홈으로 가기</a>
+      </div>
+      <p class="help-text">문제가 계속되면 시스템 관리자에게 문의하세요.</p>
+    </div>
   </body>
 </html>

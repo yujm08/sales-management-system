@@ -458,25 +458,6 @@
         location.href = "/subsidiary/sales-summary?date=" + dateValue;
       }
 
-      // 유틸리티 함수
-      function formatDate(date) {
-        return (
-          date.getFullYear() +
-          "-" +
-          String(date.getMonth() + 1).padStart(2, "0") +
-          "-" +
-          String(date.getDate()).padStart(2, "0")
-        );
-      }
-
-      function showAlert(message, type = "info") {
-        const container = document.getElementById("alert-container");
-        const alert = document.createElement("div");
-        alert.className = `alert alert-${type}`;
-        alert.textContent = message;
-        container.appendChild(alert);
-        setTimeout(() => alert.remove(), 3000);
-      }
     </script>
   </body>
 </html>

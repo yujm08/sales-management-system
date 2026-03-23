@@ -392,23 +392,6 @@
         return Math.round(value).toLocaleString("ko-KR");
       }
 
-      function formatGrowthRate(rate) {
-        if (rate === null || rate === undefined) {
-          return "0.0%";
-        }
-        const formatted = rate.toFixed(1);
-        if (rate > 0) {
-          return "+" + formatted + "%";
-        }
-        return formatted + "%";
-      }
-
-      function getGrowthClass(rate) {
-        if (rate > 0) return "growth-positive";
-        if (rate < 0) return "growth-negative";
-        return "growth-zero";
-      }
-
       function downloadExcel() {
         window.location.href = "/mynet/compare/yearly/download";
       }

@@ -312,7 +312,6 @@
         padding: 60px 20px;
         color: #6c757d;
       }
-
     </style>
   </head>
   <body>
@@ -796,11 +795,6 @@
         tbody.appendChild(growthRow);
       }
 
-      function formatNumber(value) {
-        if (value === null || value === undefined) return "0";
-        return Math.round(value).toLocaleString("ko-KR");
-      }
-
       function formatDisplay(value) {
         if (value === null || value === undefined || value === 0) return "-";
         return formatNumber(value);
@@ -809,19 +803,6 @@
       function formatDisplayCurrency(value) {
         if (value === null || value === undefined || value === 0) return "-";
         return formatNumber(value);
-      }
-
-      function formatGrowthRate(rate) {
-        if (rate === null || rate === undefined) return "0.0%";
-        const formatted = rate.toFixed(1);
-        if (rate > 0) return "+" + formatted + "%";
-        return formatted + "%";
-      }
-
-      function getGrowthClass(rate) {
-        if (rate > 0) return "growth-positive";
-        if (rate < 0) return "growth-negative";
-        return "growth-zero";
       }
 
       function clearProductSearch() {
