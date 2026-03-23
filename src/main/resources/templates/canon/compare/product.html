@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -285,64 +285,6 @@
         color: #6c757d;
       }
 
-      /* 네비게이션 서브메뉴 */
-      .nav-item {
-        position: relative;
-      }
-
-      .sub-menu {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        background: white;
-        min-width: 150px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        border-radius: 4px;
-        z-index: 1000;
-        display: none;
-      }
-
-      .nav-item:hover .sub-menu {
-        display: block;
-      }
-
-      .sub-menu a {
-        display: block;
-        padding: 10px 15px;
-        color: #333;
-        text-decoration: none;
-        border-bottom: 1px solid #eee;
-      }
-
-      .sub-menu a:last-child {
-        border-bottom: none;
-        border-radius: 0 0 4px 4px;
-      }
-
-      .sub-menu a:hover {
-        background: #f8f9fa;
-      }
-
-      .sub-menu a.active {
-        background: #e9ecef;
-        font-weight: 600;
-      }
-
-      .change-password-link {
-        color: white;
-        text-decoration: none;
-        padding: 6px 12px;
-        border: 1px solid white;
-        border-radius: 4px;
-        font-size: 14px;
-        transition: background-color 0.2s;
-        margin-right: 10px;
-        display: inline-block;
-      }
-
-      .change-password-link:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-      }
     </style>
   </head>
   <body>
@@ -535,7 +477,7 @@
 
         Object.keys(grouped).forEach((cat) => {
           grouped[cat].sort((a, b) =>
-            a.productCode.localeCompare(b.productCode)
+            a.productCode.localeCompare(b.productCode),
           );
         });
 
@@ -594,9 +536,8 @@
 
       function selectProduct(product) {
         selectedProductId = product.id;
-        document.getElementById(
-          "productSearch"
-        ).value = `${product.productCode} - ${product.productName}`;
+        document.getElementById("productSearch").value =
+          `${product.productCode} - ${product.productName}`;
         hideAutocomplete();
 
         const list = document.getElementById("productList");
@@ -620,7 +561,7 @@
         const filtered = allProducts.filter(
           (p) =>
             p.productName.toLowerCase().includes(searchValue) ||
-            p.productCode.toLowerCase().includes(searchValue)
+            p.productCode.toLowerCase().includes(searchValue),
         );
 
         showAutocomplete(filtered);
@@ -650,7 +591,7 @@
           };
 
           item.innerHTML = `${highlightText(
-            product.productCode
+            product.productCode,
           )} - ${highlightText(product.productName)}`;
           item.onclick = () => selectProduct(product);
           dropdown.appendChild(item);
@@ -748,10 +689,10 @@
         const totalGrowthCell = document.createElement("td");
         totalGrowthCell.colSpan = 1;
         totalGrowthCell.className = getGrowthClass(
-          data.growthRates.totalGrowthRate
+          data.growthRates.totalGrowthRate,
         );
         totalGrowthCell.textContent = formatGrowthRate(
-          data.growthRates.totalGrowthRate
+          data.growthRates.totalGrowthRate,
         );
         growthRow.appendChild(totalGrowthCell);
 

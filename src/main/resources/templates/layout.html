@@ -29,7 +29,7 @@
           <span
             class="user-role"
             th:text="${#authentication.principal.isCanon} ? '(캐논)' : 
-                               (${#authentication.principal.isMynet} ? '(마이넷)' : '(하위회사)')"
+                                (${#authentication.principal.isMynet} ? '(마이넷)' : '(하위회사)')"
           >
             (역할)
           </span>

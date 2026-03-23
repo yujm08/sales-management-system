@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -207,128 +207,15 @@
     </main>
 
     <script>
-      // 알림 메시지 표시 함수
-      function showAlert(message, type = "info") {
-        const container = document.getElementById("alert-container");
-
-        const alert = document.createElement("div");
-        alert.style.cssText = `
-          padding: 15px;
-          margin: 10px 0;
-          border-radius: 5px;
-          color: white;
-          font-weight: bold;
-          position: relative;
-          ${
-            type === "success"
-              ? "background-color: #28a745;"
-              : type === "error"
-              ? "background-color: #dc3545;"
-              : "background-color: #17a2b8;"
-          }
-        `;
-        alert.textContent = message;
-
-        // 닫기 버튼
-        const closeBtn = document.createElement("button");
-        closeBtn.innerHTML = "×";
-        closeBtn.style.cssText = `
-          position: absolute;
-          right: 10px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          color: white;
-          font-size: 20px;
-          cursor: pointer;
-        `;
-        closeBtn.onclick = () => alert.remove();
-        alert.appendChild(closeBtn);
-
-        container.appendChild(alert);
-
-        // 5초 후 자동 제거
-        setTimeout(() => {
-          if (alert.parentNode) {
-            alert.remove();
-          }
-        }, 5000);
-      }
-
-      // AJAX 요청 함수
-      function saveData(url, data, successCallback, errorCallback) {
-        // 로딩 표시
-        const loadingDiv = document.createElement("div");
-        loadingDiv.id = "loading";
-        loadingDiv.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0,0,0,0.5);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 9999;
-          color: white;
-          font-size: 18px;
-        `;
-        loadingDiv.textContent = "처리 중...";
-        document.body.appendChild(loadingDiv);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", url, true);
-        xhr.setRequestHeader(
-          "Content-Type",
-          "application/x-www-form-urlencoded"
-        );
-
-        // CSRF 토큰 설정
-        const csrfToken = document.querySelector('meta[name="_csrf"]');
-        const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
-        if (csrfToken && csrfHeader) {
-          xhr.setRequestHeader(
-            csrfHeader.getAttribute("content"),
-            csrfToken.getAttribute("content")
-          );
-        }
-
-        xhr.onreadystatechange = function () {
-          if (xhr.readyState === 4) {
-            // 로딩 제거
-            loadingDiv.remove();
-
-            if (xhr.status === 200) {
-              const message = successCallback
-                ? successCallback(xhr.responseText)
-                : "저장되었습니다.";
-              showAlert(message, "success");
-            } else {
-              const message = errorCallback
-                ? errorCallback(xhr)
-                : "저장 중 오류가 발생했습니다.";
-              showAlert(message, "error");
-            }
-          }
-        };
-
-        const formData = new URLSearchParams(data).toString();
-        xhr.send(formData);
-      }
-
       // 폼 초기화
       function setupUserCreateForm() {
         const form = document.getElementById("user-create-form");
         if (!form) {
-          console.error("Form not found");
           return;
         }
 
         form.addEventListener("submit", function (e) {
           e.preventDefault();
-          console.log("Form submitted");
 
           const formData = new FormData(this);
           const data = {};
@@ -347,8 +234,6 @@
             data.isCanon = false;
           }
 
-          console.log("Data to send:", data);
-
           // 폼 유효성 검사
           if (
             !data.username ||
@@ -364,15 +249,13 @@
             "/admin/users/create",
             data,
             function (response) {
-              console.log("Success response:", response);
               document.getElementById("user-create-form").reset();
               setTimeout(() => location.reload(), 1500);
               return "사용자가 성공적으로 생성되었습니다.";
             },
             function (error) {
-              console.error("Error:", error);
               return "사용자 생성 중 오류가 발생했습니다. 다시 시도해주세요.";
-            }
+            },
           );
         });
       }
@@ -387,20 +270,17 @@
           "/admin/users/delete",
           { userId: userId },
           function (response) {
-            console.log("Delete success:", response);
             setTimeout(() => location.reload(), 1500);
             return "사용자가 성공적으로 삭제되었습니다.";
           },
           function (error) {
-            console.error("Delete error:", error);
             return "사용자 삭제 중 오류가 발생했습니다.";
-          }
+          },
         );
       }
 
       // 페이지 로드 시 초기화
       document.addEventListener("DOMContentLoaded", function () {
-        console.log("DOM loaded, setting up form...");
         setupUserCreateForm();
       });
     </script>
@@ -441,59 +321,6 @@
         right: 20px;
         z-index: 1000;
         max-width: 400px;
-      }
-
-      .nav-item {
-        position: relative;
-      }
-
-      .sub-menu {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        background: white;
-        min-width: 150px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        border-radius: 4px;
-        z-index: 1000;
-        display: none;
-      }
-
-      .nav-item:hover .sub-menu {
-        display: block;
-      }
-
-      .sub-menu a {
-        display: block;
-        padding: 10px 15px;
-        color: #333;
-        text-decoration: none;
-        border-bottom: 1px solid #eee;
-      }
-
-      .sub-menu a:last-child {
-        border-bottom: none;
-        border-radius: 0 0 4px 4px;
-      }
-
-      .sub-menu a:hover {
-        background: #f8f9fa;
-      }
-
-      .change-password-link {
-        color: white;
-        text-decoration: none;
-        padding: 6px 12px;
-        border: 1px solid white;
-        border-radius: 4px;
-        font-size: 14px;
-        transition: background-color 0.2s;
-        margin-right: 10px;
-        display: inline-block;
-      }
-
-      .change-password-link:hover {
-        background-color: rgba(255, 255, 255, 0.1);
       }
     </style>
   </body>

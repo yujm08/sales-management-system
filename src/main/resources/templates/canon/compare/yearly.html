@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
@@ -75,20 +75,6 @@
         padding-left: 15px;
       }
 
-      /* 카테고리별 배경색 */
-      .category-bg-1 {
-        background: #e8f5e8;
-      }
-      .category-bg-2 {
-        background: #d4f4d4;
-      }
-      .category-bg-3 {
-        background: #c0f0c0;
-      }
-      .category-bg-4 {
-        background: #b3e6b3;
-      }
-
       /* 금액 우측 정렬 */
       .amount-cell {
         text-align: right;
@@ -130,65 +116,6 @@
         text-align: center;
         padding: 40px;
         color: #d32f2f;
-      }
-
-      /* 네비게이션 서브메뉴 */
-      .nav-item {
-        position: relative;
-      }
-
-      .sub-menu {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        background: white;
-        min-width: 150px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        border-radius: 4px;
-        z-index: 1000;
-        display: none;
-      }
-
-      .nav-item:hover .sub-menu {
-        display: block;
-      }
-
-      .sub-menu a {
-        display: block;
-        padding: 10px 15px;
-        color: #333;
-        text-decoration: none;
-        border-bottom: 1px solid #eee;
-      }
-
-      .sub-menu a:last-child {
-        border-bottom: none;
-        border-radius: 0 0 4px 4px;
-      }
-
-      .sub-menu a:hover {
-        background: #f8f9fa;
-      }
-
-      .sub-menu a.active {
-        background: #e9ecef;
-        font-weight: 600;
-      }
-
-      .change-password-link {
-        color: white;
-        text-decoration: none;
-        padding: 6px 12px;
-        border: 1px solid white;
-        border-radius: 4px;
-        font-size: 14px;
-        transition: background-color 0.2s;
-        margin-right: 10px;
-        display: inline-block;
-      }
-
-      .change-password-link:hover {
-        background-color: rgba(255, 255, 255, 0.1);
       }
     </style>
   </head>
@@ -362,7 +289,7 @@
             // 증감률
             const growthCell = document.createElement("td");
             growthCell.className = `${colorClass} growth-rate ${getGrowthClass(
-              product.growthRate
+              product.growthRate,
             )}`;
             growthCell.textContent = formatGrowthRate(product.growthRate);
             row.appendChild(growthCell);
@@ -377,13 +304,13 @@
         grandTotalRow.innerHTML = `
         <td colspan="3" style="text-align: center;"><strong>합계</strong></td>
         <td style="text-align: center;"><strong>${formatQuantity(
-          data.grandTotal.year1Quantity
+          data.grandTotal.year1Quantity,
         )}</strong></td>
         <td style="text-align: center;"><strong>${formatQuantity(
-          data.grandTotal.year2Quantity
+          data.grandTotal.year2Quantity,
         )}</strong></td>
         <td style="text-align: center;"><strong>${formatQuantity(
-          data.grandTotal.year3Quantity
+          data.grandTotal.year3Quantity,
         )}</strong></td>
         <td class="growth-rate ${getGrowthClass(data.grandTotal.growthRate)}">
             <strong>${formatGrowthRate(data.grandTotal.growthRate)}</strong>
