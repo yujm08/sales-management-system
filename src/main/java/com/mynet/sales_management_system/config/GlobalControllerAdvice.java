@@ -16,18 +16,13 @@ public class GlobalControllerAdvice {
     public void addGlobalAttributes(Model model,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         if (userDetails != null) {
-            String companyName = userDetails.getCompanyName();
-
-            // Canon 사용자 여부
-            boolean isCanon = "캐논".equals(companyName);
-
-            // 마이넷 사용자 여부
-            boolean isMynet = "마이넷".equals(companyName);
+            boolean isCanon = userDetails.isCanon();
+            boolean isMynet = userDetails.isMynet();
 
             // 전역으로 사용 가능하도록 Model에 추가
             model.addAttribute("isCanon", isCanon);
             model.addAttribute("isMynet", isMynet);
-            model.addAttribute("currentUser", companyName);
+            model.addAttribute("currentUser", userDetails.getCompanyName());
 
             // 권한 정보
             boolean hasAdminAccess = !isCanon; // Canon이 아니면 관리 권한

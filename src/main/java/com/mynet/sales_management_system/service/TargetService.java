@@ -34,20 +34,6 @@ public class TargetService {
     private final ProductRepository productRepository;
 
     /**
-     * 특정 회사의 특정 월 목표 조회
-     */
-    public List<Target> getTargetsByCompanyAndMonth(Long companyId, int year, int month) {
-        return targetRepository.findByCompanyIdAndTargetYearAndTargetMonth(companyId, year, month);
-    }
-
-    /**
-     * 전체 목표 조회
-     */
-    public List<Target> getGlobalTargets(int year, int month) {
-        return targetRepository.findGlobalTargetsByYearAndMonth(year, month);
-    }
-
-    /**
      * 목표 설정/수정
      */
     @Transactional
@@ -97,52 +83,6 @@ public class TargetService {
                 targetType, product.getProductCode(), year, month, targetQuantity);
 
         return target;
-    }
-
-    /**
-     * 개별 회사 목표 합계가 전체 목표와 일치하는지 검증
-     */
-    public boolean validateTargetSum(Long productId, int year, int month) {
-        // 전체 목표 조회
-        Optional<Target> globalTargetOpt = targetRepository
-                .findGlobalTargetByProductAndYearAndMonth(productId, year, month);
-
-        if (globalTargetOpt.isEmpty()) {
-            return true; // 전체 목표가 없으면 검증 통과
-        }
-
-        int globalTarget = globalTargetOpt.get().getTargetQuantity();
-
-        // 개별 회사 목표 합계 계산
-        List<Object[]> companySums = targetRepository.findCompanyTargetSumsByYearAndMonth(year, month);
-
-        int companyTargetSum = companySums.stream()
-                .filter(row -> row[0].equals(productId))
-                .mapToInt(row -> ((Number) row[1]).intValue())
-                .sum();
-
-        return globalTarget == companyTargetSum;
-    }
-
-    /**
-     * 목표 삭제
-     */
-    @Transactional
-    public void deleteTarget(Long companyId, Long productId, int year, int month) {
-        Optional<Target> targetOpt;
-        if (companyId != null) {
-            targetOpt = targetRepository
-                    .findByCompanyIdAndProductIdAndTargetYearAndTargetMonth(companyId, productId, year, month);
-        } else {
-            targetOpt = targetRepository
-                    .findGlobalTargetByProductAndYearAndMonth(productId, year, month);
-        }
-
-        if (targetOpt.isPresent()) {
-            targetRepository.delete(targetOpt.get());
-            String targetType = (companyId == null) ? "전체" : "개별회사";
-            log.info("목표 삭제: 대상={}, 제품ID={}, 기간={}-{}", targetType, productId, year, month);
-        }
     }
 
     /**

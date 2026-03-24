@@ -13,8 +13,6 @@ import com.mynet.sales_management_system.service.DailySalesExcelService;
 import com.mynet.sales_management_system.service.DailySalesService;
 import com.mynet.sales_management_system.service.MonthlyComparisonExcelService;
 import com.mynet.sales_management_system.service.MonthlyComparisonService;
-import com.mynet.sales_management_system.service.PeriodComparisonExcelService;
-import com.mynet.sales_management_system.service.ProductComparisonExcelService;
 import com.mynet.sales_management_system.service.ProductService;
 import com.mynet.sales_management_system.service.SalesService;
 import com.mynet.sales_management_system.service.StatisticsService;
@@ -40,7 +38,6 @@ import java.net.URLEncoder;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -73,8 +70,6 @@ public class MynetController {
     private final ViewExcelService viewExcelService;
     private final MonthlyComparisonExcelService monthlyComparisonExcelService;
     private final YearlyComparisonExcelService yearlyComparisonExcelService;
-    private final PeriodComparisonExcelService periodComparisonExcelService;
-    private final ProductComparisonExcelService productComparisonExcelService;
     private final StatisticsService statisticsService;
 
     /**
@@ -136,34 +131,13 @@ public class MynetController {
     }
 
     /**
-     * AJAX 날짜 변경 요청 처리
-     */
-    @GetMapping("/view/ajax")
-    @ResponseBody
-    public Map<String, Object> getViewDataAjax(@AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(defaultValue = "all") String companyFilter,
-            @RequestParam String date) {
-
-        LocalDate targetDate = LocalDate.parse(date);
-        List<ViewStatisticsDTO> statisticsData = viewStatisticsService.getViewStatistics(companyFilter, targetDate);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("statisticsData", statisticsData);
-        response.put("targetDate", targetDate.toString());
-        response.put("currentMonth", targetDate.getMonthValue());
-
-        return response;
-    }
-
-    /**
      * 수량 수정 - JSON 방식
      */
     @PostMapping("/update-quantity")
     @ResponseBody
     public Map<String, Object> updateQuantity(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestBody MynetQuantityUpdateRequest request) { // ✅ 새 DTO 사용
+            @RequestBody MynetQuantityUpdateRequest request) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -257,7 +231,6 @@ public class MynetController {
                 return response;
             }
 
-            Long companyId = isDistributeMode ? null : Long.parseLong(request.getCompanyId());
             LocalDate date = LocalDate.parse(request.getTargetDate());
 
             int successCount = 0;
@@ -415,61 +388,6 @@ public class MynetController {
         model.addAttribute("comparePage", "product");
 
         return "mynet/compare/product";
-    }
-
-    /**
-     * 제품 분류 페이지
-     */
-    @GetMapping("/products")
-    public String productsPage(Model model) {
-        List<Product> allProducts = productService.getAllProducts();
-        List<String> categories = productService.getCategories();
-
-        model.addAttribute("products", allProducts);
-        model.addAttribute("categories", categories);
-
-        return "mynet/products";
-    }
-
-    /**
-     * 제품 등록
-     */
-    @PostMapping("/products/create")
-    @ResponseBody
-    public String createProduct(@AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam String productName,
-            @RequestParam String category,
-            @RequestParam BigDecimal costPrice,
-            @RequestParam BigDecimal supplyPrice) {
-        try {
-            productService.createProduct(productName, category, costPrice, supplyPrice, userDetails.getUsername());
-
-            log.info("제품 등록: 이름={}, 분류={}, 등록자={}", productName, category, userDetails.getUsername());
-            return "success";
-        } catch (Exception e) {
-            log.error("제품 등록 실패", e);
-            return "error:" + e.getMessage();
-        }
-    }
-
-    /**
-     * 제품 활성화 상태 변경
-     */
-    @PostMapping("/products/toggle-active")
-    @ResponseBody
-    public String toggleProductActive(@AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam Long productId,
-            @RequestParam boolean isActive) {
-        try {
-            productService.updateProductActiveStatus(productId, isActive);
-
-            log.info("제품 상태 변경: 제품ID={}, 활성화={}, 수정자={}",
-                    productId, isActive, userDetails.getUsername());
-            return "success";
-        } catch (Exception e) {
-            log.error("제품 상태 변경 실패", e);
-            return "error:" + e.getMessage();
-        }
     }
 
     /**
@@ -710,8 +628,8 @@ public class MynetController {
             int year2 = currentYear - 1;
             int year3 = currentYear;
 
-            // 데이터 조회 (StatisticsService 사용)
-            StatisticsService.YearlyComparisonResponse response = ((StatisticsService) statisticsService)
+            // 데이터 조회
+            StatisticsService.YearlyComparisonResponse response = statisticsService
                     .getYearlyComparisonData(year1, year3);
 
             // 엑셀 생성

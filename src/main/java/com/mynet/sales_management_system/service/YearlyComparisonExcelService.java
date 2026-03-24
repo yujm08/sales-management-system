@@ -363,15 +363,6 @@ public class YearlyComparisonExcelService {
         sheet.setColumnWidth(7, 3000); // year3 수량
         sheet.setColumnWidth(8, 5000); // year3 금액
         sheet.setColumnWidth(9, 3000); // 증감률sheet.setColumnWidth(0, 3000); // 분류
-        sheet.setColumnWidth(1, 3000); // 제품코드
-        sheet.setColumnWidth(2, 6000); // 제품명
-        sheet.setColumnWidth(3, 3000); // year1 수량
-        sheet.setColumnWidth(4, 5000); // year1 금액
-        sheet.setColumnWidth(5, 3000); // year2 수량
-        sheet.setColumnWidth(6, 5000); // year2 금액
-        sheet.setColumnWidth(7, 3000); // year3 수량
-        sheet.setColumnWidth(8, 5000); // year3 금액
-        sheet.setColumnWidth(9, 3000); // 증감률
     }
 
     private Cell createCell(Row row, int column, String value, CellStyle style) {

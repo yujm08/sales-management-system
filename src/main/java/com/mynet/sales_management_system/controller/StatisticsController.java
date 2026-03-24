@@ -5,7 +5,6 @@ import com.mynet.sales_management_system.dto.ProductComparisonDTO;
 import com.mynet.sales_management_system.dto.ProductDTO;
 import com.mynet.sales_management_system.entity.Product;
 import com.mynet.sales_management_system.entity.ProductPriceHistory;
-import com.mynet.sales_management_system.repository.ProductRepository;
 import com.mynet.sales_management_system.security.CustomUserDetails;
 import com.mynet.sales_management_system.service.PeriodComparisonExcelService;
 import com.mynet.sales_management_system.service.PeriodComparisonService;
@@ -29,7 +28,6 @@ import org.springframework.http.MediaType;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.io.IOException;
@@ -47,12 +45,11 @@ public class StatisticsController {
     private final ProductComparisonService productComparisonService;
     private final PeriodComparisonExcelService periodComparisonExcelService;
     private final ProductComparisonExcelService productComparisonExcelService;
-    private final ProductRepository productRepository;
 
     /**
      * 마이넷 측 비교탭 - 년도별 데이터 조회
      */
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MYNET')")
     @GetMapping("/yearly-comparison")
     public ResponseEntity<StatisticsService.YearlyComparisonResponse> getYearlyComparison(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -70,7 +67,7 @@ public class StatisticsController {
     /**
      * 기간별 비교 데이터 조회 API
      */
-    @PreAuthorize("hasAnyRole('ADMIN','CANON')")
+    @PreAuthorize("hasAnyRole('ADMIN','CANON','MYNET')")
     @PostMapping("/period-comparison")
     public ResponseEntity<PeriodComparisonDTO.ComparisonResult> getPeriodComparison(
             @AuthenticationPrincipal CustomUserDetails userDetails,

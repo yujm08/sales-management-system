@@ -40,13 +40,6 @@ public class ProductService {
     private final DailySalesRepository dailySalesRepository;
 
     /**
-     * 활성화된 제품 목록 조회 (일상 입력용)
-     */
-    public List<Product> getActiveProducts() {
-        return productRepository.findByIsActiveTrueOrderByCategoryAscSupplyPriceAscProductCodeAsc();
-    }
-
-    /**
      * 모든 제품 조회 (제품 분류 탭용 - 비활성 포함)
      */
     public List<Product> getAllProducts() {
@@ -58,13 +51,6 @@ public class ProductService {
      */
     public Optional<Product> getProductByCode(String productCode) {
         return productRepository.findByProductCode(productCode);
-    }
-
-    /**
-     * 제품명 검색 (자동완성용)
-     */
-    public List<Product> searchProductsByName(String productName) {
-        return productRepository.findByProductNameContainingIgnoreCase(productName);
     }
 
     /**
@@ -199,13 +185,6 @@ public class ProductService {
     }
 
     /**
-     * 다음 제품 코드 조회 (컨트롤러용)
-     */
-    public String getNextProductCode() {
-        return generateNextProductCode();
-    }
-
-    /**
      * 하위회사 입력용 제품 목록 조회 (카테고리별 그룹화)
      */
     public Map<String, List<ProductInputDTO>> getProductsForInput(Long companyId, LocalDate date) {
@@ -272,12 +251,5 @@ public class ProductService {
         productRepository.saveAll(products);
         log.info("분류명 변경: {} → {}, 영향받은 제품 수: {}", oldName, newName, products.size());
         return products.size();
-    }
-
-    /**
-     * 특정 분류를 사용하는 제품 수 조회
-     */
-    public long countProductsByCategory(String category) {
-        return productRepository.findByCategoryOrderByProductCodeAsc(category).size();
     }
 }

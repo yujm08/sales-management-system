@@ -7,7 +7,6 @@ import com.mynet.sales_management_system.security.CustomUserDetails;
 import com.mynet.sales_management_system.service.MonthlyComparisonService;
 import com.mynet.sales_management_system.service.ProductService;
 import com.mynet.sales_management_system.service.SalesService;
-import com.mynet.sales_management_system.util.DateUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -75,31 +74,6 @@ public class SubsidiaryController {
 
         log.info("하위회사 입력 페이지 접근: 회사={}, 날짜={}", userDetails.getCompanyName(), targetDate);
         return "subsidiary/input";
-    }
-
-    /**
-     * 수량 데이터 저장
-     */
-    @PostMapping("/save-quantity")
-    @ResponseBody
-    public String saveQuantity(@AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam Long productId,
-            @RequestParam String salesDate,
-            @RequestParam Integer quantity) {
-        try {
-            Long companyId = userDetails.getCompanyId();
-            LocalDate date = LocalDate.parse(salesDate);
-
-            salesService.saveDailySales(companyId, productId, date, quantity, userDetails.getUsername());
-
-            log.info("수량 데이터 저장: 회사={}, 제품ID={}, 날짜={}, 수량={}",
-                    userDetails.getCompanyName(), productId, date, quantity);
-
-            return "success";
-        } catch (Exception e) {
-            log.error("수량 저장 실패", e);
-            return "error:" + e.getMessage();
-        }
     }
 
     /**

@@ -102,7 +102,6 @@ public class DailySalesService {
 
                 int year = targetDate.getYear();
                 int month = targetDate.getMonthValue();
-                int day = targetDate.getDayOfMonth();
 
                 // 회사별 데이터 맵
                 Map<String, CompanySalesData> companySalesMap = new LinkedHashMap<>();
@@ -126,19 +125,12 @@ public class DailySalesService {
                         log.info("=== 회사 처리 시작: {} (ID: {}) ===", company.getName(), company.getId());
 
                         // 일 수량 조회
-                        Optional<DailySales> dailySalesOpt = dailySalesRepository
-                                        .findByCompanyIdAndProductIdAndSalesDateNative(company.getId(), product.getId(),
-                                                        targetDate);
 
                         Integer dailyQuantity = dailySalesRepository
                                         .findByCompanyIdAndProductIdAndSalesDate(company.getId(), product.getId(),
                                                         targetDate)
                                         .map(DailySales::getQuantity)
                                         .orElse(0);
-
-                        log.info(">>> DB조회 테스트: 회사={}, 제품={}, 날짜={}, 결과={}",
-                                        company.getName(), product.getProductCode(), targetDate,
-                                        dailySalesOpt.isPresent() ? dailySalesOpt.get().getQuantity() : "없음");
 
                         // 월 기간의 일자별 판매 데이터 조회
                         LocalDate startDate = LocalDate.of(year, month, 1);
@@ -354,38 +346,4 @@ public class DailySalesService {
                 return prevMonthQty + currentMonthQty;
         }
 
-        /**
-         * DB 회사명을 HTML 표시용 키로 매핑
-         */
-        private String mapCompanyNameForDisplay(String dbCompanyName) {
-                if (dbCompanyName == null)
-                        return "";
-
-                // 정확히 일치하는 경우
-                switch (dbCompanyName) {
-                        case "영현아이앤씨":
-                                return "영현아이앤씨";
-                        case "마이씨앤에스":
-                                return "마이씨앤에스";
-                        case "우리STM":
-                                return "우리STM";
-                        case "엠에스앤샵":
-                                return "엠에스앤샵";
-                        case "원이스토리(쿠팡)":
-                                return "원이스토리 (쿠팡)";
-                        case "대현씨앤씨":
-                                return "대현씨앤씨";
-                        case "마이넷(GX판매)":
-                                return "마이넷(GX판매)";
-                }
-
-                // 부분 일치 (레거시 데이터 대응)
-                if (dbCompanyName.contains("원이스토리"))
-                        return "원이스토리(쿠팡)";
-                if (dbCompanyName.contains("마이넷"))
-                        return "마이넷(GX판매)";
-
-                log.warn("매핑되지 않은 회사명: '{}'", dbCompanyName);
-                return dbCompanyName; // 기본값
-        }
 }

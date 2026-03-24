@@ -7,15 +7,12 @@ import com.mynet.sales_management_system.entity.Product;
 import com.mynet.sales_management_system.security.CustomUserDetails;
 import com.mynet.sales_management_system.service.MonthlyComparisonService;
 import com.mynet.sales_management_system.service.ProductService;
-import com.mynet.sales_management_system.service.StatisticsService;
 import com.mynet.sales_management_system.service.ViewStatisticsService;
 import com.mynet.sales_management_system.repository.CompanyRepository;
 import com.mynet.sales_management_system.util.DateUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -39,7 +36,6 @@ public class CanonController {
         private final ViewStatisticsService viewStatisticsService;
         private final CompanyRepository companyRepository;
         private final MonthlyComparisonService monthlyComparisonService;
-        private final StatisticsService statisticsService;
         private final ProductService productService;
 
         /**
@@ -183,24 +179,6 @@ public class CanonController {
                 model.addAttribute("comparePage", "yearly");
 
                 return "canon/compare/yearly";
-        }
-
-        /**
-         * 년도별 데이터 조회
-         */
-        @PreAuthorize("hasAnyRole('CANON')")
-        @GetMapping("/yearly-comparison")
-        public ResponseEntity<StatisticsService.YearlyComparisonResponse> getYearlyComparison(
-                        @AuthenticationPrincipal CustomUserDetails userDetails) {
-
-                int currentYear = LocalDate.now().getYear();
-
-                StatisticsService.YearlyComparisonResponse response = statisticsService
-                                .getYearlyComparisonData(currentYear - 2, currentYear);
-
-                log.info("년도별 비교 데이터 조회: {}년 ~ {}년", currentYear - 2, currentYear);
-
-                return ResponseEntity.ok(response);
         }
 
         /**
