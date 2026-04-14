@@ -348,9 +348,6 @@
         margin: 0;
         outline: none;
 
-        padding-right: 0;
-        padding-left: 14px;
-
         /* 브라우저 기본 스타일 제거*/
         -webkit-appearance: none;
         -moz-appearance: textfield;
@@ -620,14 +617,14 @@
                         ' by ' + item.dailySummary.modifiedBy) : '수정 기록 없음'}"
                     >
                       <input
-                        type="number"
+                        type="text"
+                        inputmode="numeric"
                         class="quantity-input"
                         th:value="${item.dailySummary?.quantity ?: 0}"
                         th:data-product-id="${item.productId}"
                         th:data-company-id="${companyFilter}"
                         th:data-type="'quantity'"
                         readonly
-                        min="-999999"
                       />
                     </td>
 
@@ -718,14 +715,14 @@
                       th:data-tooltip="'목표 수량'"
                     >
                       <input
-                        type="number"
+                        type="text"
+                        inputmode="numeric"
                         class="quantity-input"
                         th:value="${item.targetData?.targetQuantity ?: 0}"
                         th:data-product-id="${item.productId}"
                         th:data-company-id="${companyFilter}"
                         th:data-type="'target'"
                         readonly
-                        min="-999999"
                       />
                     </td>
 
@@ -946,9 +943,33 @@
           currentValues[key] = initialValue;
           originalValues[key] = initialValue;
 
+          input.addEventListener("keydown", (e) => {
+            // 허용: 숫자, -, 백스페이스, Delete, 방향키, Tab
+            const allowed =
+              /[0-9\-]/.test(e.key) ||
+              [
+                "Backspace",
+                "Delete",
+                "ArrowLeft",
+                "ArrowRight",
+                "Tab",
+                "Enter",
+              ].includes(e.key);
+            if (!allowed) e.preventDefault();
+
+            // - 는 맨 앞에만 허용
+            if (e.key === "-" && input.value.includes("-")) e.preventDefault();
+          });
+
           input.addEventListener("input", () => {
+            // 숫자와 - 이외 문자 제거
+            input.value = input.value.replace(/[^0-9\-]/g, "");
+            // - 가 맨 앞이 아닌 경우 제거
+            if (input.value.indexOf("-") > 0) {
+              input.value = input.value.replace(/-/g, "");
+            }
             const newValue = parseInt(input.value, 10);
-            currentValues[key] = isNaN(newValue) ? 0 : newValue; // 음수 허용
+            currentValues[key] = isNaN(newValue) ? 0 : newValue;
           });
 
           input.addEventListener("blur", () => {

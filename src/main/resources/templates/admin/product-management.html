@@ -599,49 +599,67 @@
     }
 
     function expandCategoryRowspan(targetRow) {
-        // 이 행 또는 이전 행에서 category-cell 찾기
-        let categoryCell = targetRow.querySelector('.category-cell');
-        let groupFirstRow = targetRow;
+    let categoryCell = targetRow.querySelector('.category-cell');
+    let groupFirstRow = targetRow;
+    const isFirstRow = !!categoryCell;
 
-        if (!categoryCell) {
-            let prev = targetRow.previousElementSibling;
-            while (prev) {
-                const cell = prev.querySelector('.category-cell');
-                if (cell) { categoryCell = cell; groupFirstRow = prev; break; }
-                prev = prev.previousElementSibling;
-            }
+    if (!categoryCell) {
+        let prev = targetRow.previousElementSibling;
+        while (prev) {
+            const cell = prev.querySelector('.category-cell');
+            if (cell) { categoryCell = cell; groupFirstRow = prev; break; }
+            prev = prev.previousElementSibling;
         }
-        if (!categoryCell) return;
+    }
+    if (!categoryCell) return;
 
-        const originalSpan = parseInt(categoryCell.rowSpan) || 1;
-        const categoryName = categoryCell.querySelector('.category-display')?.textContent.trim() || categoryCell.dataset.category;
+    const originalSpan = parseInt(categoryCell.rowSpan) || 1;
+    const categoryName = categoryCell.querySelector('.category-display')?.textContent.trim() || categoryCell.dataset.category;
 
-        // 원복용 데이터 저장
-        categoryCell.dataset.originalSpan = originalSpan;
-        categoryCell.dataset.originalCategory = categoryName;
+    categoryCell.dataset.originalSpan = originalSpan;
+    categoryCell.dataset.originalCategory = categoryName;
 
-        // 원본 셀 → rowspan 1로 축소 + select로 교체
+    const table = categoryCell.closest('table');
+    const allRows = Array.from(table.querySelectorAll('tbody tr'));
+    const startIdx = allRows.indexOf(groupFirstRow);
+    const targetIdx = allRows.indexOf(targetRow);
+    const relativeIdx = targetIdx - startIdx; // 그룹 내 몇 번째 행인지
+
+    if (isFirstRow) {
+        // 수정 대상이 첫 번째 행 → 기존처럼 원본 셀을 select로 교체
         categoryCell.rowSpan = 1;
         categoryCell.innerHTML = buildCategorySelect(categoryName);
 
-        if (originalSpan > 1) {
-            const table = categoryCell.closest('table');
-            const allRows = Array.from(table.querySelectorAll('tbody tr'));
-            const startIdx = allRows.indexOf(groupFirstRow);
-
-            for (let i = 1; i < originalSpan; i++) {
-                const siblingRow = allRows[startIdx + i];
-                if (!siblingRow) continue;
-
-                const newTd = document.createElement('td');
-                newTd.className = 'category-cell injected-category-cell';
-
-                newTd.innerHTML = `<span class="category-display">${categoryName}</span>`;
-
-                siblingRow.insertBefore(newTd, siblingRow.firstElementChild);
-            }
+        for (let i = 1; i < originalSpan; i++) {
+            const siblingRow = allRows[startIdx + i];
+            if (!siblingRow) continue;
+            const newTd = document.createElement('td');
+            newTd.className = 'category-cell injected-category-cell';
+            newTd.innerHTML = `<span class="category-display">${categoryName}</span>`;
+            siblingRow.insertBefore(newTd, siblingRow.firstElementChild);
         }
+    } else {
+    // 원본 셀을 relativeIdx 행만 커버하도록 축소
+    // → rows 0 ~ relativeIdx-1은 원본 셀이 계속 커버하므로 주입 불필요
+    categoryCell.rowSpan = relativeIdx;
+
+    // 수정 대상 행에만 select 셀 주입
+    const selectTd = document.createElement('td');
+    selectTd.className = 'category-cell injected-category-cell';
+    selectTd.innerHTML = buildCategorySelect(categoryName);
+    targetRow.insertBefore(selectTd, targetRow.firstElementChild);
+
+    // target 이후 행들만 text 셀 주입
+    for (let i = relativeIdx + 1; i < originalSpan; i++) {
+        const siblingRow = allRows[startIdx + i];
+        if (!siblingRow) continue;
+        const newTd = document.createElement('td');
+        newTd.className = 'category-cell injected-category-cell';
+        newTd.innerHTML = `<span class="category-display">${categoryName}</span>`;
+        siblingRow.insertBefore(newTd, siblingRow.firstElementChild);
     }
+}
+}
 
     function buildCategorySelect(selectedCategory) {
         const options = Array.from(document.querySelectorAll('#categoryInput option'))

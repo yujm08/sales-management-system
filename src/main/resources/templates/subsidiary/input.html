@@ -321,7 +321,8 @@
                                     <!-- 수량 입력 셀 -->
                                     <td th:class="'data-cell green-' + ${(categoryStat.index % 4) + 1} + ' quantity-cell'"
                                         th:classappend="${isCurrentMonth ? 'editable' : ''}">
-                                        <input type="number" 
+                                        <input type="text"
+                                            inputmode="numeric"
                                             class="quantity-input" 
                                             th:value="${product.quantity}" 
                                             th:data-product-id="${product.id}"
@@ -329,9 +330,7 @@
                                             th:data-category="${categoryEntry.key}"
                                             th:data-supply-price="${product.supplyPrice}"
                                             th:data-editable="${isCurrentMonth}"
-                                            readonly
-                                            min="-999999"
-                                            oninput="calculateTotals()">
+                                            readonly>
                                     </td>
                                 </tr>
                             </th:block>
@@ -402,13 +401,37 @@
                 currentValues[key] = initialValue;
                 originalData[key] = initialValue; // 초기값도 originalData에 저장
 
-                input.addEventListener("input", () => {
-                    const newValue = parseInt(input.value, 10);
-                    currentValues[key] = isNaN(newValue) ? 0 : newValue;
+                // focus 시 전체 선택 → 바로 덮어쓰기 가능
+                input.addEventListener("focus", () => {
+                    if (!input.readOnly) {
+                        input.select();
+                    }
                 });
 
-                // blur 이벤트 추가
+                input.addEventListener("keydown", (e) => {
+                    const allowed = /[0-9\-]/.test(e.key) ||
+                        ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"].includes(e.key);
+                    if (!allowed) e.preventDefault();
+                    if (e.key === "-" && input.value.includes("-")) e.preventDefault();
+                });
+                input.addEventListener("input", () => {
+                    input.value = input.value.replace(/[^0-9\-]/g, "");
+                    if (input.value.indexOf("-") > 0) {
+                        input.value = input.value.replace(/-/g, "");
+                    }
+                    const newValue = parseInt(input.value, 10);
+                    currentValues[key] = isNaN(newValue) ? 0 : newValue;
+                    calculateTotals(); // oninput 대신 여기서 호출
+                });
+
+                // blur 시 빈 값이면 0으로 복원
                 input.addEventListener("blur", () => {
+                    if (input.value === "" || input.value === "-") {
+                        input.value = "0";
+                        currentValues[key] = 0;
+                        calculateTotals();
+                        return;
+                    }
                     const savedValue = currentValues[key];
                     if (input.value !== savedValue.toString()) {
                         input.value = savedValue;
